@@ -128,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () => Navigator.of(context).pushNamed('/forgot-password'),
                     child: const Text('Olvide mi contrasena'),
                   ),
                 ],

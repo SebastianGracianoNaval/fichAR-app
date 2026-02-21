@@ -24,6 +24,16 @@
 
 **Conclusion:** La capa de codigo/DB esta cubierta. La configuracion del Dashboard es manual y recomendada.
 
+### Variables para la API
+
+La API (packages/api) requiere en `.env` (raiz del repo):
+
+- `SUPABASE_URL` — URL del proyecto
+- `SUPABASE_SERVICE_ROLE_KEY` — Clave service_role (Dashboard > Settings > API). Solo servidor, nunca en cliente.
+- `INVITE_SECRET` — **Requerido** para POST /auth/invite y POST /auth/register. Secreto para firmar tokens de invitacion. No usar `SUPABASE_SERVICE_ROLE_KEY`. Generar con `openssl rand -hex 32`.
+- `RESET_PASSWORD_REDIRECT_URL` — (opcional) URL de redireccion tras reset de password.
+- `HASH_PEPPER` — **Requerido** para POST /fichajes. Secreto para cadena de hashes (32+ bytes). Generar: `openssl rand -hex 32`.
+
 ---
 
 ## 2. Aplicar migraciones
@@ -52,6 +62,8 @@ supabase db push
 1. Ir a https://supabase.com/dashboard
 2. Proyecto > SQL Editor
 3. Copiar y ejecutar cada archivo de `supabase/migrations/` en orden (000001, 000002, etc.)
+
+**Nota:** Las migraciones ya estan aplicadas via MCP `apply_migration`. Las tablas organizations, employees, org_configs y audit_logs existen.
 
 ---
 

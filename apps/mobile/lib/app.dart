@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'screens/dashboard_screen.dart';
+import 'screens/forgot_password_screen.dart';
 import 'screens/login_screen.dart';
 import 'theme.dart';
 
@@ -30,6 +31,7 @@ class FicharApp extends StatelessWidget {
       ),
       routes: {
         '/login': (_) => const LoginScreen(),
+        '/forgot-password': (_) => const ForgotPasswordScreen(),
         '/dashboard': (_) => const DashboardScreen(),
       },
     );

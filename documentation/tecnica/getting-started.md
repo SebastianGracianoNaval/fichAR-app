@@ -36,6 +36,7 @@ Crear `.env` en la raíz (no commiteado). Usar `.env.example` como plantilla cua
 ```bash
 SUPABASE_URL=
 SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=   # Para la API (auth, register-org, etc.)
 ```
 
 ### 3. Supabase
@@ -51,10 +52,18 @@ supabase start
 
 ### 4. Desarrollo
 
-- **API:** `bun run dev` o `cd packages/api && bun run dev`
-- **Mobile:** `bun run mobile` (copia .env de la raiz a apps/mobile/assets y ejecuta Flutter)
-- **Web:** `bun run mobile:web`
-- **Flutter directo:** Ejecutar `bun run scripts/ensure_mobile_env.ts` antes para copiar .env
+| Comando | Descripcion |
+|---------|-------------|
+| `bun run dev` | Levanta API (Bun) |
+| `bun run mobile` | Levanta Flutter (dispositivo/emulador) |
+| `bun run mobile:web` | Levanta Flutter en Chrome |
+| `bun run test` | Tests API |
+| `bun run test:api` | Solo tests API |
+| `bun run test:mobile` | Solo tests Flutter |
+| `bun run lint` | Biome lint |
+| `bun run format` | Biome format |
+
+Al iniciar API o mobile se muestra el banner de fichAR en terminal.
 
 ## Siguientes pasos
 

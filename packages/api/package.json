@@ -10,7 +10,9 @@
     "lint": "echo 'api: no lint config yet'"
   },
   "dependencies": {
-    "@fichar/shared": "workspace:*"
+    "@fichar/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.47.0",
+    "jose": "^5.9.0"
   },
   "devDependencies": {
     "@types/bun": "latest",

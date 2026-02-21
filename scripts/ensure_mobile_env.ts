@@ -2,6 +2,10 @@
 import { existsSync, copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { printBanner } from '../packages/shared/banner.ts';
+
+printBanner();
+
 const root = join(import.meta.dir, '..');
 const rootEnv = join(root, '.env');
 const mobileAssets = join(root, 'apps', 'mobile', 'assets');
