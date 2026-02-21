@@ -6,6 +6,31 @@
 
 ---
 
+## Foundational Principles (Non-Negotiable)
+
+These principles govern all development. AGENTS and humans must always comply.
+
+1. **Integrability:** The app must be highly integrable with any system—old software, modern APIs, ERPs, n8n, webhooks, CSV/Excel. Minimal development for consumers. See fichar-integrations.
+
+2. **Security:** Zero tolerance for vulnerabilities. Defensive programming, RLS, auth, audit logs. No exceptions.
+   - **legal_auditor role:** Must remain hidden and hard to assign. Not exposed in Admin UI or in roles assignable via invite/import. Only activatable via a controlled mechanism (e.g., env flag, restricted script, or undocumented flow) known to the project owner. Admin must NOT be able to grant it through normal flows.
+
+3. **Compatibility:** Support old and modern OSs, all platforms. Android 5+, iOS 12+, legacy Windows/macOS/Linux. Design for low-end devices and constrained resources. See Compatibility table and fichar-low-end.
+
+4. **Documentation:** Technical docs must be readable by both AIs and humans. Easy to understand endpoints, methods, params, examples. APIs flexible and follow best practices. Foster quick integrations and onboarding.
+
+5. **Post-implementation audit:** After every plan implementation, bug fix, or significant change, run an audit and all tests. Nothing must break. The audit must verify compliance with everything AGENTS.md mandates (VOIS, security, integration, compatibility, documentation).
+
+6. **VOIS pillars (always enforced):** Security and Integration are core. Every audit checks VOIS compliance.
+
+7. **Flexibility and customization:** Maximize employer (Admin) control. Configs, webhooks, report formats, permissions—design for customization without code changes.
+
+8. **Optimization:** Optimize processes, resources, network usage, exports. Efficient queries, batching, minimal payloads. Design for low bandwidth and offline-capable flows where applicable.
+
+9. **Platform and OS optimization:** Tune for each platform (Android, iOS, web, desktop) and OS versions. Use platform-specific skills (fichar-android, fichar-ios, fichar-low-end) for compatibility.
+
+---
+
 ## Programming Personality
 
 Follow these rules for consistent, professional code:
@@ -75,6 +100,7 @@ Follow these rules for consistent, professional code:
 | Implement fix after hypothesis | fichar-bug-fix | — |
 | Before merging fix | fichar-regression-check | — |
 | Plan review (security, optimization, speed) | fichar-plan-review | — |
+| Project audit (structure, VOIS, legal, judicial) | fichar-audit | fichar-security, fichar-legal-compliance |
 | Create new skill | skill-creator | — |
 | Sync skills to AGENTS | skill-sync | — |
 | Produce plan before implementation | skill-planning | — |
@@ -103,12 +129,13 @@ Follow these rules for consistent, professional code:
 
 ---
 
-## Workflow: Plan → Review → Implement
+## Workflow: Plan → Review → Implement → Audit
 
 1. **Non-trivial change?** → Invoke `skill-planning` → Create `plans/<feature>.md` in English
 2. **Review plan** → Invoke `fichar-plan-review` (integration, security, optimization, speed pillars)
 3. **Implement** with appropriate domain/tech skills
-4. **Run tests** before considering done
+4. **Run all tests** before considering done. No merge with failing tests.
+5. **Run audit** after implementation: Invoke `fichar-audit` (or project-auditor). Verify compliance with AGENTS.md, VOIS, security, integration. Fix any regressions before closing.
 
 ---
 
@@ -121,6 +148,7 @@ Follow these rules for consistent, professional code:
 | mobile-developer | Flutter iOS/Android | fichar-flutter, fichar-android, fichar-ios |
 | change-planner | Need structured plan | skill-planning |
 | plan-reviewer | Review plan before implementation | fichar-plan-review |
+| project-auditor | Full audit: structure, VOIS, legal, judicial readiness | fichar-audit, fichar-security |
 | test-creator | Adding/modifying tests | fichar-test-backend, fichar-test-frontend, fichar-test-e2e |
 | security-reviewer | Auth, RLS, logs changes | fichar-security |
 | legal-reviewer | Fichaje, schedules, reports | fichar-legal-compliance |

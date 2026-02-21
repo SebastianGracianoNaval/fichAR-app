@@ -73,6 +73,22 @@ describe('Auth validation', () => {
     expect(res.status).toBe(401);
   });
 
+  it('POST /fichajes accepts idempotency_key (CL-025 format, returns 401 sin auth)', async () => {
+    const req = new Request('http://localhost/api/v1/fichajes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: 'entrada', idempotency_key: 'test-uuid-cl025' }),
+    });
+    const res = await handleRequest(req);
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /me without auth returns 401', async () => {
+    const req = new Request('http://localhost/api/v1/me');
+    const res = await handleRequest(req);
+    expect(res.status).toBe(401);
+  });
+
   it('GET /fichajes without auth returns 401', async () => {
     const req = new Request('http://localhost/api/v1/fichajes');
     const res = await handleRequest(req);

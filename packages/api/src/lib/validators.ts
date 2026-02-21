@@ -10,7 +10,8 @@ export function validateEmail(email: string): boolean {
 }
 
 export function validateCuil(cuil: string): boolean {
-  return /^\d{2}-?\d{8}-?\d$/.test(cuil.replace(/-/g, '')) && cuil.replace(/-/g, '').length === 11;
+  const normalized = cuil.replace(/-/g, '');
+  return /^\d{11}$/.test(normalized);
 }
 
 export function parseBody<T>(body: unknown): T | null {

@@ -4,7 +4,7 @@ Sistema de Gestión y Administración de Cumplimiento Laboral para empresas y Py
 
 ## Descripción
 
-fichAR permite el registro digital de entrada y salida (fichaje) con geolocalización, banco de horas, control de jornada y cumplimiento de la Ley de Contrato de Trabajo y la Reforma Laboral 2026. Los datos están diseñados para ser admisibles en juicios laborales.
+fichAR permite el registro digital de entrada y salida (fichaje) con geolocalización, banco de horas, control de jornada y cumplimiento de la Ley de Contrato de Trabajo y la Reforma Laboral 2026. Los datos están diseñados para ser admisibles en juicios laborales. Diseñado bajo estándares ISO 27001 (ver documentation/tecnica/ISO-27001-ALIGNMENT.md).
 
 **Filosofía:** Código de Grado Bancario, Interfaz de Grado Humano.
 

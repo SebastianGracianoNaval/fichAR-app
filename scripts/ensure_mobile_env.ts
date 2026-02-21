@@ -21,6 +21,6 @@ if (existsSync(rootEnv)) {
 } else if (existsSync(envExample) && !existsSync(mobileEnv)) {
   copyFileSync(envExample, mobileEnv);
   console.warn(
-    'apps/mobile/assets/.env created from env.example. Fill SUPABASE_URL and SUPABASE_ANON_KEY.',
+    'apps/mobile/assets/.env created from env.example. Fill SUPABASE_URL, SUPABASE_ANON_KEY and API_URL.',
   );
 }

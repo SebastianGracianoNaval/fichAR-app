@@ -11,10 +11,17 @@ Future<void> main() async {
 
   final url = dotenv.env['SUPABASE_URL'];
   final anonKey = dotenv.env['SUPABASE_ANON_KEY'];
+  final apiUrl = dotenv.env['API_URL'];
 
-  if (url == null || url.isEmpty || anonKey == null || anonKey.isEmpty) {
+  if (
+      url == null ||
+      url.isEmpty ||
+      anonKey == null ||
+      anonKey.isEmpty ||
+      apiUrl == null ||
+      apiUrl.isEmpty) {
     throw Exception(
-      'SUPABASE_URL y SUPABASE_ANON_KEY deben estar en apps/mobile/assets/.env. '
+      'SUPABASE_URL, SUPABASE_ANON_KEY y API_URL deben estar en apps/mobile/assets/.env. '
       'Copia desde .env en la raiz o desde assets/env.example.',
     );
   }

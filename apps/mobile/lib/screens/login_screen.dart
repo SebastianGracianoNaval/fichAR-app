@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../services/auth_api_service.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -30,10 +32,51 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
 
     try {
-      await Supabase.instance.client.auth.signInWithPassword(
+      final response = await AuthApiService.login(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+
+      if (response.mfaEnrollmentRequired != null) {
+        setState(() => _loading = false);
+        if (!mounted) return;
+        Navigator.of(context).pushReplacementNamed(
+          '/mfa-enroll',
+          arguments: response.mfaEnrollmentRequired!,
+        );
+        return;
+      }
+
+      if (response.mfaVerificationRequired != null) {
+        setState(() => _loading = false);
+        if (!mounted) return;
+        Navigator.of(context).pushReplacementNamed(
+          '/mfa-verify',
+          arguments: response.mfaVerificationRequired!,
+        );
+        return;
+      }
+
+      if (response.result == null) {
+        setState(() {
+          _loading = false;
+          if (response.statusCode == 429) {
+            _errorMessage = 'Demasiados intentos. Intentá en 15 minutos.';
+          } else if (response.statusCode == 401) {
+            _errorMessage = 'Email o contrasena incorrectos.';
+          } else {
+            _errorMessage = response.error ?? 'Error al iniciar sesion. Intentá de nuevo.';
+          }
+        });
+        return;
+      }
+
+      final authResponse = await Supabase.instance.client.auth.setSession(
+        response.result!.refreshToken,
+      );
+      if (authResponse.session == null) {
+        throw Exception('No se pudo establecer la sesión');
+      }
     } on AuthException catch (e) {
       setState(() {
         _loading = false;

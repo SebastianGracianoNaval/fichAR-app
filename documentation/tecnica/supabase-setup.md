@@ -15,6 +15,7 @@
 - [ ] Authentication > URL Configuration: Whitelist de redirect URLs (no usar *)
 - [ ] Authentication > Rate Limits: Revisar limites por defecto
 - [ ] Cuenta Supabase: Activar MFA en account settings
+- [ ] Authentication > MFA: TOTP está habilitado por defecto en todos los proyectos (CFG-025)
 
 ### Para produccion
 
@@ -33,12 +34,24 @@ La API (packages/api) requiere en `.env` (raiz del repo):
 - `INVITE_SECRET` — **Requerido** para POST /auth/invite y POST /auth/register. Secreto para firmar tokens de invitacion. No usar `SUPABASE_SERVICE_ROLE_KEY`. Generar con `openssl rand -hex 32`.
 - `RESET_PASSWORD_REDIRECT_URL` — (opcional) URL de redireccion tras reset de password.
 - `HASH_PEPPER` — **Requerido** para POST /fichajes. Secreto para cadena de hashes (32+ bytes). Generar: `openssl rand -hex 32`.
+- `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN` — **Opcional**. Para rate limiting distribuido (multi-instancia). Sin estas variables se usa almacenamiento in-memory (solo una instancia). Crear base Redis gratuita en https://console.upstash.com, copiar credenciales REST.
 
 ---
 
-## 2. Aplicar migraciones
+## 2. Rate limiting con Redis (Upstash)
 
-### Opcion A: Supabase CLI (Linux Debian 12)
+Para entornos con múltiples instancias de la API, el rate limit de login debe usar Redis:
+
+1. Crear cuenta en https://console.upstash.com
+2. Crear base de datos Redis (plan Free: 256 MB, 500K comandos/mes)
+3. En el detalle de la base, copiar `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`
+4. Añadir a `.env`
+
+---
+
+## 3. Aplicar migraciones
+
+### Opción A: Supabase CLI (Linux Debian 12)
 
 ```bash
 # Instalar Supabase CLI
@@ -57,7 +70,7 @@ supabase link --project-ref dfbyxjqryqrlpobudwmu
 supabase db push
 ```
 
-### Opcion B: Dashboard (SQL Editor)
+### Opción B: Dashboard (SQL Editor)
 
 1. Ir a https://supabase.com/dashboard
 2. Proyecto > SQL Editor
@@ -67,7 +80,18 @@ supabase db push
 
 ---
 
-## 3. MCP de Supabase (Cursor)
+## 3.1. Retención audit_logs (CFG-037)
+
+**Referencia:** definiciones/CONFIGURACIONES.txt CFG-037, LCT Art. 52.
+
+- **Default:** 3650 días (10 años). Se persiste en `org_configs` con key `logs_retencion_dias`.
+- **Política:** `audit_logs` es inmutable (INSERT only). No existe purga automática en esta versión.
+- **Operativo:** Los logs se conservan indefinidamente. Para archivar o rotar, usar backup/export manual.
+- **Futuro:** Si se implementa job de purga, debe respetar `logs_retencion_dias` por org (valor >= 365).
+
+---
+
+## 4. MCP de Supabase (Cursor)
 
 Archivo: `.cursor/mcp.json` (o `~/.cursor/mcp.json`)
 

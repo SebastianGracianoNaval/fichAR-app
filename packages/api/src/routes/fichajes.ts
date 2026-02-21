@@ -2,8 +2,8 @@ import { getSupabaseAdmin } from '../lib/supabase.ts';
 import { requireAuth } from '../lib/auth-middleware.ts';
 import { parseBody } from '../lib/validators.ts';
 import { computeHash } from '../services/fichaje-hash.ts';
-
-const DESCANSO_HORAS = 12;
+import { validateEntrada } from '../services/fichaje-rules.ts';
+import { logAudit, logError, getRequestMeta } from '../lib/logger.ts';
 
 interface PostFichajeBody {
   tipo: 'entrada' | 'salida';
@@ -40,7 +40,7 @@ export async function handlePostFichajes(req: Request): Promise<Response> {
 
   const pepper = process.env.HASH_PEPPER ?? process.env.FICHAJE_HASH_SECRET;
   if (!pepper) {
-    console.error('fichajes: HASH_PEPPER or FICHAJE_HASH_SECRET not set');
+    await logError('critical', 'fichaje_pepper_missing', { orgId: ctx.orgId, employeeId: ctx.employeeId }, {});
     return Response.json({ error: 'Configuración incorrecta' }, { status: 500 });
   }
 
@@ -55,7 +55,8 @@ export async function handlePostFichajes(req: Request): Promise<Response> {
       .maybeSingle();
 
     if (existing) {
-      console.log('request_duplicado_ignorado', { idempotency_key: data.idempotency_key });
+      const meta = getRequestMeta(req);
+      await logAudit('request_duplicado_ignorado', { orgId: ctx.orgId, employeeId: ctx.employeeId, ip: meta.ip, userAgent: meta.userAgent }, { idempotency_key: data.idempotency_key }, 'info');
       return Response.json(
         {
           id: existing.id,
@@ -78,30 +79,20 @@ export async function handlePostFichajes(req: Request): Promise<Response> {
       .limit(1)
       .maybeSingle();
 
-    if (lastFichaje?.tipo === 'entrada') {
+    const validation = validateEntrada(lastFichaje ?? null);
+    if (!validation.allowed) {
+      const meta = getRequestMeta(req);
+      const logAction = validation.code === 'duplicado_entrada'
+        ? 'intento_fichaje_duplicado_entrada'
+        : 'fichaje_rechazado_descanso_insuficiente';
+      const logDetails = validation.code === 'descanso_insuficiente' && 'esperarHoras' in validation
+        ? { horas_transcurridas: Math.round((12 - validation.esperarHoras) * 10) / 10, horas_requeridas: 12 }
+        : {};
+      await logAudit(logAction, { orgId: ctx.orgId, employeeId: ctx.employeeId, ip: meta.ip, userAgent: meta.userAgent }, logDetails, 'info');
       return Response.json(
-        {
-          error: 'Ya registraste entrada. Registrar salida primero.',
-          code: 'duplicado_entrada',
-        },
+        { error: validation.message, code: validation.code },
         { status: 400 },
       );
-    }
-
-    if (lastFichaje?.tipo === 'salida') {
-      const lastSalida = new Date(lastFichaje.timestamp_servidor);
-      const now = new Date();
-      const horasDesdeSalida = (now.getTime() - lastSalida.getTime()) / (1000 * 60 * 60);
-      if (horasDesdeSalida < DESCANSO_HORAS) {
-        const esperar = Math.ceil((DESCANSO_HORAS - horasDesdeSalida) * 10) / 10;
-        return Response.json(
-          {
-            error: `Debés esperar ${esperar} horas más para cumplir el descanso mínimo de 12 horas (Art. 198 LCT). Tu última salida fue a las ${lastSalida.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}.`,
-            code: 'descanso_insuficiente',
-          },
-          { status: 400 },
-        );
-      }
     }
   }
 
@@ -147,9 +138,12 @@ export async function handlePostFichajes(req: Request): Promise<Response> {
     .single();
 
   if (error) {
-    console.error('fichajes: insert failed', error);
+    await logError('critical', 'fichaje_insert_failed', { orgId: ctx.orgId, employeeId: ctx.employeeId }, {}, error);
     return Response.json({ error: 'Error al registrar fichaje' }, { status: 500 });
   }
+
+  const meta = getRequestMeta(req);
+  await logAudit('fichaje_creado', { orgId: ctx.orgId, employeeId: ctx.employeeId, ip: meta.ip, userAgent: meta.userAgent }, { resource_type: 'fichaje', resource_id: inserted.id, fichaje_id: inserted.id, tipo: inserted.tipo }, 'info');
 
   return Response.json(inserted, { status: 201 });
 }
@@ -179,7 +173,7 @@ export async function handleGetFichajes(req: Request): Promise<Response> {
   const { data, error, count } = await query;
 
   if (error) {
-    console.error('fichajes: select failed', error);
+    await logError('critical', 'fichajes_select_failed', { orgId: ctx.orgId, employeeId: ctx.employeeId }, {}, error);
     return Response.json({ error: 'Error al listar fichajes' }, { status: 500 });
   }
 

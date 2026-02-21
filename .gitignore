@@ -68,4 +68,7 @@ definiciones/
 # Planning (not official documentation)
 plans/
 
+# Audits (internal assessments, not for version control)
+audits/
+
 # NOTE: .cursor/skills/ and .cursor/rules/ and AGENTS.md are tracked (vibecoding system)

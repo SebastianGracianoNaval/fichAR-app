@@ -12,7 +12,10 @@
   "dependencies": {
     "@fichar/shared": "workspace:*",
     "@supabase/supabase-js": "^2.47.0",
-    "jose": "^5.9.0"
+    "@upstash/redis": "^1.36.2",
+    "dotenv": "^17.3.1",
+    "jose": "^5.9.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/bun": "latest",
