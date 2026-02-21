@@ -55,4 +55,41 @@ describe('fichaje-rules (CASOS-LIMITE CL-006, CL-007)', () => {
     const r = validateEntrada(last);
     expect(r.allowed).toBe(false);
   });
+
+  it('CFG-010: respeta descanso_minimo_horas configurable (10h)', () => {
+    const hace11h = new Date(Date.now() - 11 * 60 * 60 * 1000);
+    const last = {
+      id: 'x',
+      tipo: 'salida' as const,
+      timestamp_servidor: hace11h.toISOString(),
+    };
+    const r = validateEntrada(last, new Date(), 10);
+    expect(r.allowed).toBe(true);
+  });
+
+  it('CFG-010: rechaza con descanso 10h cuando pasaron 8h', () => {
+    const hace8h = new Date(Date.now() - 8 * 60 * 60 * 1000);
+    const last = {
+      id: 'x',
+      tipo: 'salida' as const,
+      timestamp_servidor: hace8h.toISOString(),
+    };
+    const r = validateEntrada(last, new Date(), 10);
+    expect(r.allowed).toBe(false);
+    expect(r.code).toBe('descanso_insuficiente');
+    expect('descansoHoras' in r && r.descansoHoras).toBe(10);
+    expect(r.message).toContain('10 horas');
+  });
+
+  it('CFG-010: clamp inválidos a 12 (fail secure)', () => {
+    const hace9h = new Date(Date.now() - 9 * 60 * 60 * 1000);
+    const last = {
+      id: 'x',
+      tipo: 'salida' as const,
+      timestamp_servidor: hace9h.toISOString(),
+    };
+    const r = validateEntrada(last, new Date(), 5);
+    expect(r.allowed).toBe(false);
+    expect('descansoHoras' in r && r.descansoHoras).toBe(12);
+  });
 });

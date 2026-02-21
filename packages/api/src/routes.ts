@@ -41,6 +41,13 @@ import {
   handlePostLicenciaRechazar,
 } from './routes/licencias.ts';
 import { handleGetPlaces } from './routes/places.ts';
+import { handleGetOrgConfigs, handlePatchOrgConfigs } from './routes/org-configs.ts';
+import {
+  handleGetWebhooks,
+  handlePostWebhooks,
+  handlePatchWebhook,
+  handleDeleteWebhook,
+} from './routes/webhooks.ts';
 import { handleGetAlertas } from './routes/alertas.ts';
 import { handleGetBanco, handleGetBancoEquipo } from './routes/banco.ts';
 import { handlePostReportesExport } from './routes/reportes.ts';
@@ -128,6 +135,16 @@ const routes: Route[] = [
 
   // Places
   exact('GET', '/places', handleGetPlaces),
+
+  // Org configs (Admin only)
+  exact('GET', '/org-configs', handleGetOrgConfigs),
+  exact('PATCH', '/org-configs', handlePatchOrgConfigs),
+
+  // Webhooks (Admin only)
+  exact('GET', '/webhooks', handleGetWebhooks),
+  exact('POST', '/webhooks', handlePostWebhooks),
+  dynamic('PATCH', '/webhooks/', '', handlePatchWebhook),
+  dynamic('DELETE', '/webhooks/', '', handleDeleteWebhook),
 
   // Alertas, Banco, Reportes
   exact('GET', '/alertas', handleGetAlertas),

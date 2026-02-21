@@ -3,6 +3,7 @@ import { requireAuth } from '../lib/auth-middleware.ts';
 import { parseBody } from '../lib/validators.ts';
 import { computeHash } from '../services/fichaje-hash.ts';
 import { validateEntrada } from '../services/fichaje-rules.ts';
+import { dispatchWebhooks } from '../services/webhook-dispatch.ts';
 import { logAudit, logError, getRequestMeta } from '../lib/logger.ts';
 import { getOrgConfigBoolean, getOrgConfigNumber } from '../lib/org-config.ts';
 import { haversineKm } from '../lib/geo.ts';
@@ -124,6 +125,7 @@ export async function handlePostFichajes(req: Request): Promise<Response> {
   }
 
   if (data.tipo === 'entrada') {
+    const descansoMinimo = await getOrgConfigNumber(admin, ctx.orgId, 'descanso_minimo_horas', 12);
     const { data: lastFichaje } = await admin
       .from('fichajes')
       .select('id, tipo, timestamp_servidor')
@@ -133,14 +135,14 @@ export async function handlePostFichajes(req: Request): Promise<Response> {
       .limit(1)
       .maybeSingle();
 
-    const validation = validateEntrada(lastFichaje ?? null);
+    const validation = validateEntrada(lastFichaje ?? null, new Date(), descansoMinimo);
     if (!validation.allowed) {
       const meta = getRequestMeta(req);
       const logAction = validation.code === 'duplicado_entrada'
         ? 'intento_fichaje_duplicado_entrada'
         : 'fichaje_rechazado_descanso_insuficiente';
-      const logDetails = validation.code === 'descanso_insuficiente' && 'esperarHoras' in validation
-        ? { horas_transcurridas: Math.round((12 - validation.esperarHoras) * 10) / 10, horas_requeridas: 12 }
+      const logDetails = validation.code === 'descanso_insuficiente' && 'descansoHoras' in validation
+        ? { horas_transcurridas: Math.round((validation.descansoHoras - validation.esperarHoras) * 10) / 10, horas_requeridas: validation.descansoHoras }
         : {};
       await logAudit(logAction, { orgId: ctx.orgId, employeeId: ctx.employeeId, ip: meta.ip, userAgent: meta.userAgent }, logDetails, 'info');
       return Response.json(
@@ -201,6 +203,26 @@ export async function handlePostFichajes(req: Request): Promise<Response> {
 
   const meta = getRequestMeta(req);
   await logAudit('fichaje_creado', { orgId: ctx.orgId, employeeId: ctx.employeeId, ip: meta.ip, userAgent: meta.userAgent }, { resource_type: 'fichaje', resource_id: inserted.id, fichaje_id: inserted.id, tipo: inserted.tipo }, 'info');
+
+  const lugarId = inserted.lugar_id as string | null;
+  let lugarNombre: string | null = null;
+  if (lugarId) {
+    const { data: place } = await admin.from('places').select('nombre').eq('id', lugarId).single();
+    lugarNombre = (place as { nombre?: string } | null)?.nombre ?? null;
+  }
+  const payload = {
+    id: inserted.id,
+    user_id: ctx.employeeId,
+    org_id: ctx.orgId,
+    tipo: inserted.tipo,
+    timestamp_servidor: inserted.timestamp_servidor,
+    timestamp_dispositivo: inserted.timestamp_dispositivo,
+    lugar_id: lugarId,
+    lugar_nombre: lugarNombre,
+  };
+  void dispatchWebhooks(ctx.orgId, 'fichaje.creado', payload).catch((e) =>
+    logError('warning', 'webhook_dispatch_failed', { orgId: ctx.orgId }, { event: 'fichaje.creado' }, e instanceof Error ? e : new Error(String(e))),
+  );
 
   return Response.json(inserted, { status: 201 });
 }
@@ -271,6 +293,7 @@ export async function handlePostFichajesBatch(req: Request): Promise<Response> {
 
   const admin = getSupabaseAdmin();
   const inserted: { id: string; tipo: string; timestamp_servidor: string; idempotency_key?: string }[] = [];
+  const toDispatch: { id: string; tipo: string; timestamp_servidor: string; timestamp_dispositivo: string | null; lugar_id: string | null }[] = [];
   const errors: { index: number; error: string; code?: string }[] = [];
 
   for (let i = 0; i < data.fichajes.length; i++) {
@@ -289,7 +312,7 @@ export async function handlePostFichajesBatch(req: Request): Promise<Response> {
         .maybeSingle();
       if (existing) {
         inserted.push({ id: existing.id, tipo: existing.tipo, timestamp_servidor: existing.timestamp_servidor, idempotency_key: item.idempotency_key });
-        continue;
+        continue; /* no dispatch for idempotency - already sent on first create */
       }
     }
 
@@ -336,9 +359,59 @@ export async function handlePostFichajesBatch(req: Request): Promise<Response> {
     }
 
     inserted.push({ id: row.id, tipo: row.tipo, timestamp_servidor: row.timestamp_servidor, idempotency_key: item.idempotency_key });
+    toDispatch.push({
+      id: row.id,
+      tipo: row.tipo,
+      timestamp_servidor: row.timestamp_servidor,
+      timestamp_dispositivo: item.timestamp_dispositivo ?? null,
+      lugar_id: item.lugar_id ?? null,
+    });
     const meta = getRequestMeta(req);
     await logAudit('fichaje_creado', { orgId: ctx.orgId, employeeId: ctx.employeeId, ip: meta.ip, userAgent: meta.userAgent }, { resource_type: 'fichaje', resource_id: row.id, fichaje_id: row.id, tipo: row.tipo, batch: true }, 'info');
   }
 
+  void fireBatchFichajeWebhooks(admin, ctx, toDispatch);
+
   return Response.json({ inserted, errors }, { status: 201 });
+}
+
+interface BatchFichajeItem {
+  id: string;
+  tipo: string;
+  timestamp_servidor: string;
+  timestamp_dispositivo: string | null;
+  lugar_id: string | null;
+}
+
+async function fireBatchFichajeWebhooks(
+  admin: ReturnType<typeof getSupabaseAdmin>,
+  ctx: { orgId: string; employeeId: string },
+  toDispatch: BatchFichajeItem[],
+): Promise<void> {
+  if (toDispatch.length === 0) return;
+
+  const lugarIds = [...new Set(toDispatch.map((d) => d.lugar_id).filter((id): id is string => Boolean(id)))];
+  const lugarMap = new Map<string, string>();
+  if (lugarIds.length > 0) {
+    const { data: places } = await admin.from('places').select('id, nombre').in('id', lugarIds);
+    for (const p of places ?? []) {
+      lugarMap.set((p as { id: string }).id, (p as { nombre: string }).nombre ?? '');
+    }
+  }
+
+  for (const d of toDispatch) {
+    const payload = {
+      id: d.id,
+      user_id: ctx.employeeId,
+      org_id: ctx.orgId,
+      tipo: d.tipo,
+      timestamp_servidor: d.timestamp_servidor,
+      timestamp_dispositivo: d.timestamp_dispositivo,
+      lugar_id: d.lugar_id,
+      lugar_nombre: d.lugar_id ? lugarMap.get(d.lugar_id) ?? null : null,
+    };
+    void dispatchWebhooks(ctx.orgId, 'fichaje.creado', payload).catch((e) =>
+      logError('warning', 'webhook_dispatch_failed', { orgId: ctx.orgId }, { event: 'fichaje.creado', fichaje_id: d.id }, e instanceof Error ? e : new Error(String(e))),
+    );
+  }
 }

@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from '../lib/supabase.ts';
 import { requireAuth } from '../lib/auth-middleware.ts';
+import { dispatchWebhooks } from '../services/webhook-dispatch.ts';
 import { logAudit, logError, getRequestMeta } from '../lib/logger.ts';
 
 const ADMIN_OR_SUPERVISOR = ['admin', 'supervisor'];
@@ -221,6 +222,19 @@ export async function handlePostLicencias(req: Request): Promise<Response> {
   const meta = getRequestMeta(req);
   await logAudit('licencia_creada', { orgId: ctx.orgId, employeeId: ctx.employeeId, ip: meta.ip }, { resource_type: 'licencia', resource_id: inserted.id, tipo }, 'info');
 
+  const payload = {
+    id: inserted.id,
+    employee_id: ctx.employeeId,
+    org_id: ctx.orgId,
+    tipo: (inserted as { tipo: string }).tipo,
+    fecha_inicio: (inserted as { fecha_inicio: string }).fecha_inicio,
+    fecha_fin: (inserted as { fecha_fin: string }).fecha_fin,
+    estado: 'pendiente',
+  };
+  void dispatchWebhooks(ctx.orgId, 'licencia.creada', payload).catch((e) =>
+    logError('warning', 'webhook_dispatch_failed', { orgId: ctx.orgId }, { event: 'licencia.creada' }, e instanceof Error ? e : new Error(String(e))),
+  );
+
   return Response.json(inserted, { status: 201 });
 }
 
@@ -273,6 +287,17 @@ export async function handlePostLicenciaAprobar(req: Request, licenciaId: string
 
   const meta = getRequestMeta(req);
   await logAudit('licencia_aprobada', { orgId: ctx.orgId, employeeId: ctx.employeeId, ip: meta.ip }, { resource_type: 'licencia', resource_id: licenciaId, approver_id: ctx.employeeId }, 'info');
+
+  const payload = {
+    id: licenciaId,
+    employee_id: (lic as { employee_id: string }).employee_id,
+    org_id: (lic as { org_id: string }).org_id,
+    estado: 'aprobada',
+    aprobado_por: ctx.employeeId,
+  };
+  void dispatchWebhooks(ctx.orgId, 'licencia.aprobada', payload).catch((e) =>
+    logError('warning', 'webhook_dispatch_failed', { orgId: ctx.orgId }, { event: 'licencia.aprobada' }, e instanceof Error ? e : new Error(String(e))),
+  );
 
   return Response.json({ ok: true, estado: 'aprobada' });
 }
@@ -343,6 +368,17 @@ export async function handlePostLicenciaRechazar(req: Request, licenciaId: strin
 
   const meta = getRequestMeta(req);
   await logAudit('licencia_rechazada', { orgId: ctx.orgId, employeeId: ctx.employeeId, ip: meta.ip }, { resource_type: 'licencia', resource_id: licenciaId, rechazo_motivo: motivo.trim() }, 'info');
+
+  const payload = {
+    id: licenciaId,
+    employee_id: (lic as { employee_id: string }).employee_id,
+    org_id: (lic as { org_id: string }).org_id,
+    estado: 'rechazada',
+    rechazo_motivo: motivo.trim(),
+  };
+  void dispatchWebhooks(ctx.orgId, 'licencia.rechazada', payload).catch((e) =>
+    logError('warning', 'webhook_dispatch_failed', { orgId: ctx.orgId }, { event: 'licencia.rechazada' }, e instanceof Error ? e : new Error(String(e))),
+  );
 
   return Response.json({ ok: true, estado: 'rechazada' });
 }

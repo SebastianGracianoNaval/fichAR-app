@@ -19,9 +19,14 @@ These principles govern all development. AGENTS and humans must always comply.
 
 4. **Documentation:** Technical docs must be readable by both AIs and humans. Easy to understand endpoints, methods, params, examples. APIs flexible and follow best practices. Foster quick integrations and onboarding.
 
-5. **Post-implementation audit:** After every plan implementation, bug fix, or significant change, run an audit and all tests. Nothing must break. The audit must verify compliance with everything AGENTS.md mandates (VOIS, security, integration, compatibility, documentation).
+5. **Post-implementation audit:** After every plan implementation, bug fix, or significant change, run an audit and all tests. Nothing must break. The audit must verify compliance with everything AGENTS.md mandates (VOIS+P, security, integration, compatibility, documentation).
 
-6. **VOIS pillars (always enforced):** Security and Integration are core. Every audit checks VOIS compliance.
+6. **VOIS+P pillars (always enforced):** Every audit checks compliance with all five pillars:
+   - **V (Velocity):** Optimal speed of processes, loads, requests. Fast feedback, lazy loading, pagination. No blocking UI.
+   - **O (Optimization):** Optimization of resources—background tasks, WiFi/data usage, processing, exports, imports. Connection pooling, timeouts, retry, batching, offline-capable flows.
+   - **I (Integration):** Highly easy to integrate with other apps (ClickUp, Clockify, ERPs, n8n). Flexible request/JSON understanding, versioned APIs, webhooks, adapters.
+   - **S (Security):** Completely secure. No cyber-attack weak points. Compliant with Argentine labor laws and ISO 27001. Data legally admissible in labor lawsuits.
+   - **P (Personalization):** Highly configurable and customizable. Law obliges employer control. Admin configures CFG-* via org_configs. Configs editable without code changes.
 
 7. **Flexibility and customization:** Maximize employer (Admin) control. Configs, webhooks, report formats, permissions—design for customization without code changes.
 
@@ -100,7 +105,7 @@ Follow these rules for consistent, professional code:
 | Implement fix after hypothesis | fichar-bug-fix | — |
 | Before merging fix | fichar-regression-check | — |
 | Plan review (security, optimization, speed) | fichar-plan-review | — |
-| Project audit (structure, VOIS, legal, judicial) | fichar-audit | fichar-security, fichar-legal-compliance |
+| Project audit (structure, VOIS+P, legal, judicial) | fichar-audit | fichar-security, fichar-legal-compliance |
 | Create new skill | skill-creator | — |
 | Sync skills to AGENTS | skill-sync | — |
 | Produce plan before implementation | skill-planning | — |
@@ -148,7 +153,7 @@ Follow these rules for consistent, professional code:
 | mobile-developer | Flutter iOS/Android | fichar-flutter, fichar-android, fichar-ios |
 | change-planner | Need structured plan | skill-planning |
 | plan-reviewer | Review plan before implementation | fichar-plan-review |
-| project-auditor | Full audit: structure, VOIS, legal, judicial readiness | fichar-audit, fichar-security |
+| project-auditor | Full audit: structure, VOIS+P, legal, judicial readiness | fichar-audit, fichar-security |
 | test-creator | Adding/modifying tests | fichar-test-backend, fichar-test-frontend, fichar-test-e2e |
 | security-reviewer | Auth, RLS, logs changes | fichar-security |
 | legal-reviewer | Fichaje, schedules, reports | fichar-legal-compliance |

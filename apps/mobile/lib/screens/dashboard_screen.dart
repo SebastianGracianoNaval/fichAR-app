@@ -10,6 +10,7 @@ import '../core/offline_queue.dart';
 import '../services/fichajes_api_service.dart';
 import '../services/licencias_api_service.dart';
 import '../utils/error_utils.dart';
+import 'admin_config_screen.dart';
 import 'admin_empleados_screen.dart';
 import 'alertas_screen.dart';
 import 'equipo_screen.dart';
@@ -342,6 +343,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ReportesScreen()),
+            ),
+          ),
+        if (['admin'].contains(widget.role))
+          _NavCard(
+            icon: Icons.settings,
+            title: 'Configuracion',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminConfigScreen()),
             ),
           ),
       ],

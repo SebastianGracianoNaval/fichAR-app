@@ -1,9 +1,11 @@
 /**
  * Reglas de negocio para fichajes (CL-006, CL-007).
- * Referencia: definiciones/CASOS-LIMITE.txt
+ * Referencia: definiciones/CASOS-LIMITE.txt, CONFIGURACIONES.txt CFG-010
  */
 
-const DESCANSO_HORAS = 12;
+const DEFAULT_DESCANSO_HORAS = 12;
+const MIN_DESCANSO = 10;
+const MAX_DESCANSO = 12;
 
 export interface LastFichaje {
   id: string;
@@ -14,15 +16,23 @@ export interface LastFichaje {
 export type EntradaValidation =
   | { allowed: true }
   | { allowed: false; code: 'duplicado_entrada'; message: string }
-  | { allowed: false; code: 'descanso_insuficiente'; message: string; esperarHoras: number };
+  | { allowed: false; code: 'descanso_insuficiente'; message: string; esperarHoras: number; descansoHoras: number };
+
+function clampDescansoHoras(value: number): number {
+  if (!Number.isFinite(value) || value < MIN_DESCANSO) return DEFAULT_DESCANSO_HORAS;
+  if (value > MAX_DESCANSO) return MAX_DESCANSO;
+  return Math.round(value);
+}
 
 /**
  * CL-006: Si último evento es entrada, rechazar otra entrada.
- * CL-007: Si pasaron <12h desde última salida, rechazar entrada.
+ * CL-007: Si pasaron <descansoHoras desde última salida, rechazar entrada.
+ * CFG-010: descanso_minimo_horas (default 12, legal Argentina).
  */
 export function validateEntrada(
   lastFichaje: LastFichaje | null,
   now: Date = new Date(),
+  descansoHoras: number = DEFAULT_DESCANSO_HORAS,
 ): EntradaValidation {
   if (!lastFichaje) return { allowed: true };
 
@@ -35,15 +45,17 @@ export function validateEntrada(
   }
 
   if (lastFichaje.tipo === 'salida') {
+    const horas = clampDescansoHoras(descansoHoras);
     const lastSalida = new Date(lastFichaje.timestamp_servidor);
     const horasDesdeSalida = (now.getTime() - lastSalida.getTime()) / (1000 * 60 * 60);
-    if (horasDesdeSalida < DESCANSO_HORAS) {
-      const esperar = Math.ceil((DESCANSO_HORAS - horasDesdeSalida) * 10) / 10;
+    if (horasDesdeSalida < horas) {
+      const esperar = Math.ceil((horas - horasDesdeSalida) * 10) / 10;
       return {
         allowed: false,
         code: 'descanso_insuficiente',
-        message: `Debés esperar ${esperar} horas más para cumplir el descanso mínimo de 12 horas (Art. 198 LCT). Tu última salida fue a las ${lastSalida.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}.`,
+        message: `Debés esperar ${esperar} horas más para cumplir el descanso mínimo de ${horas} horas (Art. 198 LCT). Tu última salida fue a las ${lastSalida.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}.`,
         esperarHoras: esperar,
+        descansoHoras: horas,
       };
     }
   }

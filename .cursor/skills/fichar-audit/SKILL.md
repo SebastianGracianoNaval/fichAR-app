@@ -1,6 +1,6 @@
 ---
 name: fichar-audit
-description: Harsh, critical, perfectionist project audit. No leniency. Identifies every gap against AGENTS.md, VOIS, SEGURIDAD.txt, Reforma Laboral, and judicial readiness. Must guide solutions for each finding. Use when auditing before releases or when user requests honest status. Output goes to audits/ (gitignored).
+description: Harsh, critical, perfectionist project audit. No leniency. Identifies every gap against AGENTS.md, VOIS+P (Velocity, Optimization, Integration, Security, Personalization), SEGURIDAD.txt, ISO 27001, Reforma Laboral, and judicial readiness. Must guide solutions for each finding. Use when auditing before releases or when user requests honest status. Output goes to audits/ (gitignored).
 ---
 
 # fichAR Project Audit — Critical Mode
@@ -21,7 +21,9 @@ description: Harsh, critical, perfectionist project audit. No leniency. Identifi
 
 ## Audit Checklist (Exhaustive)
 
-### 1. Security (SEGURIDAD.txt)
+### 1. Security (SEGURIDAD.txt, ISO 27001)
+
+App must be completely secure: no cyber-attack weak points. Data must be legally admissible in Argentine labor lawsuits. Align with ISO 27001 controls where applicable.
 
 | ID | Check | Severity if FAIL | Solution Guide |
 |----|-------|------------------|----------------|
@@ -35,14 +37,15 @@ description: Harsh, critical, perfectionist project audit. No leniency. Identifi
 | S8 | Security headers (X-Content-Type-Options, X-Frame-Options, etc.) | MEDIUM | Add middleware in index.ts. |
 | S9 | INVITE_SECRET, HASH_PEPPER required, never in client | CRITICAL | 500 if missing. Verify .env.example documents. |
 
-### 2. VOIS Pillars
+### 2. VOIS + P Pillars
 
-| Pillar | Check | Fail if |
-|--------|-------|---------|
-| **V**elocity | Deliverables aligned with plans | Plans exist but items not implemented; no prioritization. |
-| **O**ptimization | No waste | N+1 queries, full table scans, redundant network calls, uncompressed responses, duplicated logic. |
-| **I**ntegration | API-first, webhook-ready | Auth/session not via API; no versioning; no integration endpoints. |
-| **S**ecurity | See S1–S9 | Any CRITICAL or HIGH from Security fails VOIS-S. |
+| Pillar | Definition | Fail if |
+|--------|------------|---------|
+| **V**elocity | Optimal speed of processes, loads, requests. Fast feedback, lazy loading, pagination, no blocking UI. | Slow responses (>500ms critical paths), full table loads, no pagination, blocking main thread. |
+| **O**ptimization | Optimization of resources: background tasks, WiFi/data usage, processing, exports, imports. Connection pooling, timeouts, retry, batching, offline-capable flows. | N+1 queries, full table scans, redundant network calls, uncompressed responses, no timeouts, no batch endpoints. |
+| **I**ntegration | Highly easy to integrate with other apps (ClickUp, Clockify, ERPs, n8n). Flexible request/JSON understanding, versioned APIs, webhooks, adapters. Minimal development for consumers. | Auth/session not via API; no versioning; rigid formats; no integration endpoints; no webhooks. |
+| **S**ecurity | Completely secure. No cyber-attack weak points. Compliant with Argentine labor laws (LCT, Reforma) and ISO 27001. Data legally admissible in labor lawsuits. See S1–S9, RL1–RL3, J1–J5. | Any CRITICAL or HIGH from Security/Reforma/Judicial fails. |
+| **P**ersonalization | Highly configurable and customizable. Law obliges employer control. Admin configures CFG-* via org_configs. Configs exposed and editable without code changes. | CFG-* defined but not implemented; no Admin UI to change configs; hardcoded behavior. |
 
 ### 3. Reforma Laboral (Reforma-Laboral-Proyecto-con-cambios-Senado.txt)
 
@@ -73,7 +76,15 @@ description: Harsh, critical, perfectionist project audit. No leniency. Identifi
 | C5 | logError with severity, context, stack (non-prod) | console.error without structured format. |
 | C6 | Tests for CASOS-LIMITE edge cases | No tests for CL-006, CL-007, CL-025. |
 
-### 6. Known Technical Debt
+### 6. Personalization (CONFIGURACIONES.txt)
+
+| ID | Check | Severity if FAIL | Solution |
+|----|-------|------------------|----------|
+| P1 | CFG-* from CONFIGURACIONES.txt implemented in org_configs | HIGH | Add keys to org_configs; read via getOrgConfig*. |
+| P2 | Admin UI to edit org configs (or API PATCH /org-configs) | HIGH | Create endpoint and screen; law requires employer control. |
+| P3 | Configs affect behavior (geoloc, offline, MFA, etc.) | CRITICAL | No hardcoded defaults; read from org_configs. |
+
+### 7. Known Technical Debt
 
 | ID | Item | Action |
 |----|------|--------|
