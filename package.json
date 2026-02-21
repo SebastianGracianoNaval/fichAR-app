@@ -1,9 +1,21 @@
 {
   "name": "fichar-app",
-  "version": "0.1.0",
+  "devDependencies": {
+    "@biomejs/biome": "2.4.4",
+    "@types/bun": "latest"
+  },
   "private": true,
-  "workspaces": ["packages/*"],
   "scripts": {
-    "dev:api": "bun run --cwd packages/api dev"
-  }
+    "dev": "bun run --cwd packages/api dev",
+    "start": "bun run --cwd packages/api start",
+    "test": "bun test",
+    "lint": "bunx biome lint .",
+    "format": "bunx biome format --write .",
+    "format:check": "bunx biome format .",
+    "mobile": "bun run scripts/ensure_mobile_env.ts && cd apps/mobile && flutter run",
+    "mobile:web": "bun run scripts/ensure_mobile_env.ts && cd apps/mobile && flutter run -d chrome"
+  },
+  "workspaces": [
+    "packages/*"
+  ]
 }

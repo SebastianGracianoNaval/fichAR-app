@@ -1,0 +1,29 @@
+---
+description: Supabase development for fichAR — Auth, DB, RLS, migrations, MCP
+globs: supabase/**/*, packages/api/**/*.ts
+alwaysApply: false
+---
+
+# Supabase
+
+## Skills to Load
+
+- fichar-supabase
+- fichar-postgres
+- fichar-security
+
+## Guidelines
+
+- Consult `definiciones/ESQUEMA-BD.txt` for schema
+- Consult `definiciones/SEGURIDAD.txt` for RLS, auth, audit
+- Migraciones en `supabase/migrations/` con formato `YYYYMMDDHHMMSS_descripcion.sql`
+
+## MCP
+
+Si está configurado, usar el MCP de Supabase para: `execute_sql`, `list_tables`, `apply_migration`, `list_migrations`, `generate_typescript_types`.
+
+## Comandos
+
+- `supabase db push` — Aplicar migraciones al proyecto remoto
+- `supabase db diff` — Generar diff de schema
+- `supabase start` — Levantar local (requiere Docker)

@@ -51,9 +51,10 @@ supabase start
 
 ### 4. Desarrollo
 
-- **API:** `cd packages/api && bun run dev`
-- **Mobile:** `cd apps/mobile && flutter run` (tras crear proyecto Flutter)
-- **Web:** `cd apps/web && flutter run -d chrome` (tras crear proyecto)
+- **API:** `bun run dev` o `cd packages/api && bun run dev`
+- **Mobile:** `bun run mobile` (copia .env de la raiz a apps/mobile/assets y ejecuta Flutter)
+- **Web:** `bun run mobile:web`
+- **Flutter directo:** Ejecutar `bun run scripts/ensure_mobile_env.ts` antes para copiar .env
 
 ## Siguientes pasos
 

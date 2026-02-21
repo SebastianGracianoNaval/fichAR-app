@@ -1,9 +1,11 @@
 ---
 name: fichar-integrations
-description: Webhooks, ARCA, Excel/CSV import/export, n8n, compatibility with legacy systems. Use for integrations, imports, exports, or external APIs.
+description: Webhooks, ARCA, Excel/CSV import/export, n8n, compatibility with legacy systems. Integration is a project pillar: maximize integration with old/new software using minimal development. Use for integrations, imports, exports, or external APIs.
 ---
 
 # fichAR Integrations
+
+**Pillar:** Maximum integration capability. Old software, new software, minimal development.
 
 ## When to Use
 

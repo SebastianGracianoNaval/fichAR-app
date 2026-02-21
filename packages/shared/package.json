@@ -2,5 +2,9 @@
   "name": "@fichar/shared",
   "version": "0.1.0",
   "private": true,
-  "type": "module"
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "lint": "echo 'shared: no lint config yet'"
+  }
 }

@@ -57,3 +57,11 @@ packages/
 - Detect: API &lt; 24, mem &lt; 2GB → low-end mode
 - Low-end: no complex animations, fewer effects, simpler geofencing
 - High-end: animations, haptics, sounds, skeleton loaders
+
+## UX Feedback (Duolingo-Style)
+
+- Feedback under 100ms on tap
+- Haptic on fichar, accept, reject
+- Sound on success (configurable)
+- Celebrations (confetti) on fichaje, high-end only
+- See: documentation/tecnica/ux-feedback-guide.md

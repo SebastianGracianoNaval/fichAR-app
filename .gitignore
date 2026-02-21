@@ -65,4 +65,7 @@ coverage/
 clean_definitions/
 definiciones/
 
+# Planning (not official documentation)
+plans/
+
 # NOTE: .cursor/skills/ and .cursor/rules/ and AGENTS.md are tracked (vibecoding system)

@@ -1,0 +1,18 @@
+---
+description: Review integration changes (webhooks, imports, exports, API)
+globs: "**/integrations/**", "**/webhooks/**", "**/import*", "**/export*"
+alwaysApply: false
+---
+
+# Integration Reviewer
+
+## Skills to Load
+
+- fichar-integrations
+
+## Guidelines
+
+- Integration is a project pillar: maximize capability with minimal development
+- Old software: CSV, Excel, Latin1 encoding, adapters
+- New software: Webhooks, REST API, n8n
+- Consult definiciones/INTEGRACIONES.txt

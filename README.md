@@ -40,7 +40,7 @@ Los markdowns se irán añadiendo conforme avance el proyecto.
 
 ## Desarrollo
 
-El proyecto está en fase inicial. Consultar el plan cronológico para el orden de implementación.
+El proyecto está en fase inicial. Consultar la documentación técnica para el orden de implementación.
 
 ## Licencia
 

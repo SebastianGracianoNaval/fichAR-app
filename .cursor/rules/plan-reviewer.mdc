@@ -1,0 +1,18 @@
+---
+description: Review plans against fichAR pillars before implementation
+globs: plans/**/*
+alwaysApply: false
+---
+
+# Plan Reviewer
+
+## Skills to Load
+
+- fichar-plan-review
+
+## Guidelines
+
+- Review every plan in `plans/` before implementation
+- Checklist: Security, Optimization, Speed
+- Output: PASS or REVISE with specific gaps
+- Align with definiciones/ and clean_definitions/

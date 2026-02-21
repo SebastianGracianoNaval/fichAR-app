@@ -6,8 +6,14 @@
   "scripts": {
     "dev": "bun run src/index.ts",
     "start": "bun run src/index.ts",
-    "build": "bun build src/index.ts --outdir=dist",
     "test": "bun test",
-    "lint": "eslint src/"
+    "lint": "echo 'api: no lint config yet'"
+  },
+  "dependencies": {
+    "@fichar/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bun-types": "latest"
   }
 }
