@@ -13,7 +13,7 @@ description: Produce a plan .md file in English before implementation. Use for n
 
 ## Output
 
-Create `docs/plans/<feature>.md` in **English** with:
+Create `documentation/tecnica/plans/<feature>.md` in **English** with:
 
 1. **Goal**: What we're building
 2. **Scope**: In scope / out of scope

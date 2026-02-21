@@ -70,7 +70,7 @@
 
 ## Workflow: Plan → Review → Implement
 
-1. **Non-trivial change?** → Invoke `skill-planning` → Create `docs/plans/<feature>.md` in English
+1. **Non-trivial change?** → Invoke `skill-planning` → Create `documentation/tecnica/plans/<feature>.md` in English
 2. **Review plan** against definitions
 3. **Implement** with appropriate domain/tech skills
 4. **Run tests** before considering done

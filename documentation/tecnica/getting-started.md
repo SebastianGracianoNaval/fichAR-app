@@ -16,8 +16,7 @@ fichar-app/
 ├── apps/           Aplicaciones Flutter (mobile, web)
 ├── packages/       Código compartido (api, shared)
 ├── supabase/       Migraciones y config
-├── definiciones/   Especificaciones del producto
-└── clean_definitions/   Documentación consolidada
+└── documentation/  Documentación oficial
 ```
 
 ## Setup inicial
@@ -56,12 +55,6 @@ supabase start
 - **Mobile:** `cd apps/mobile && flutter run` (tras crear proyecto Flutter)
 - **Web:** `cd apps/web && flutter run -d chrome` (tras crear proyecto)
 
-## Documentación de referencia
-
-- `clean_definitions/FICHAR-DEFINICION-COMPLETA.txt` - Especificación completa
-- `clean_definitions/PLAN-CRONOLOGICO-DESARROLLO.txt` - Fases de desarrollo
-- `clean_definitions/INDICE-REFERENCIAS.txt` - Índice de documentos
-
 ## Siguientes pasos
 
-Seguir la Fase 0 del plan cronológico: estructura base, auth, migraciones iniciales.
+Revisar la documentación técnica en `documentation/tecnica/` según vaya estando disponible.

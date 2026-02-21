@@ -12,7 +12,7 @@ alwaysApply: false
 
 ## Guidelines
 
-- Produce `docs/plans/<feature>.md` in **English**
+- Produce `documentation/tecnica/plans/<feature>.md` in **English**
 - Include: Goal, Scope, Approach, Files affected, Dependencies, Risks
-- Review plan against `definiciones/` before implementation
+- Review plan against project definitions before implementation
 - Non-trivial changes: plan first, then implement

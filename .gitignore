@@ -61,4 +61,8 @@ coverage/
 # Cursor: ignore settings but keep skills and rules
 .cursor/settings.json
 
+# Definitions (internal reference, not official documentation)
+clean_definitions/
+definiciones/
+
 # NOTE: .cursor/skills/ and .cursor/rules/ and AGENTS.md are tracked (vibecoding system)

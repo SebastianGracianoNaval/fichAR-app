@@ -26,17 +26,17 @@ fichar-app/
 │   ├── api/             Backend (Bun/Node)
 │   └── shared/          Tipos y constantes compartidos
 ├── supabase/            Migraciones y configuración
-├── definiciones/        Especificaciones detalladas
-├── clean_definitions/   Documentación consolidada
-└── docs/                Guías de desarrollo
+└── documentation/       Documentación oficial (uso y técnica)
 ```
 
 ## Documentación
 
-- **clean_definitions/FICHAR-DEFINICION-COMPLETA.txt** - Referencia única del producto
-- **clean_definitions/INDICE-REFERENCIAS.txt** - Índice de todos los documentos
-- **clean_definitions/PLAN-CRONOLOGICO-DESARROLLO.txt** - Plan de desarrollo por fases
-- **docs/getting-started.md** - Setup paso a paso
+La documentación oficial está en **documentation/**:
+
+- **documentation/uso/** — Documentación general de uso de la aplicación
+- **documentation/tecnica/** — Documentación técnica para modificar y desarrollar
+
+Los markdowns se irán añadiendo conforme avance el proyecto.
 
 ## Desarrollo
 
