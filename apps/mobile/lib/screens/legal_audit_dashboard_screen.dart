@@ -51,6 +51,11 @@ class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
           hasta: _toIso(_hasta!),
           limit: 50,
         ),
+      'licencias' => await LegalApiService.getLicencias(
+          desde: '${_desde!.year}-${_desde!.month.toString().padLeft(2, '0')}-${_desde!.day.toString().padLeft(2, '0')}',
+          hasta: '${_hasta!.year}-${_hasta!.month.toString().padLeft(2, '0')}-${_hasta!.day.toString().padLeft(2, '0')}',
+          limit: 50,
+        ),
       _ => await LegalApiService.getFichajes(
           desde: _toIso(_desde!),
           hasta: _toIso(_hasta!),
@@ -122,7 +127,9 @@ class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
         ? ['id', 'user_id', 'tipo', 'timestamp_servidor', 'hash_registro']
         : _tipo == 'logs'
             ? ['timestamp', 'action', 'user_id', 'resource_type', 'ip']
-            : ['id', 'user_id', 'tipo', 'timestamp_servidor', 'hash_registro'];
+            : _tipo == 'licencias'
+                ? ['id', 'employee_id', 'tipo', 'fecha_inicio', 'fecha_fin', 'estado']
+                : ['id', 'user_id', 'tipo', 'timestamp_servidor', 'hash_registro'];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -178,6 +185,7 @@ class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
                   DropdownMenuItem(value: 'fichajes', child: Text('Fichajes')),
                   DropdownMenuItem(value: 'logs', child: Text('Logs')),
                   DropdownMenuItem(value: 'hash_chain', child: Text('Cadena Hashes')),
+                  DropdownMenuItem(value: 'licencias', child: Text('Licencias')),
                   DropdownMenuItem(value: 'todo', child: Text('Todo')),
                 ],
                 onChanged: (v) => setState(() => _tipo = v ?? 'fichajes'),

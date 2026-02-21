@@ -82,12 +82,34 @@ supabase db push
 
 ## 3.1. Retención audit_logs (CFG-037)
 
-**Referencia:** definiciones/CONFIGURACIONES.txt CFG-037, LCT Art. 52.
+**Referencia:** definiciones/CONFIGURACIONES.txt CFG-037, LCT Art. 52, ISO 27001 A.8.10.
 
 - **Default:** 3650 días (10 años). Se persiste en `org_configs` con key `logs_retencion_dias`.
 - **Política:** `audit_logs` es inmutable (INSERT only). No existe purga automática en esta versión.
 - **Operativo:** Los logs se conservan indefinidamente. Para archivar o rotar, usar backup/export manual.
 - **Futuro:** Si se implementa job de purga, debe respetar `logs_retencion_dias` por org (valor >= 365).
+
+### Opciones de purga (futuro)
+
+1. **Manual:** Ejecutar periódicamente un script que elimine registros vencidos:
+
+```sql
+DELETE FROM audit_logs
+WHERE org_id = :org_id
+  AND timestamp < now() - interval '1 day' * (
+    SELECT value::int FROM org_configs
+    WHERE org_id = :org_id AND key = 'logs_retencion_dias'
+  );
+```
+
+2. **pg_cron (Supabase):** Crear job diario via `pg_cron` extension.
+3. **Particionamiento:** Particionar `audit_logs` por mes permite `DROP` de particiones antiguas sin overhead de DELETE masivo.
+
+### Advertencias
+
+- No purgar antes de cumplir el mínimo legal (Art. 52 LCT: 10 años para documentación laboral).
+- Antes de purgar, exportar backup completo del periodo.
+- Un log purgado antes de tiempo invalida la cadena de evidencia en juicio laboral.
 
 ---
 

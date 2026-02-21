@@ -1,23 +1,6 @@
 import './load-env.ts';
 import { API_VERSION, printBanner } from '@fichar/shared';
-import {
-  handleForgotPassword,
-  handleLogin,
-  handleRegister,
-  handleRegisterOrg,
-  handleCreateInvite,
-  handleGetMe,
-  handleMfaVerify,
-  handleMfaEnroll,
-  handleMfaEnrollVerify,
-} from './routes/auth.ts';
-import { handleGetFichajes, handlePostFichajes } from './routes/fichajes.ts';
-import {
-  handleGetLegalFichajes,
-  handleGetLegalAuditLogs,
-  handleGetLegalHashChain,
-  handlePostLegalExport,
-} from './routes/legal.ts';
+import { matchRoute } from './routes.ts';
 
 export function handleHealth(): Response {
   return Response.json({ status: 'ok', timestamp: new Date().toISOString() }, { status: 200 });
@@ -49,6 +32,7 @@ function applySecurityHeaders(res: Response, req: Request): Response {
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('X-Frame-Options', 'DENY');
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  headers.set('Content-Security-Policy', "default-src 'self'; frame-ancestors 'none'");
   headers.set('Cache-Control', 'no-store');
 
   const corsOrigin = resolveCorsOrigin(req);
@@ -100,40 +84,11 @@ async function fetchHandler(req: Request): Promise<Response> {
     return applySecurityHeaders(handleHealth(), req);
   }
 
-  let res: Response;
-  if (req.method === 'POST' && path === `${base}/auth/register-org`) {
-    res = await handleRegisterOrg(req);
-  } else if (req.method === 'POST' && path === `${base}/auth/register`) {
-    res = await handleRegister(req);
-  } else if (req.method === 'POST' && path === `${base}/auth/login`) {
-    res = await handleLogin(req);
-  } else if (req.method === 'POST' && path === `${base}/auth/forgot-password`) {
-    res = await handleForgotPassword(req);
-  } else if (req.method === 'POST' && path === `${base}/auth/invite`) {
-    res = await handleCreateInvite(req);
-  } else if (req.method === 'GET' && path === `${base}/me`) {
-    res = await handleGetMe(req);
-  } else if (req.method === 'POST' && path === `${base}/auth/mfa/verify`) {
-    res = await handleMfaVerify(req);
-  } else if (req.method === 'POST' && path === `${base}/auth/mfa/enroll`) {
-    res = await handleMfaEnroll(req);
-  } else if (req.method === 'POST' && path === `${base}/auth/mfa/enroll-verify`) {
-    res = await handleMfaEnrollVerify(req);
-  } else if (req.method === 'POST' && path === `${base}/fichajes`) {
-    res = await handlePostFichajes(req);
-  } else if (req.method === 'GET' && path === `${base}/fichajes`) {
-    res = await handleGetFichajes(req);
-  } else if (req.method === 'GET' && path === `${base}/legal/fichajes`) {
-    res = await handleGetLegalFichajes(req);
-  } else if (req.method === 'GET' && path === `${base}/legal/audit-logs`) {
-    res = await handleGetLegalAuditLogs(req);
-  } else if (req.method === 'GET' && path === `${base}/legal/hash-chain`) {
-    res = await handleGetLegalHashChain(req);
-  } else if (req.method === 'POST' && path === `${base}/legal/export`) {
-    res = await handlePostLegalExport(req);
-  } else {
+  const matched = matchRoute(req.method, path);
+  if (!matched) {
     return applySecurityHeaders(new Response('Not Found', { status: 404 }), req);
   }
+  const res = await matched.handler(req);
 
   const compressed = await maybeCompress(res, req);
   return applySecurityHeaders(compressed, req);

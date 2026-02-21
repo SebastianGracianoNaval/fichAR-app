@@ -4,26 +4,10 @@ import { getSupabaseAdmin } from '../lib/supabase.ts';
 import { checkLoginRateLimit, recordLoginFailure, clearLoginFailure, FAIL_THRESHOLD } from '../lib/rate-limit.ts';
 import { parseBody, validateCuil, validateEmail, validatePassword } from '../lib/validators.ts';
 import { logAudit, logError, getRequestMeta } from '../lib/logger.ts';
+import { getOrgConfigBoolean } from '../lib/org-config.ts';
 import { VALID_ROLES } from '@fichar/shared';
 
 const INVITE_EXP_HOURS = 168; // 7 days
-
-async function getOrgConfigBoolean(
-  admin: ReturnType<typeof getSupabaseAdmin>,
-  orgId: string,
-  key: string,
-  defaultValue: boolean,
-): Promise<boolean> {
-  const { data } = await admin
-    .from('org_configs')
-    .select('value')
-    .eq('org_id', orgId)
-    .eq('key', key)
-    .maybeSingle();
-  if (!data?.value) return defaultValue;
-  const v = data.value as unknown;
-  return typeof v === 'boolean' ? v : defaultValue;
-}
 
 function createSupabaseAuthClient() {
   const url = process.env.SUPABASE_URL;
@@ -133,6 +117,16 @@ export async function handleRegisterOrg(req: Request): Promise<Response> {
 }
 
 export async function handleForgotPassword(req: Request): Promise<Response> {
+  const meta = getRequestMeta(req);
+  const limit = await checkLoginRateLimit(req);
+  if (!limit.allowed) {
+    await logAudit('rate_limit_forgot_password', { ip: meta.ip, userAgent: meta.userAgent }, {}, 'warning');
+    return Response.json(
+      { error: 'Demasiados intentos. Intentá en 15 minutos.' },
+      { status: 429, headers: limit.retryAfter ? { 'Retry-After': String(limit.retryAfter) } : {} },
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -155,6 +149,8 @@ export async function handleForgotPassword(req: Request): Promise<Response> {
   if (error) {
     await logError('warning', 'forgot_password_failed', undefined, {}, error);
   }
+
+  await logAudit('forgot_password', { ip: meta.ip, userAgent: meta.userAgent }, {}, 'info');
 
   return Response.json({
     message: 'Si el email existe, recibirás un enlace en minutos.',
@@ -271,6 +267,68 @@ export async function handleRegister(req: Request): Promise<Response> {
   return Response.json({ userId: authUser.user.id }, { status: 201 });
 }
 
+interface MfaContext {
+  admin: ReturnType<typeof getSupabaseAdmin>;
+  supabaseAuth: ReturnType<typeof createClient>;
+  emp: { id: string; org_id: string; role: string };
+  refreshToken: string;
+  session: { aal?: string };
+  meta: { ip: string; userAgent: string };
+}
+
+async function checkMfaRequirement(mfa: MfaContext): Promise<Response | null> {
+  if (mfa.emp.role !== 'admin') return null;
+  const aal = mfa.session.aal ?? 'aal1';
+  if (aal !== 'aal1') return null;
+
+  const { data: aalData } = await mfa.supabaseAuth.auth.mfa.getAuthenticatorAssuranceLevel();
+  const nextLevel = aalData?.nextLevel ?? 'aal1';
+  const currentLevel = aalData?.currentLevel ?? 'aal1';
+  if (!(nextLevel === 'aal2' && currentLevel !== 'aal2')) return null;
+
+  const mfaRequired = await getOrgConfigBoolean(mfa.admin, mfa.emp.org_id, 'mfa_obligatorio_admin', true);
+  if (!mfaRequired) return null;
+
+  const factors = await mfa.supabaseAuth.auth.mfa.listFactors();
+  const totpFactors = factors.data?.totp ?? [];
+  if (totpFactors.length === 0) {
+    await logAudit('login_mfa_enrollment_required', { orgId: mfa.emp.org_id, employeeId: mfa.emp.id, ip: mfa.meta.ip, userAgent: mfa.meta.userAgent }, {}, 'info');
+    return Response.json({
+      requires_mfa_enrollment: true,
+      refresh_token: mfa.refreshToken,
+      message: 'Debés configurar 2FA para continuar.',
+    });
+  }
+
+  await logAudit('login_mfa_verification_required', { orgId: mfa.emp.org_id, employeeId: mfa.emp.id, ip: mfa.meta.ip, userAgent: mfa.meta.userAgent }, {}, 'info');
+  return Response.json({
+    requires_mfa_verification: true,
+    refresh_token: mfa.refreshToken,
+    factor_id: totpFactors[0]?.id,
+    message: 'Ingresá el código de tu app autenticadora.',
+  });
+}
+
+function buildLoginSuccessResponse(
+  emp: { id: string; org_id: string; role: string; password_changed_at: string | null },
+  authData: { user: { id: string; email?: string }; session: { access_token: string; refresh_token: string; expires_in?: number } | null },
+): Response {
+  const requiresPasswordChange = emp.password_changed_at === null;
+  return Response.json({
+    token: authData.session!.access_token,
+    refresh_token: authData.session!.refresh_token,
+    expires_in: authData.session?.expires_in,
+    ...(requiresPasswordChange && { requires_password_change: true }),
+    user: {
+      id: emp.id,
+      auth_user_id: authData.user.id,
+      org_id: emp.org_id,
+      role: emp.role,
+      email: authData.user.email,
+    },
+  });
+}
+
 export async function handleLogin(req: Request): Promise<Response> {
   const meta = getRequestMeta(req);
   const limit = await checkLoginRateLimit(req);
@@ -296,14 +354,7 @@ export async function handleLogin(req: Request): Promise<Response> {
     return Response.json({ error: 'Email o contraseña incorrectos.' }, { status: 401 });
   }
 
-  const url = process.env.SUPABASE_URL;
-  const anonKey = process.env.SUPABASE_ANON_KEY;
-  if (!url || !anonKey) {
-    await logError('critical', 'login_config_missing', undefined, {});
-    return Response.json({ error: 'Configuración incorrecta' }, { status: 500 });
-  }
-
-  const supabaseAuth = createClient(url, anonKey);
+  const supabaseAuth = createSupabaseAuthClient();
   const { data: authData, error: authErr } = await supabaseAuth.auth.signInWithPassword({
     email: email.toLowerCase(),
     password,
@@ -327,7 +378,7 @@ export async function handleLogin(req: Request): Promise<Response> {
   const admin = getSupabaseAdmin();
   const { data: emp } = await admin
     .from('employees')
-    .select('id, org_id, role, status')
+    .select('id, org_id, role, status, password_changed_at')
     .eq('auth_user_id', authData.user.id)
     .single();
 
@@ -337,52 +388,19 @@ export async function handleLogin(req: Request): Promise<Response> {
     return Response.json({ error: 'Email o contraseña incorrectos.' }, { status: 401 });
   }
 
-  if (emp.role === 'admin') {
-    const aal = (authData.session as { aal?: string })?.aal ?? 'aal1';
-    if (aal === 'aal1') {
-      const { data: aalData } = await supabaseAuth.auth.mfa.getAuthenticatorAssuranceLevel();
-      const nextLevel = aalData?.nextLevel ?? 'aal1';
-      const currentLevel = aalData?.currentLevel ?? 'aal1';
-
-      if (nextLevel === 'aal2' && currentLevel !== 'aal2') {
-        const mfaRequired = await getOrgConfigBoolean(admin, emp.org_id, 'mfa_obligatorio_admin', true);
-        if (mfaRequired) {
-          const factors = await supabaseAuth.auth.mfa.listFactors();
-          const totpFactors = factors.data?.totp ?? [];
-          if (totpFactors.length === 0) {
-            await logAudit('login_mfa_enrollment_required', { orgId: emp.org_id, employeeId: emp.id, ip: meta.ip, userAgent: meta.userAgent }, {}, 'info');
-            return Response.json({
-              requires_mfa_enrollment: true,
-              refresh_token: refreshToken,
-              message: 'Debés configurar 2FA para continuar.',
-            });
-          }
-          await logAudit('login_mfa_verification_required', { orgId: emp.org_id, employeeId: emp.id, ip: meta.ip, userAgent: meta.userAgent }, {}, 'info');
-          return Response.json({
-            requires_mfa_verification: true,
-            refresh_token: refreshToken,
-            factor_id: totpFactors[0]?.id,
-            message: 'Ingresá el código de tu app autenticadora.',
-          });
-        }
-      }
-    }
-  }
+  const mfaResponse = await checkMfaRequirement({
+    admin, supabaseAuth, emp, refreshToken,
+    session: authData.session as { aal?: string },
+    meta,
+  });
+  if (mfaResponse) return mfaResponse;
 
   await logAudit('login', { orgId: emp.org_id, employeeId: emp.id, ip: meta.ip, userAgent: meta.userAgent }, {}, 'info');
 
-  return Response.json({
-    token: accessToken,
-    refresh_token: refreshToken,
-    expires_in: authData.session?.expires_in,
-    user: {
-      id: emp.id,
-      auth_user_id: authData.user.id,
-      org_id: emp.org_id,
-      role: emp.role,
-      email: authData.user.email,
-    },
-  });
+  return buildLoginSuccessResponse(
+    emp as { id: string; org_id: string; role: string; password_changed_at: string | null },
+    authData as { user: { id: string; email?: string }; session: { access_token: string; refresh_token: string; expires_in?: number } },
+  );
 }
 
 export async function handleGetMe(req: Request): Promise<Response> {
@@ -399,7 +417,7 @@ export async function handleGetMe(req: Request): Promise<Response> {
 
   const { data: emp, error: empErr } = await getSupabaseAdmin()
     .from('employees')
-    .select('id, org_id, role, status, email')
+    .select('id, org_id, role, status, email, password_changed_at')
     .eq('auth_user_id', user.id)
     .single();
 
@@ -411,11 +429,14 @@ export async function handleGetMe(req: Request): Promise<Response> {
     return Response.json({ error: 'Cuenta no activa', code: 'empleado_despedido' }, { status: 403 });
   }
 
+  const requiresPasswordChange = (emp as { password_changed_at: string | null }).password_changed_at === null;
+
   return Response.json({
     id: emp.id,
     org_id: emp.org_id,
     role: emp.role,
-    email: emp.email ?? user.email,
+    email: (emp as { email: string | null }).email ?? user.email,
+    ...(requiresPasswordChange && { requires_password_change: true }),
   });
 }
 
@@ -671,4 +692,123 @@ export async function handleMfaEnrollVerify(req: Request): Promise<Response> {
       email: verifyData.user.email,
     },
   });
+}
+
+interface ChangePasswordBody {
+  current_password: string;
+  new_password: string;
+}
+
+export async function handleChangePassword(req: Request): Promise<Response> {
+  const meta = getRequestMeta(req);
+  const authHeader = req.headers.get('Authorization');
+  const token = authHeader?.replace(/^Bearer\s+/i, '');
+  if (!token) {
+    return Response.json({ error: 'Authorization required' }, { status: 401 });
+  }
+
+  const admin = getSupabaseAdmin();
+  const { data: { user }, error: userErr } = await admin.auth.getUser(token);
+  if (userErr || !user) {
+    return Response.json({ error: 'Token inválido' }, { status: 401 });
+  }
+
+  const { data: emp } = await admin
+    .from('employees')
+    .select('id, org_id, role, status, email, password_changed_at')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!emp || emp.status !== 'activo') {
+    return Response.json({ error: 'Token inválido' }, { status: 401 });
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  const data = parseBody<ChangePasswordBody>(body);
+  if (!data?.current_password || !data?.new_password) {
+    return Response.json({ error: 'Faltan campos: current_password, new_password' }, { status: 400 });
+  }
+
+  const pwErr = validatePassword(data.new_password);
+  if (pwErr) {
+    return Response.json({ error: `Contraseña inválida: ${pwErr}` }, { status: 400 });
+  }
+
+  const userEmail = (emp as { email: string | null }).email ?? user.email ?? '';
+
+  // Verify current password (CL-038: user might be legacy or coming from forced change)
+  const supabaseAuth = createSupabaseAuthClient();
+  const { error: verifyErr } = await supabaseAuth.auth.signInWithPassword({
+    email: userEmail,
+    password: data.current_password,
+  });
+
+  if (verifyErr) {
+    await logAudit('password_change_failed', { orgId: emp.org_id, employeeId: emp.id, ip: meta.ip, userAgent: meta.userAgent }, { reason: 'wrong_current_password' }, 'info');
+    return Response.json({ error: 'Contraseña actual incorrecta.' }, { status: 400 });
+  }
+
+  const { error: updateErr } = await admin.auth.admin.updateUserById(user.id, {
+    password: data.new_password,
+  });
+
+  if (updateErr) {
+    await logError('warning', 'password_change_update_failed', { orgId: emp.org_id, employeeId: emp.id }, {}, updateErr);
+    return Response.json({ error: 'Error al actualizar contraseña.' }, { status: 500 });
+  }
+
+  const { error: dbErr } = await admin
+    .from('employees')
+    .update({ password_changed_at: new Date().toISOString() })
+    .eq('auth_user_id', user.id);
+
+  if (dbErr) {
+    await logError('warning', 'password_changed_at_update_failed', { orgId: emp.org_id, employeeId: emp.id }, {}, dbErr);
+  }
+
+  const isFirstTime = (emp as { password_changed_at: string | null }).password_changed_at === null;
+  await logAudit('password_changed', { orgId: emp.org_id, employeeId: emp.id, ip: meta.ip, userAgent: meta.userAgent }, { first_time: isFirstTime }, 'info');
+
+  return Response.json({ message: 'Contraseña actualizada.' });
+}
+
+export async function handlePasswordSetComplete(req: Request): Promise<Response> {
+  const meta = getRequestMeta(req);
+  const authHeader = req.headers.get('Authorization');
+  const token = authHeader?.replace(/^Bearer\s+/i, '');
+  if (!token) {
+    return Response.json({ error: 'Authorization required' }, { status: 401 });
+  }
+
+  const admin = getSupabaseAdmin();
+  const { data: { user }, error: userErr } = await admin.auth.getUser(token);
+  if (userErr || !user) {
+    return Response.json({ error: 'Token inválido' }, { status: 401 });
+  }
+
+  const { data: emp } = await admin
+    .from('employees')
+    .select('id, org_id, status')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!emp || emp.status !== 'activo') {
+    return Response.json({ error: 'Token inválido' }, { status: 401 });
+  }
+
+  // Idempotent: always set, even if already set
+  await admin
+    .from('employees')
+    .update({ password_changed_at: new Date().toISOString() })
+    .eq('auth_user_id', user.id);
+
+  await logAudit('password_set_complete', { orgId: emp.org_id, employeeId: emp.id, ip: meta.ip, userAgent: meta.userAgent }, {}, 'info');
+
+  return Response.json({ message: 'OK' });
 }

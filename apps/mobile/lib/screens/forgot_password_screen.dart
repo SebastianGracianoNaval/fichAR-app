@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../services/auth_api_service.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -29,19 +30,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() => _loading = true);
 
     try {
-      await Supabase.instance.client.auth.resetPasswordForEmail(
-        _emailController.text.trim(),
+      final result = await AuthApiService.forgotPassword(
+        email: _emailController.text.trim(),
       );
       setState(() {
         _loading = false;
-        _sent = true;
+        if (result.error == null) {
+          _sent = true;
+        } else {
+          _errorMessage = result.error;
+        }
       });
-    } on AuthException catch (e) {
-      setState(() {
-        _loading = false;
-        _errorMessage = e.message;
-      });
-      return;
     } catch (e) {
       setState(() {
         _loading = false;

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../screens/change_password_screen.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/legal_audit_shell.dart';
 import '../services/me_api_service.dart';
@@ -53,10 +55,17 @@ class _AuthHomeResolverState extends State<AuthHomeResolver> {
       );
     }
 
+    // CL-038: bypass via stored session — force change before dashboard
+    if (_me!.requiresPasswordChange) {
+      final refreshToken =
+          Supabase.instance.client.auth.currentSession?.refreshToken ?? '';
+      return ChangePasswordScreen(refreshToken: refreshToken);
+    }
+
     if (_me!.role == 'legal_auditor') {
       return const LegalAuditShell();
     }
 
-    return const DashboardScreen();
+    return DashboardScreen(role: _me!.role);
   }
 }

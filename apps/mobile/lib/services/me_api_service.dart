@@ -1,8 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/api_client.dart';
 
 class MeResult {
   const MeResult({
@@ -10,12 +8,14 @@ class MeResult {
     required this.orgId,
     required this.role,
     required this.email,
+    this.requiresPasswordChange = false,
   });
 
   final String id;
   final String orgId;
   final String role;
   final String email;
+  final bool requiresPasswordChange;
 
   factory MeResult.fromJson(Map<String, dynamic> json) {
     return MeResult(
@@ -23,31 +23,23 @@ class MeResult {
       orgId: json['org_id'] as String,
       role: json['role'] as String,
       email: json['email'] as String? ?? '',
+      requiresPasswordChange: json['requires_password_change'] as bool? ?? false,
     );
   }
 }
 
 class MeApiService {
-  static String _apiBaseUrl() {
-    final apiUrl = dotenv.env['API_URL']?.trim();
-    if (apiUrl == null || apiUrl.isEmpty) {
-      throw Exception('API_URL no configurado en assets/.env');
-    }
-    return apiUrl;
-  }
-
   static Future<({MeResult? result, String? error})> getMe() async {
-    final session = Supabase.instance.client.auth.currentSession;
-    final token = session?.accessToken;
+    final token = await ApiClient.getToken();
     if (token == null) {
       return (result: null, error: 'No hay sesión activa');
     }
 
-    final url = Uri.parse('${_apiBaseUrl()}/api/v1/me');
-    final res = await http.get(
+    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/me');
+    final res = await ApiClient.client.get(
       url,
       headers: {'Authorization': 'Bearer $token'},
-    );
+    ).timeout(ApiClient.defaultTimeout);
 
     if (res.statusCode != 200) {
       final body = res.body.isNotEmpty

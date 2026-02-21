@@ -57,6 +57,16 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
+      if (response.passwordChangeRequired != null) {
+        setState(() => _loading = false);
+        if (!mounted) return;
+        Navigator.of(context).pushReplacementNamed(
+          '/change-password',
+          arguments: response.passwordChangeRequired!,
+        );
+        return;
+      }
+
       if (response.result == null) {
         setState(() {
           _loading = false;

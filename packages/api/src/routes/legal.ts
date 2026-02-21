@@ -132,6 +132,46 @@ export async function handleGetLegalHashChain(req: Request): Promise<Response> {
   return Response.json({ data: data ?? [], meta: { total: count ?? 0 } });
 }
 
+export async function handleGetLegalLicencias(req: Request): Promise<Response> {
+  const authResult = await requireLegalAuditor(req);
+  if (!authResult.ok) return authResult.res;
+  const { ctx } = authResult;
+
+  const url = new URL(req.url);
+  const desde = url.searchParams.get('desde');
+  const hasta = url.searchParams.get('hasta');
+  const empleadoId = url.searchParams.get('empleado_id');
+  const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '50', 10) || 50, 200);
+
+  if (!desde || !hasta) {
+    return Response.json(
+      { error: 'desde y hasta (ISO 8601) requeridos' },
+      { status: 400 },
+    );
+  }
+
+  const admin = getSupabaseAdmin();
+  let query = admin
+    .from('solicitudes_licencia')
+    .select('id, employee_id, tipo, fecha_inicio, fecha_fin, motivo, estado, aprobado_por, rechazo_motivo, created_at', { count: 'exact' })
+    .eq('org_id', ctx.orgId)
+    .gte('fecha_fin', desde)
+    .lte('fecha_inicio', hasta)
+    .order('created_at', { ascending: true })
+    .limit(limit);
+
+  if (empleadoId) query = query.eq('employee_id', empleadoId);
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    await logError('critical', 'legal_licencias_failed', { orgId: ctx.orgId }, {}, error);
+    return Response.json({ error: 'Error al listar licencias' }, { status: 500 });
+  }
+
+  return Response.json({ data: data ?? [], meta: { total: count ?? 0 } });
+}
+
 export async function handlePostLegalExport(req: Request): Promise<Response> {
   const authResult = await requireLegalAuditor(req);
   if (!authResult.ok) return authResult.res;
@@ -164,7 +204,16 @@ export async function handlePostLegalExport(req: Request): Promise<Response> {
 
   const admin = getSupabaseAdmin();
   const exportedAt = new Date().toISOString();
-  const exportedBy = ctx.employeeId;
+
+  const { data: exporter } = await admin
+    .from('employees')
+    .select('name, email')
+    .eq('id', ctx.employeeId)
+    .single();
+
+  const exportedBy = exporter
+    ? `${(exporter as { name: string }).name} (${(exporter as { email: string }).email})`
+    : ctx.employeeId;
 
   const sheetFichajes: { headers: string[]; rows: Record<string, unknown>[] } = {
     headers: ['id', 'user_id', 'tipo', 'timestamp_servidor', 'timestamp_dispositivo', 'hash_registro', 'hash_anterior_id'],
@@ -178,10 +227,15 @@ export async function handlePostLegalExport(req: Request): Promise<Response> {
     headers: ['id', 'user_id', 'tipo', 'timestamp_servidor', 'hash_registro', 'hash_anterior_id'],
     rows: [],
   };
+  const sheetLicencias: { headers: string[]; rows: Record<string, unknown>[] } = {
+    headers: ['id', 'employee_id', 'tipo', 'fecha_inicio', 'fecha_fin', 'estado', 'aprobado_por', 'rechazo_motivo', 'created_at'],
+    rows: [],
+  };
 
   const includeFichajes = ['fichajes', 'todo'].includes(tipo);
   const includeLogs = ['logs', 'todo'].includes(tipo);
   const includeHashChain = ['hash_chain', 'todo'].includes(tipo);
+  const includeLicencias = ['licencias', 'todo'].includes(tipo);
 
   if (includeFichajes) {
     let q = admin
@@ -246,7 +300,28 @@ export async function handlePostLegalExport(req: Request): Promise<Response> {
     sheetHashChain.rows = truncated.map((r) => ({ ...r }));
   }
 
-  const totalRows = sheetFichajes.rows.length + sheetLogs.rows.length + sheetHashChain.rows.length;
+  if (includeLicencias) {
+    let q = admin
+      .from('solicitudes_licencia')
+      .select('id, employee_id, tipo, fecha_inicio, fecha_fin, estado, aprobado_por, rechazo_motivo, created_at')
+      .eq('org_id', ctx.orgId)
+      .gte('fecha_fin', desde)
+      .lte('fecha_inicio', hasta)
+      .order('created_at', { ascending: true })
+      .limit(MAX_EXPORT_ROWS);
+
+    if (empleadoIds.length > 0) q = q.in('employee_id', empleadoIds);
+
+    const { data: licencias, error: err } = await q;
+    if (err) {
+      await logError('critical', 'legal_export_licencias_failed', { orgId: ctx.orgId }, {}, err);
+      return Response.json({ error: 'Error al exportar licencias' }, { status: 500 });
+    }
+    const { data: truncated } = truncateWithLimit((licencias ?? []) as Record<string, unknown>[], MAX_EXPORT_ROWS);
+    sheetLicencias.rows = truncated.map((r) => ({ ...r }));
+  }
+
+  const totalRows = sheetFichajes.rows.length + sheetLogs.rows.length + sheetHashChain.rows.length + sheetLicencias.rows.length;
   await logAudit(
     'legal_export',
     { orgId: ctx.orgId, employeeId: ctx.employeeId, ip: meta.ip, userAgent: meta.userAgent },
@@ -256,8 +331,22 @@ export async function handlePostLegalExport(req: Request): Promise<Response> {
 
   if (formato === 'csv') {
     const metaLine = `# Exportado por fichAR. Fecha exportación: ${exportedAt}. Por: ${exportedBy}. Uso exclusivo fines legales.`;
-    const rows = sheetFichajes.rows.length > 0 ? sheetFichajes.rows : sheetLogs.rows.length > 0 ? sheetLogs.rows : sheetHashChain.rows;
-    const headers = sheetFichajes.rows.length > 0 ? sheetFichajes.headers : sheetLogs.rows.length > 0 ? sheetLogs.headers : sheetHashChain.headers;
+    const rows =
+      sheetFichajes.rows.length > 0
+        ? sheetFichajes.rows
+        : sheetLogs.rows.length > 0
+          ? sheetLogs.rows
+          : sheetHashChain.rows.length > 0
+            ? sheetHashChain.rows
+            : sheetLicencias.rows;
+    const headers =
+      sheetFichajes.rows.length > 0
+        ? sheetFichajes.headers
+        : sheetLogs.rows.length > 0
+          ? sheetLogs.headers
+          : sheetHashChain.rows.length > 0
+            ? sheetHashChain.headers
+            : sheetLicencias.headers;
     const csvForHash = buildCsv(rows, headers, metaLine);
     const bufForHash = Buffer.from(csvForHash, 'utf-8');
     const sha256 = computeFileSha256(bufForHash);
@@ -277,6 +366,7 @@ export async function handlePostLegalExport(req: Request): Promise<Response> {
   if (sheetFichajes.rows.length > 0) sheets.push({ name: 'Fichajes', ...sheetFichajes });
   if (sheetLogs.rows.length > 0) sheets.push({ name: 'Logs', ...sheetLogs });
   if (sheetHashChain.rows.length > 0) sheets.push({ name: 'CadenaHashes', ...sheetHashChain });
+  if (sheetLicencias.rows.length > 0) sheets.push({ name: 'Licencias', ...sheetLicencias });
 
   const xlsxBuf = buildXlsx(sheets, { exportedAt, exportedBy, totalRows });
   const sha256 = computeFileSha256(xlsxBuf);

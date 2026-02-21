@@ -13,7 +13,7 @@ These principles govern all development. AGENTS and humans must always comply.
 1. **Integrability:** The app must be highly integrable with any system—old software, modern APIs, ERPs, n8n, webhooks, CSV/Excel. Minimal development for consumers. See fichar-integrations.
 
 2. **Security:** Zero tolerance for vulnerabilities. Defensive programming, RLS, auth, audit logs. No exceptions.
-   - **legal_auditor role:** Must remain hidden and hard to assign. Not exposed in Admin UI or in roles assignable via invite/import. Only activatable via a controlled mechanism (e.g., env flag, restricted script, or undocumented flow) known to the project owner. Admin must NOT be able to grant it through normal flows.
+   - **legal_auditor role:** Assignable normally via Admin UI, invite, and import like other roles (empleado, supervisor, admin, auditor). Access: read-only for peritaje (fichajes, logs, licencias, export).
 
 3. **Compatibility:** Support old and modern OSs, all platforms. Android 5+, iOS 12+, legacy Windows/macOS/Linux. Design for low-end devices and constrained resources. See Compatibility table and fichar-low-end.
 

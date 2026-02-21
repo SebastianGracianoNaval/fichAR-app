@@ -1,7 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
+import '../core/api_client.dart';
 
 class LoginApiResult {
   const LoginApiResult({
@@ -35,34 +34,33 @@ class MfaVerificationRequiredResult {
   final String? message;
 }
 
+class PasswordChangeRequiredResult {
+  const PasswordChangeRequiredResult({required this.refreshToken});
+  final String refreshToken;
+}
+
 class AuthApiService {
-  static String _apiBaseUrl() {
-    final apiUrl = dotenv.env['API_URL']?.trim();
-    if (apiUrl == null || apiUrl.isEmpty) {
-      throw Exception('API_URL no configurado en assets/.env');
-    }
-    return apiUrl;
-  }
 
   static Future<({
     LoginApiResult? result,
     MfaEnrollmentRequiredResult? mfaEnrollmentRequired,
     MfaVerificationRequiredResult? mfaVerificationRequired,
+    PasswordChangeRequiredResult? passwordChangeRequired,
     String? error,
     int statusCode,
   })> login({
     required String email,
     required String password,
   }) async {
-    final url = Uri.parse('${_apiBaseUrl()}/api/v1/auth/login');
-    final res = await http.post(
+    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/login');
+    final res = await ApiClient.client.post(
       url,
       headers: const {'Content-Type': 'application/json'},
       body: jsonEncode({
         'email': email,
         'password': password,
       }),
-    );
+    ).timeout(ApiClient.defaultTimeout);
 
     Map<String, dynamic> body = const {};
     if (res.body.isNotEmpty) {
@@ -81,6 +79,7 @@ class AuthApiService {
             result: null,
             mfaEnrollmentRequired: null,
             mfaVerificationRequired: null,
+            passwordChangeRequired: null,
             error: 'Respuesta inválida del servidor.',
             statusCode: 500,
           );
@@ -92,6 +91,7 @@ class AuthApiService {
             message: body['message'] as String?,
           ),
           mfaVerificationRequired: null,
+          passwordChangeRequired: null,
           error: null,
           statusCode: res.statusCode,
         );
@@ -103,6 +103,7 @@ class AuthApiService {
             result: null,
             mfaEnrollmentRequired: null,
             mfaVerificationRequired: null,
+            passwordChangeRequired: null,
             error: 'Respuesta inválida del servidor.',
             statusCode: 500,
           );
@@ -115,6 +116,7 @@ class AuthApiService {
             factorId: body['factor_id'] as String?,
             message: body['message'] as String?,
           ),
+          passwordChangeRequired: null,
           error: null,
           statusCode: res.statusCode,
         );
@@ -126,8 +128,19 @@ class AuthApiService {
           result: null,
           mfaEnrollmentRequired: null,
           mfaVerificationRequired: null,
+          passwordChangeRequired: null,
           error: 'Respuesta inválida del servidor.',
           statusCode: 500,
+        );
+      }
+      if (body['requires_password_change'] == true) {
+        return (
+          result: null,
+          mfaEnrollmentRequired: null,
+          mfaVerificationRequired: null,
+          passwordChangeRequired: PasswordChangeRequiredResult(refreshToken: refreshToken),
+          error: null,
+          statusCode: res.statusCode,
         );
       }
       return (
@@ -138,6 +151,7 @@ class AuthApiService {
         ),
         mfaEnrollmentRequired: null,
         mfaVerificationRequired: null,
+        passwordChangeRequired: null,
         error: null,
         statusCode: res.statusCode,
       );
@@ -147,6 +161,7 @@ class AuthApiService {
       result: null,
       mfaEnrollmentRequired: null,
       mfaVerificationRequired: null,
+      passwordChangeRequired: null,
       error: body['error'] as String?,
       statusCode: res.statusCode,
     );
@@ -157,12 +172,12 @@ class AuthApiService {
     required String refreshToken,
     required String code,
   }) async {
-    final url = Uri.parse('${_apiBaseUrl()}/api/v1/auth/mfa/verify');
-    final res = await http.post(
+    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/mfa/verify');
+    final res = await ApiClient.client.post(
       url,
       headers: const {'Content-Type': 'application/json'},
       body: jsonEncode({'refresh_token': refreshToken, 'code': code}),
-    );
+    ).timeout(ApiClient.defaultTimeout);
     final body = res.body.isNotEmpty
         ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
         : <String, dynamic>{};
@@ -196,12 +211,12 @@ class AuthApiService {
     String? error,
     int statusCode,
   })> mfaEnroll({required String refreshToken}) async {
-    final url = Uri.parse('${_apiBaseUrl()}/api/v1/auth/mfa/enroll');
-    final res = await http.post(
+    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/mfa/enroll');
+    final res = await ApiClient.client.post(
       url,
       headers: const {'Content-Type': 'application/json'},
       body: jsonEncode({'refresh_token': refreshToken}),
-    );
+    ).timeout(ApiClient.defaultTimeout);
     final body = res.body.isNotEmpty
         ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
         : <String, dynamic>{};
@@ -229,8 +244,8 @@ class AuthApiService {
     required String factorId,
     required String code,
   }) async {
-    final url = Uri.parse('${_apiBaseUrl()}/api/v1/auth/mfa/enroll-verify');
-    final res = await http.post(
+    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/mfa/enroll-verify');
+    final res = await ApiClient.client.post(
       url,
       headers: const {'Content-Type': 'application/json'},
       body: jsonEncode({
@@ -238,7 +253,7 @@ class AuthApiService {
         'factor_id': factorId,
         'code': code,
       }),
-    );
+    ).timeout(ApiClient.defaultTimeout);
     final body = res.body.isNotEmpty
         ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
         : <String, dynamic>{};
@@ -263,5 +278,70 @@ class AuthApiService {
       error: body['error'] as String? ?? 'Código incorrecto',
       statusCode: res.statusCode,
     );
+  }
+
+  static Future<({String? error, int statusCode})> forgotPassword({
+    required String email,
+  }) async {
+    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/forgot-password');
+    final res = await ApiClient.client.post(
+      url,
+      headers: const {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    ).timeout(ApiClient.defaultTimeout);
+    final body = res.body.isNotEmpty
+        ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
+        : <String, dynamic>{};
+    if (res.statusCode == 200) {
+      return (error: null, statusCode: res.statusCode);
+    }
+    return (
+      error: body['error'] as String? ?? 'Error al enviar. Intentá de nuevo.',
+      statusCode: res.statusCode,
+    );
+  }
+
+  static Future<({String? error, int statusCode})> changePassword({
+    required String token,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/change-password');
+    final res = await ApiClient.client.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      }),
+    ).timeout(ApiClient.defaultTimeout);
+    final body = res.body.isNotEmpty
+        ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
+        : <String, dynamic>{};
+    if (res.statusCode == 200) {
+      return (error: null, statusCode: res.statusCode);
+    }
+    return (
+      error: body['error'] as String? ?? 'Error al cambiar contraseña.',
+      statusCode: res.statusCode,
+    );
+  }
+
+  static Future<void> passwordSetComplete({required String token}) async {
+    try {
+      final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/password-set-complete');
+      await ApiClient.client.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(ApiClient.defaultTimeout);
+    } catch (_) {
+      // Non-critical: best effort
+    }
   }
 }
