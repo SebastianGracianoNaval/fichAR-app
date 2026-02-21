@@ -1,0 +1,347 @@
+# fichAR — Definición Exhaustiva de Pantallas
+
+Documento de especificación. Nada queda a la imaginación.
+Referencia: DEFINICION-PROYECTO-FICHAR.md
+
+================================================================================
+CONVENCIONES
+================================================================================
+- ID: Identificador único de pantalla (ej. P-AUTH-01)
+- Campos: nombre | tipo | obligatorio | validación | default
+- Estados: loading | success | error | empty | disabled
+- Acciones: botón/enlace → destino o acción
+- Rol mínimo: Empleado | Supervisor | Admin | Auditor
+
+================================================================================
+1. AUTENTICACIÓN
+================================================================================
+
+--- P-AUTH-01: Login ---
+ID: P-AUTH-01
+Nombre: Login / Inicio de sesión
+Ruta: /login (web) | pantalla inicial (mobile)
+Rol mínimo: Público (no autenticado)
+Aparece: Siempre que no haya sesión válida.
+
+CAMPOS:
+| Campo          | Tipo        | Obligatorio | Validación                    | Default |
+|----------------|-------------|-------------|-------------------------------|---------|
+| email          | email       | Sí          | Formato email válido          | -       |
+| contraseña     | password    | Sí          | Mín 8 chars, 1 mayúsc, 1 núm  | -       |
+| recordar sesión| checkbox    | No          | -                             | false   |
+| código 2FA     | text 6 díg  | Condicional | Solo si 2FA habilitado        | -       |
+
+ESTADOS:
+- loading: Spinner; botón "Iniciar sesión" deshabilitado.
+- error: Mensaje debajo del formulario. Tipos: credenciales inválidas, cuenta bloqueada, 2FA requerido.
+- success: Redirige a dashboard según rol.
+- empty: Formulario vacío listo para ingresar.
+
+ACCIONES:
+- "Iniciar sesión" → Valida → Si 2FA: mostrar campo código → Si OK: redirigir.
+- "Olvidé mi contraseña" → P-AUTH-02.
+- "Iniciar con Google" (si configurado) → OAuth flow.
+- Huella/Face ID (mobile, si habilitado) → Autenticación biométrica.
+
+VALIDACIONES:
+- Email: no vacío, formato válido.
+- Contraseña: no vacía al submit.
+- 2FA: exactamente 6 dígitos numéricos.
+
+MENSAJES DE ERROR (exactos):
+- "Email o contraseña incorrectos." (no revelar cuál falló)
+- "Tu cuenta está temporalmente bloqueada. Intenta en X minutos."
+- "Ingresá el código de 6 dígitos enviado a tu email."
+
+--- P-AUTH-02: Recuperar contraseña ---
+ID: P-AUTH-02
+Nombre: Recuperar contraseña
+Ruta: /forgot-password
+Rol mínimo: Público
+
+CAMPOS:
+| Campo | Tipo  | Obligatorio | Validación           | Default |
+|-------|-------|-------------|----------------------|---------|
+| email | email | Sí          | Formato email válido | -       |
+
+ACCIONES:
+- "Enviar enlace" → Envía email con link de reset. Mensaje: "Si el email existe, recibirás un enlace en minutos."
+- "Volver al login" → P-AUTH-01.
+
+NOTA: No revelar si el email existe o no en el sistema (seguridad).
+
+--- P-AUTH-03: Reset contraseña (desde email) ---
+ID: P-AUTH-03
+Nombre: Nueva contraseña
+Ruta: /reset-password?token=XXX
+Rol mínimo: Público
+
+CAMPOS:
+| Campo              | Tipo     | Obligatorio | Validación                          | Default |
+|--------------------|----------|-------------|-------------------------------------|---------|
+| nueva contraseña   | password | Sí          | Mín 8, 1 mayúsc, 1 núm, 1 especial  | -       |
+| confirmar          | password | Sí          | Debe coincidir con nueva            | -       |
+
+ACCIONES:
+- "Guardar" → Si token válido y no expirado: actualiza y redirige a login. Mensaje: "Contraseña actualizada."
+- Si token inválido/expirado: "El enlace expiró. Solicitá uno nuevo." + link a P-AUTH-02.
+
+================================================================================
+2. EMPLEADO — DASHBOARD Y FICHAJE
+================================================================================
+
+--- P-EMP-01: Dashboard ---
+ID: P-EMP-01
+Nombre: Dashboard / Inicio
+Ruta: / (web) | pantalla principal (mobile)
+Rol mínimo: Empleado
+
+ELEMENTOS VISIBLES:
+1. Botón central "FICHAR" (grande, prominente)
+   - Estado habilitado: Verde, pulsante. Click → registra entrada o salida.
+   - Estado deshabilitado: Gris. Razones: fuera de zona, descanso insuficiente, ya fichado (según estado).
+   - Texto dinámico: "Fichar entrada" | "Fichar salida" según último evento.
+2. Barra de progreso "Banco de horas"
+   - Valor numérico: X h (positivo) o -X h (negativo).
+   - Color: Verde si ≥0, amarillo si cercano a límite, rojo si supera.
+3. Resumen del día
+   - Entrada: HH:MM o "-" si no fichó.
+   - Salida: HH:MM o "-" si no fichó.
+   - Horas trabajadas hoy: X h
+4. Accesos rápidos
+   - Mis Horas → P-EMP-02
+   - Licencias → P-EMP-03
+   - Tareas (si habilitado) → P-EMP-04
+   - Perfil → P-EMP-05
+
+ESTADOS DEL BOTÓN FICHAR:
+- habilitado_entrada: Empleado puede fichar entrada. En zona, descanso OK.
+- habilitado_salida: Empleado puede fichar salida. Ya fichó entrada hoy.
+- deshabilitado_fuera_zona: "Estás fuera de tu zona de trabajo."
+- deshabilitado_descanso: "Debés esperar X horas para cumplir el descanso mínimo."
+- deshabilitado_sin_permiso: "No tenés permiso para fichar desde este dispositivo." (si app mobile deshabilitada)
+- loading: Spinner en botón durante registro.
+
+--- P-EMP-02: Mis Horas ---
+ID: P-EMP-02
+Nombre: Mis Horas
+Ruta: /mis-horas
+Rol mínimo: Empleado
+
+SECCIONES:
+1. Banco de horas actual: valor numérico + explicación breve.
+2. Historial de fichajes
+   - Tabla: Fecha | Entrada | Salida | Horas | Lugar
+   - Filtros: por mes, por rango de fechas.
+   - Paginación: 20 registros por página.
+3. Horas extras (si aplica)
+   - Total del período seleccionado.
+
+CAMPOS TABLA:
+| Columna | Tipo   | Origen                    |
+|---------|--------|---------------------------|
+| Fecha   | date   | fecha del fichaje         |
+| Entrada | time   | timestamp entrada         |
+| Salida  | time   | timestamp salida          |
+| Horas   | decimal| calculado                 |
+| Lugar   | string | nombre lugar de trabajo   |
+
+ESTADO empty: "No hay registros para el período seleccionado."
+
+--- P-EMP-03: Licencias ---
+ID: P-EMP-03
+Nombre: Solicitar licencia
+Ruta: /licencias
+Rol mínimo: Empleado
+
+SECCIONES:
+1. Botón "Nueva solicitud" → abre formulario.
+2. Lista de solicitudes previas: Estado | Fecha inicio | Fecha fin | Tipo | Adjuntos | Acciones
+
+FORMULARIO NUEVA SOLICITUD:
+| Campo       | Tipo    | Obligatorio | Validación                    | Default |
+|-------------|---------|-------------|-------------------------------|---------|
+| tipo        | select  | Sí          | Enumerado (enfermedad, etc.)  | -       |
+| fecha inicio| date    | Sí          | No futura, no pasada > 1 año  | -       |
+| fecha fin   | date    | Sí          | >= fecha inicio               | -       |
+| motivo      | text    | No          | Max 500 chars                 | -       |
+| adjunto     | file    | Condicional | PDF, JPG, PNG. Max 5 MB       | -       |
+
+Adjunto obligatorio si tipo = enfermedad o accidente (Art. 210).
+
+ACCIONES:
+- "Enviar" → Crea solicitud, estado "Pendiente". Notifica a Supervisor/Admin.
+- "Cancelar" → Cierra formulario sin guardar.
+
+ESTADOS solicitud: Pendiente | Aprobada | Rechazada
+
+--- P-EMP-04: Tareas ---
+ID: P-EMP-04
+Nombre: Tareas asignadas
+Ruta: /tareas
+Rol mínimo: Empleado
+Visibilidad: Solo si config "tareas_habilitado" = true.
+
+LISTA:
+- Tarea | Descripción | Horas asignadas | Horas registradas | Acción "Registrar horas"
+
+FORMULARIO REGISTRAR HORAS:
+| Campo  | Tipo   | Obligatorio | Validación        |
+|--------|--------|-------------|-------------------|
+| tarea  | select | Sí          | De lista          |
+| horas  | decimal| Sí          | > 0, <= 24        |
+| fecha  | date   | Sí          | No futura         |
+
+--- P-EMP-05: Perfil ---
+ID: P-EMP-05
+Nombre: Mi perfil
+Ruta: /perfil
+Rol mínimo: Empleado
+
+CAMPOS (solo lectura excepto indicado):
+| Campo    | Editable | Nota                          |
+|----------|----------|-------------------------------|
+| Nombre   | No       |                               |
+| Email    | No       |                               |
+| CUIL     | No       |                               |
+| Preferencias notif | Sí  | Toggle notificaciones        |
+| Dispositivos      | No  | Lista con opción "Revocar"   |
+
+================================================================================
+3. SUPERVISOR
+================================================================================
+
+--- P-SUP-01: Mi Equipo ---
+ID: P-SUP-01
+Nombre: Mi Equipo
+Ruta: /equipo
+Rol mínimo: Supervisor
+
+CONTENIDO:
+- Lista empleados a cargo
+- Por cada uno: Nombre | Estado (fichado entrada/salida/no fichó) | Último fichaje | Acción "Ver detalle"
+
+--- P-SUP-02: Aprobar licencias ---
+ID: P-SUP-02
+Nombre: Aprobar licencias
+Ruta: /licencias/aprobar
+Rol mínimo: Supervisor
+
+CONTENIDO:
+- Cola de solicitudes pendientes
+- Por cada una: Empleado | Tipo | Fechas | Adjunto (link) | Botones Aprobar | Rechazar
+- Rechazar requiere motivo (obligatorio)
+
+--- P-SUP-03: Alertas ---
+ID: P-SUP-03
+Nombre: Alertas
+Ruta: /alertas
+Rol mínimo: Supervisor
+
+TIPOS DE ALERTA:
+1. "Empleado X intentó fichar fuera de zona a las HH:MM"
+2. "Empleado X no cumplió descanso de 12h (fichó entrada a las HH:MM)"
+3. "Empleado X superó banco de horas límite"
+
+Lista con filtro por tipo, por empleado, por fecha.
+
+================================================================================
+4. ADMIN
+================================================================================
+
+--- P-ADM-01: Panel de Control ---
+ID: P-ADM-01
+Nombre: Panel de Control
+Ruta: /admin
+Rol mínimo: Admin
+
+KPIs: Total empleados | Fichados hoy | Alertas pendientes | Licencias pendientes
+Gráficos: Horas por día (última semana), Presentismo (último mes).
+
+--- P-ADM-02: Empleados ---
+ID: P-ADM-02
+Nombre: Gestión de empleados
+Ruta: /admin/empleados
+Rol mínimo: Admin
+
+ACCIONES:
+- Crear empleado (formulario)
+- Editar empleado
+- Importar Excel/CSV (ver INTEGRACIONES.txt formato)
+- Crear batch (50+ cuentas)
+
+CAMPOS empleado:
+| Campo   | Obligatorio | Nota                    |
+|---------|-------------|-------------------------|
+| DNI     | Sí          |                         |
+| CUIL    | Sí          |                         |
+| Nombre  | Sí          |                         |
+| Email   | Sí          | Único por org           |
+| Rol     | Sí          | Empleado, Supervisor    |
+| Lugar(es) trabajo | Sí | Asignación             |
+| Modalidad | Sí        | Presencial, remoto, híbrido |
+
+--- P-ADM-03: Lugares de trabajo ---
+ID: P-ADM-03
+Nombre: Lugares de trabajo
+Ruta: /admin/lugares
+Rol mínimo: Admin
+
+Por cada lugar:
+| Campo    | Tipo   | Obligatorio |
+|----------|--------|-------------|
+| Nombre   | string | Sí          |
+| Dirección| string | Sí          |
+| Lat/Long | coords | Sí          |
+| Radio (m)| number | Sí, default 100 |
+| Días     | multiselect | Sí   | L,M,X,J,V,S,D |
+
+Importar desde Excel/CSV.
+
+--- P-ADM-04: Reportes ---
+ID: P-ADM-04
+Nombre: Reportes
+Ruta: /admin/reportes
+Rol mínimo: Admin
+
+TIPOS:
+1. Presentismo
+2. Banco de horas
+3. Horas trabajadas
+4. Alertas fatiga
+5. Días sin trabajar
+
+Por cada uno: Seleccionar período, empleados (o todos), formato (Excel). Botón "Descargar".
+Reportes programados: Configurar enlace en Configuración.
+
+--- P-ADM-05: Configuración ---
+ID: P-ADM-05
+Nombre: Configuración
+Ruta: /admin/config
+Rol mínimo: Admin
+
+Ver CONFIGURACIONES.txt para lista exhaustiva. Cada config es un toggle o select en esta pantalla.
+
+--- P-ADM-06: Logs / Auditoría ---
+ID: P-ADM-06
+Nombre: Logs
+Ruta: /admin/logs
+Rol mínimo: Admin (escritura) | Auditor (solo lectura)
+
+Tabla: Timestamp | Usuario | Acción | IP | Dispositivo | Detalle
+Filtros: por fecha, por usuario, por tipo de acción.
+Solo lectura para Auditor. Inmutable (no se puede editar ni borrar).
+
+================================================================================
+5. SABÍAS QUE...
+================================================================================
+
+--- P-LEGAL: Sabías que ---
+ID: P-LEGAL
+Tipo: Modal o splash
+Momento: Durante carga de app o al iniciar sesión (rotativo).
+Contenido: Mensajes legales breves. Ver DEFINICION-PROYECTO-FICHAR.md sección 14.
+
+================================================================================
+FIN DOCUMENTO PANTALLAS
+================================================================================

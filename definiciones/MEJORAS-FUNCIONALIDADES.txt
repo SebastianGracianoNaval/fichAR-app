@@ -1,0 +1,83 @@
+# fichAR — Mejoras y Funcionalidades Adicionales
+
+Ideas sencillas que sería bueno tener. Nada loco, realistas.
+
+Referencia: fichAR-firts-txt.txt
+
+================================================================================
+1. FUNCIONALIDADES SUGERIDAS
+================================================================================
+
+--- 1.1 Recordatorio de fichaje ---
+Notificación push: "No olvides fichar la salida" si pasaron X horas desde la entrada y no fichó salida.
+Config: activable, hora límite (ej. después de 10h de jornada).
+Útil para evitar registros incompletos.
+
+--- 1.2 Resumen semanal por email ---
+Empleado recibe cada lunes un resumen: "La semana pasada trabajaste X horas. Banco actual: Y."
+Opt-in o configurable por org.
+
+--- 1.3 Fichaje con foto (opcional) ---
+Algunos empleadores quieren verificación extra: selfie al fichar.
+Config desactivable. Polémico en privacidad; solo si el empleador lo exige y hay acuerdo.
+Baja prioridad; evaluar legalidad.
+
+--- 1.4 Historial de cambios de configuración ---
+Admin puede ver quién cambió qué config y cuándo.
+Útil para auditoría interna.
+
+--- 1.5 Modo "vacaciones" o "ausencia programada" ---
+Empleado puede marcar "estaré ausente del X al Y" para que no esperen que fiche.
+Reduce alertas falsas.
+
+--- 1.6 Duplicar lugar de trabajo ---
+Al crear lugar similar a uno existente, opción "Duplicar" con cambios mínimos.
+Ahorra tiempo.
+
+--- 1.7 Plantillas de licencia ---
+Para tipos frecuentes (ej. estudio), el empleado puede guardar datos y reutilizar.
+Opcional.
+
+--- 1.8 Widget en pantalla de inicio (mobile) ---
+Widget que muestra estado actual (fichado entrada/salida) y botón rápido para fichar.
+Solo en dispositivos que lo soporten (Android, iOS 14+).
+Alta utilidad, bajo esfuerzo.
+
+--- 1.9 Atajos de teclado (desktop) ---
+Ctrl+F o similar para fichar rápido sin abrir la app completa.
+Power users lo agradecen.
+
+--- 1.10 Exportar "mi historial" (empleado) ---
+El empleado puede descargar sus propios fichajes en CSV/XLSX.
+Transparencia. Útil para reclamos o su propia contabilidad.
+
+--- 1.11 Horarios de trabajo esperados ---
+Admin define "horario estándar" (ej. 9 a 18). Alertas si alguien ficha mucho antes/después.
+Detectar anomalías.
+
+--- 1.12 Integración calendario ---
+Sincronizar ausencias/licencias con Google Calendar o Outlook.
+Opcional, para empleados que usan agenda.
+
+--- 1.13 Modo oscuro ---
+Tema dark. Configurable por usuario.
+Batería en OLED; preferencia de muchos.
+
+--- 1.14 Multi-idioma ---
+Español e inglés como mínimo. Estructura i18n desde el inicio.
+Útil si hay empresas con equipos internacionales.
+
+--- 1.15 Pausa para almuerzo ---
+Algunos necesitan registrar "inicio pausa" y "fin pausa" para descontar del horario.
+Configurable. No todos lo usan.
+
+================================================================================
+2. PRIORIZACIÓN SUGERIDA
+================================================================================
+Alta: 1.1, 1.2, 1.8, 1.10, 1.13
+Media: 1.4, 1.5, 1.6, 1.9, 1.11
+Baja: 1.3, 1.7, 1.12, 1.14, 1.15
+
+================================================================================
+FIN DOCUMENTO MEJORAS
+================================================================================

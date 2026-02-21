@@ -1,0 +1,133 @@
+# fichAR — Personalización para el Empleador
+
+Muchas cosas quedan a acordar entre empleador y empleado. El empleador debe poder configurarlas.
+
+Referencia: DEFINICION-PROYECTO-FICHAR.md, CONFIGURACIONES.txt
+
+================================================================================
+1. PRINCIPIO
+================================================================================
+La LCT y la Reforma dan márgenes. Cada empresa y convenio puede acordar distinto.
+fichAR debe soportar la máxima configurabilidad sin violar la ley.
+Toda configuración debe documentarse (para auditoría y juicios).
+
+================================================================================
+2. BANCO DE HORAS (acuerdos empleador-empleado)
+================================================================================
+
+--- 2.1 Vencimiento de horas en banco ---
+CFG-BH-001: banco_horas_vencimiento_meses
+Tipo: number
+Valores: 0 (sin vencimiento) | 3 | 6 | 12
+Default: 12 (reforma 2026 permite hasta 1 año)
+Impacto: Las horas acumuladas que excedan X meses desde su origen "caducan" o deben liquidarse.
+Configuración por org. Algunos convenios: 6 meses, otros 12.
+
+--- 2.2 Límite máximo de horas en banco ---
+CFG-015 (existente). Extender:
+Valores: 0 (sin límite) | 8 | 16 | 24 | 40 | custom (número libre)
+Default: 24
+
+--- 2.3 Cómo se consumen las horas (FIFO vs acordado) ---
+CFG-BH-002: banco_horas_consumo_orden
+Tipo: select
+Valores: fifo (primero en entrar, primero en salir) | lifo | acordado
+Default: fifo
+Impacto: Al tomar franco o reducir jornada, de qué "lote" de horas se descuenta.
+
+--- 2.4 Permitir negativo en banco ---
+CFG-BH-003: banco_horas_permitir_negativo
+Tipo: boolean
+Default: false
+Impacto: Si true, el empleado puede tener -X horas (debe recuperar después). Si false, no baja de 0.
+
+================================================================================
+3. FLEXIBILIDAD DE JORNADA (intercambio de horas)
+================================================================================
+Caso: "Hoy trabajo 4h, mañana 12h" para cumplir 48h semanales.
+Ver LIMITACIONES-ALERTAS.txt para reglas detalladas.
+Aquí solo las configs que controla el empleador:
+
+--- CFG-FJ-001: intercambio_horas_habilitado ---
+Tipo: boolean
+Default: true
+Si false: No se permite solicitar cambios de jornada (todo según horario fijo).
+
+--- CFG-FJ-002: intercambio_max_semana ---
+Tipo: number
+Valores: 0 | 1 | 2 | 3 | ilimitado (-1)
+Default: 1
+Cuántas veces por semana puede el empleado solicitar "hoy X horas, mañana Y".
+0 = nunca. 1 = una vez por semana, etc.
+
+--- CFG-FJ-003: intercambio_aprobacion ---
+Tipo: select
+Valores: automatico | supervisor | admin
+Default: supervisor
+Quién debe aprobar el intercambio.
+
+--- CFG-FJ-004: intercambio_antelacion_minima_dias ---
+Tipo: number
+Default: 1
+Con cuántos días de anticipación debe solicitarse.
+
+================================================================================
+4. LICENCIAS
+================================================================================
+- Tipos permitidos (CFG-018)
+- Adjunto obligatorio (CFG-017)
+- Quién aprueba (CFG-020)
+- Días máximos por tipo (nuevo):
+
+CFG-LIC-001: licencia_max_dias_por_tipo
+Tipo: json
+Ejemplo: { "enfermedad": 365, "estudio": 30, "duelo": 5 }
+Por tipo de licencia, máximo días que se pueden solicitar de una vez (o por año, según convenio).
+0 = sin límite configurado.
+
+================================================================================
+5. LUGARES Y MODALIDAD
+================================================================================
+- Radio por lugar (por lugar, no solo default)
+- Días asignados por empleado (presencial/remoto por día)
+- Permitir "cualquier lugar" para remoto (CFG ya contempla lugares múltiples)
+
+================================================================================
+6. REPORTES
+================================================================================
+- Qué reportes incluir en envío programado (CFG-032)
+- Columnas custom en reportes (según atributos definidos en ESCALABILIDAD)
+- Período por defecto al abrir reportes: 1 mes, 3 meses, etc.
+
+================================================================================
+7. PALETA DE COLORES
+================================================================================
+CFG-042: org_color_palette
+Tipo: select
+Valores: profesional | fresco | neutro | custom
+Si custom: CFG-043 org_color_primary, CFG-044 org_color_secondary (hex)
+Ver FRONTEND.txt paletas.
+
+================================================================================
+8. MENSAJES PERSONALIZABLES
+================================================================================
+CFG-MSG-001: mensaje_bienvenida
+Tipo: string (max 500 chars)
+Default: vacío
+Si tiene valor, se muestra al empleado en primer login o en Dashboard.
+
+CFG-MSG-002: mensaje_fichaje_exitoso
+Tipo: string (max 200)
+Default: "¡Listo! Fichaste [entrada/salida]."
+Permite personalizar ("Gracias por registrarte", etc.)
+
+================================================================================
+9. DOCUMENTACIÓN PARA ACUERDOS
+================================================================================
+Cuando el empleador activa banco de horas, intercambio, etc., el sistema debe poder generar un documento tipo "Acuerdo de banco de horas" o "Acuerdo de flexibilidad" con los términos configurados, para que empleador y empleado firmen.
+Funcionalidad: "Descargar acuerdo PDF" con los parámetros actuales.
+Opcional para MVP; deseable para Fase 2.
+
+================================================================================
+FIN DOCUMENTO PERSONALIZACION
+================================================================================

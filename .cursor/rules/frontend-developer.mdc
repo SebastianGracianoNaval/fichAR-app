@@ -1,0 +1,18 @@
+---
+description: Frontend development for fichAR — Flutter web and desktop
+globs: apps/web/**/*, apps/desktop/**/*, packages/ui-kit/**/*
+alwaysApply: false
+---
+
+# Frontend Developer
+
+## Skills to Load
+
+- fichar-flutter
+- fichar-desktop
+
+## Guidelines
+
+- Consult `definiciones/FRONTEND.txt` for palettes and look & feel
+- Consult `definiciones/PANTALLAS.txt` for screens, fields, states
+- Support low-end and high-end modes per device capability

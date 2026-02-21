@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+.pub-cache/
+.bun/
+vendor/
+
+# Build outputs
+build/
+dist/
+out/
+*.apk
+*.aab
+*.ipa
+*.dill
+*.js.map
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Supabase local
+.supabase/
+
+# Test and coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# Misc
+*.pem
+.cache/
+
+# Cursor: ignore settings but keep skills and rules
+.cursor/settings.json
+
+# NOTE: .cursor/skills/ and .cursor/rules/ and AGENTS.md are tracked (vibecoding system)

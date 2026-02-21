@@ -1,0 +1,107 @@
+# fichAR — Escalabilidad: Atributos Extensibles y Crecimiento
+
+Objetivo: Poder agregar atributos a empleados (y otras entidades) de forma sencilla sin migraciones complejas.
+
+Referencia: DEFINICION-PROYECTO-FICHAR.md
+
+================================================================================
+1. PROBLEMA
+================================================================================
+Los empleados necesitan campos variables según la empresa:
+- Supermercado: turno, caja asignada, sector
+- Software: proyecto, seniority, skills
+- Retail: sucursal, categoría, comisión
+- Otros: legajo interno, centro de costo, costo por hora, etc.
+
+No podemos predefinir todos. Debe ser fácil añadir sin tocar schema rígido.
+
+================================================================================
+2. SOLUCIÓN: HÍBRIDO (columnas fijas + JSONB)
+================================================================================
+
+--- 2.1 Enfoque recomendado (PostgreSQL) ---
+Tabla employees:
+- Columnas fijas: id, org_id, dni, cuil, name, email, role, created_at, ...
+- Columna JSONB: custom_attributes
+
+Ejemplo custom_attributes:
+```json
+{
+  "legajo": "EMP-001",
+  "centro_costo": "CC-VENTAS",
+  "sucursal": "Centro",
+  "categoria": "Cajero",
+  "costo_hora": 1500.50,
+  "proyecto_actual": "Proyecto X"
+}
+```
+
+Ventajas:
+- Un solo row por empleado
+- Sin JOINs para atributos custom
+- Índices GIN en JSONB para búsquedas
+- Sin migraciones al agregar nuevos atributos
+
+--- 2.2 Schema de definición de atributos ---
+Tabla org_attribute_definitions:
+| id | org_id | entity_type | key | label | data_type | required | options (json) |
+entity_type: "employee" | "place" | "project" (si módulo proyectos activo)
+
+Permite que cada org defina qué atributos custom tiene y su tipo.
+El Admin configura en UI: "Agregar atributo: legajo, tipo texto, obligatorio"
+
+--- 2.3 API para atributos ---
+
+GET /api/v1/orgs/{org_id}/attribute-definitions?entity=employee
+Response: Lista de definiciones. El frontend construye formularios dinámicamente.
+
+POST /api/v1/orgs/{org_id}/attribute-definitions
+Body: { "entity_type": "employee", "key": "legajo", "label": "Legajo", "data_type": "string", "required": true }
+
+PATCH /api/v1/employees/{id}
+Body: { "custom_attributes": { "legajo": "EMP-001", "sucursal": "Centro" } }
+
+--- 2.4 Validación ---
+- Al guardar employee, validar custom_attributes contra definiciones de la org
+- Tipos: string, number, boolean, date, select (options en JSON)
+- Keys: snake_case, alfanumérico + guión bajo
+
+--- 2.5 Importación Excel/CSV ---
+Columnas dinámicas: Si el CSV trae columna "legajo" y existe definición, mapear a custom_attributes.legajo.
+Permitir en el Excel columnas extra que se mapeen a custom (configurable en importación).
+
+--- 2.6 Reportes y exportación ---
+Incluir columnas custom en reportes cuando existan.
+En XLSX: una columna por atributo custom definido.
+
+================================================================================
+3. ENDPOINT SUGERIDO PARA EXTENSIBILIDAD
+================================================================================
+
+GET /api/v1/orgs/{org_id}/schema
+Response: Schema dinámico de cada entidad (employees, places, etc.) incluyendo:
+- Campos fijos (con tipo, si son required)
+- Campos custom (desde attribute_definitions)
+
+Uso: El frontend puede generar formularios e imports sin hardcodear campos.
+
+================================================================================
+4. OTRAS ENTIDADES EXTENSIBLES
+================================================================================
+- Lugares: custom_attributes para "piso", "sector", "responsable"
+- Proyectos (si módulo activo): custom_attributes
+- Tareas: custom_attributes
+
+Misma mecánica: entity_type en attribute_definitions.
+
+================================================================================
+5. LÍMITES
+================================================================================
+- Máximo 50 atributos custom por entity_type por org (evitar abuso)
+- Key max 64 chars
+- Label max 100 chars
+- JSONB value: no más de 1MB por entity (en la práctica, atributos son cortos)
+
+================================================================================
+FIN DOCUMENTO ESCALABILIDAD
+================================================================================

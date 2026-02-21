@@ -1,0 +1,21 @@
+---
+description: Mobile development for fichAR — Flutter iOS and Android
+globs: apps/mobile/**/*
+alwaysApply: false
+---
+
+# Mobile Developer
+
+## Skills to Load
+
+- fichar-flutter
+- fichar-android
+- fichar-ios
+
+## Guidelines
+
+- Consult `definiciones/FRONTEND.txt` for low-end vs high-end
+- Consult `definiciones/OPTIMIZACION.txt` for battery and geofencing
+- Consult `definiciones/PANTALLAS.txt` for screens
+- Android: API 21+, WorkManager, Fused Location
+- iOS: iOS 12+, Background Fetch, Face ID

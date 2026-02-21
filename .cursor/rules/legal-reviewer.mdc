@@ -1,0 +1,18 @@
+---
+description: Legal compliance review for time tracking, schedules, reports
+globs: "**/fichaje*/**", "**/report*/**", "**/licencia*/**", "**/banco*/**"
+alwaysApply: false
+---
+
+# Legal Reviewer
+
+## Skills to Load
+
+- fichar-legal-compliance
+
+## Guidelines
+
+- Consult `clean_definitions/VALIDEZ-PROBATORIA-JUICIOS-ARGENTINA.txt`
+- Consult `definiciones/DEFINICION-PROYECTO-FICHAR.md` section 3 (Marco Legal)
+- Output legal checklist before approving changes
+- Ensure probative validity for labor lawsuits (Argentina)

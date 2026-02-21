@@ -1,0 +1,231 @@
+# fichAR — Testing y Documentación
+
+Estrategia de tests, cómo ejecutarlos, arreglarlos, mantenerlos actualizados.
+Documentación oficial bien estructurada.
+
+Referencia: DEFINICION-PROYECTO-FICHAR.md, fichAR-firts-txt.txt
+
+================================================================================
+1. FILOSOFÍA
+================================================================================
+- Tests y documentación son parte del producto, no un extra
+- Si un test falla, arreglarlo antes de merge (o documentar por qué se skipea temporalmente)
+- Documentación actualizada en cada release; revisión en cada PR
+- "Si no está documentado, no existe"
+
+================================================================================
+2. PIRÁMIDE DE TESTS
+================================================================================
+
+--- 2.1 Unitarios (base) ---
+Qué: Lógica de negocio pura, validadores, cálculos, formatters.
+Dónde: packages/api/src/**/*.test.ts, apps/mobile/test/
+Herramientas: Bun test, flutter test
+Cobertura objetivo: > 80% en dominio crítico (fichaje, banco de horas, descansos)
+Ejemplos: Validar descanso 12h, calcular banco de horas, validar CUIL, hash chain
+
+--- 2.2 Integración ---
+Qué: API endpoints, Supabase (RLS, queries), flujos completos.
+Dónde: packages/api/src/__tests__/integration/
+Herramientas: Bun test con Supabase local (Docker) o test project
+Ejemplos: POST /fichaje, GET /reportes, RLS por org_id
+
+--- 2.3 E2E (cima) ---
+Qué: Flujos críticos de usuario: login, fichar, solicitar licencia.
+Dónde: e2e/ o apps/mobile/integration_test/
+Herramientas: Playwright (web), Flutter integration_test (mobile)
+Cantidad: Pocos pero representativos. Solo flujos críticos.
+
+================================================================================
+3. COMANDOS
+================================================================================
+
+# Unitarios (backend)
+bun test
+
+# Unitarios (Flutter mobile)
+cd apps/mobile && flutter test
+
+# Con cobertura
+bun test --coverage
+flutter test --coverage
+
+# Integración (requiere Supabase local)
+bun run test:integration
+
+# E2E (requiere app corriendo)
+bun run test:e2e
+
+# Lint (ejecutar antes de commit)
+bun run lint
+flutter analyze
+
+# Todo en uno (CI)
+bun run ci
+
+================================================================================
+4. SI UN TEST FALLA
+================================================================================
+
+--- 4.1 Diagnóstico ---
+1. Leer el mensaje de error completo
+2. Identificar: ¿falló el test o falló el código?
+3. Si el test está desactualizado (cambió el requisito): Actualizar el test
+4. Si el código tiene un bug: Arreglar el código, no el test (a menos que el test sea incorrecto)
+
+--- 4.2 Test desactualizado ---
+- El requisito cambió (ej. nueva config, nuevo comportamiento)
+- Acción: Actualizar el test para reflejar el comportamiento esperado actual
+- Validar con definiciones: CONFIGURACIONES, CASOS-LIMITE, ROLES
+
+--- 4.3 Código con bug ---
+- El test detectó un error real
+- Acción: Arreglar el código
+- No modificar el test para que "pase" sin corregir el bug
+- Añadir un comentario en el test si el caso es sutil: // Regla: CASOS-LIMITE CL-007
+
+--- 4.4 Test flaky (a veces pasa, a veces no) ---
+- Eliminar dependencias de timing (usar mocks, fake timers)
+- Eliminar dependencias de orden (tests aislados)
+- Si es por red/DB: usar fixtures, no datos reales
+- Marcar como flaky temporalmente y crear issue: @flaky
+
+--- 4.5 Test que tarda mucho ---
+- Optimizar: mocks en lugar de integración real cuando no es necesario
+- Paralelizar: bun test --concurrency
+- Separar tests lentos: bun test --testPathIgnore=integration
+
+================================================================================
+5. MANTENER TESTS ACTUALIZADOS
+================================================================================
+
+- Al añadir feature: Añadir tests que cubran el happy path y 1-2 edge cases
+- Al modificar comportamiento: Buscar tests afectados y actualizarlos
+- Al eliminar feature: Eliminar tests asociados
+- En cada PR: CI debe pasar. No mergear con tests rojos
+- Revisión trimestral: Ejecutar suite completa, revisar tests obsoletos o redundantes
+
+================================================================================
+6. SKILLS PARA TESTING (incluir en PROMPT/AGENTS)
+================================================================================
+
+--- skill: fichar-test-backend ---
+When: Añadir o modificar tests de API, dominio, integración.
+Referencia: Este documento, CASOS-LIMITE.
+Patrones: Usar mocks para Supabase; fixtures para datos; fake timers para fechas.
+
+--- skill: fichar-test-frontend ---
+When: Añadir o modificar tests de widgets Flutter.
+Referencia: Este documento, PANTALLAS.
+Patrones: Widget tests para componentes aislados; golden tests para UI crítica; integration_test para flujos.
+
+--- skill: fichar-test-e2e ---
+When: Añadir o modificar tests E2E.
+Referencia: Flujos críticos definidos.
+Patrones: Idempotentes; usar datos de test; limpiar después.
+
+================================================================================
+7. DOCUMENTACIÓN OFICIAL — ESTRUCTURA
+================================================================================
+
+docs/
+├── README.md                 # Índice, cómo contribuir, links
+├── architecture/
+│   ├── overview.md           # Diagrama, capas, flujos
+│   ├── data-model.md         # Entidades, relaciones
+│   └── security.md           # Auth, RLS, hashing
+├── api/
+│   ├── openapi.yaml          # Especificación OpenAPI 3
+│   ├── endpoints.md          # Descripción de endpoints
+│   └── webhooks.md           # Eventos, payloads
+├── guides/
+│   ├── getting-started.md    # Setup, primer run
+│   ├── development.md        # Workflow, comandos
+│   ├── deployment.md         # Cómo desplegar
+│   └── troubleshooting.md    # Errores comunes, soluciones
+├── user/
+│   ├── empleado.md           # Manual empleado
+│   ├── supervisor.md         # Manual supervisor
+│   └── admin.md              # Manual admin
+├── legal/
+│   └── compliance.md         # Requisitos legales, referencias
+└── changelog/
+    └── CHANGELOG.md          # Historial de versiones
+
+================================================================================
+8. DOCUMENTACIÓN — REGLAS
+================================================================================
+
+--- 8.1 Formato ---
+- Markdown
+- Encabezados jerárquicos (H1 > H2 > H3)
+- Tablas para comparaciones
+- Diagramas: Mermaid o ascii
+- Código: bloques con language tag
+- Links relativos entre docs
+
+--- 8.2 Qué documentar ---
+- Toda API pública (OpenAPI obligatorio)
+- Flujos de usuario críticos
+- Decisiones de arquitectura (ADRs en docs/architecture/decisions/)
+- Configuraciones y variables de entorno
+- Requisitos legales aplicables
+
+--- 8.3 Actualización ---
+- Cada PR que añade/modifica feature: actualizar docs asociados
+- Checklist en PR: [ ] Documentación actualizada
+- Revisión en release: changelog, guías de usuario
+- Docs en el mismo repo que el código (single source of truth)
+
+--- 8.4 Generación automática ---
+- OpenAPI desde código (anotaciones) o desde spec manual
+- Docs de API: generar desde OpenAPI (Redoc, Swagger UI)
+- Changelog: mantener manual o con conventional commits
+
+================================================================================
+9. TROUBLESHOOTING TESTS
+================================================================================
+
+--- "Supabase connection refused" ---
+- Levantar Supabase local: supabase start
+- O usar test project en Supabase Cloud con .env.test
+
+--- "Flutter test timeout" ---
+- Aumentar timeout en test: test(..., timeout: Timeout(Duration(seconds: 30)))
+- Revisar si hay operación async sin await
+
+--- "Tests pasan localmente, fallan en CI" ---
+- Variables de entorno en CI
+- Orden de ejecución (evitar dependencias)
+- Timezone (usar UTC en tests)
+- Archivos de test no incluidos en .gitignore
+
+--- "Coverage bajo" ---
+- Priorizar dominio crítico (fichaje, banco, descansos)
+- No obsesionarse con 100%; 80% en dominio es razonable
+- Excluir generated code, main.dart bootstrap
+
+================================================================================
+10. CI/CD
+================================================================================
+
+Pipeline mínimo:
+1. lint
+2. test (unitarios)
+3. test:integration (si hay Supabase)
+4. build (verificar que compila)
+5. (opcional) test:e2e en staging
+
+Fallo en cualquier paso = no merge.
+
+================================================================================
+11. REFERENCIAS
+================================================================================
+- Flutter testing: https://docs.flutter.dev/testing
+- Bun test: https://bun.sh/docs/cli/test
+- Playwright: https://playwright.dev
+- OpenAPI: https://spec.openapis.org/oas/latest.html
+
+================================================================================
+FIN DOCUMENTO TESTING DOCUMENTACION
+================================================================================

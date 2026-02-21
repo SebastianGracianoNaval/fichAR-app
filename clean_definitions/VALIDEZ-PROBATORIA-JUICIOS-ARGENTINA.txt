@@ -1,0 +1,140 @@
+# fichAR — Validez Probatoria en Juicios Laborales (Argentina)
+
+Requisitos legales para que los datos de la app sean admisibles y confiables en juicios laborales.
+Referencias: Decreto 1131/2016, Ley 27.446, Ley 25.506, jurisprudencia peritaje informático.
+
+================================================================================
+1. MARCO LEGAL ARGENTINO
+================================================================================
+
+--- 1.1 Documentos electrónicos = papel ---
+Decreto 1131/2016: Los documentos generados en soporte electrónico tienen idéntica eficacia y valor probatorio que sus equivalentes en papel (Art. 293 Código Civil y Comercial).
+
+Ley 27.446: Documentos oficiales electrónicos firmados digitalmente, expedientes electrónicos y notificaciones tienen igual valor probatorio que papel.
+
+--- 1.2 Firma electrónica/digital ---
+Ley 25.506 (Firma Digital):
+- Firma digital: presunción de autoría e integridad. Quien la niega debe probar que es falsa.
+- Firma electrónica: valor probatorio menor; quien la invoca debe acreditar validez.
+
+Disposición 2/2026 (Registro): Documento sin firma electrónica válida o con certificado no verificable = inválido.
+
+--- 1.3 LCT y registros laborales ---
+LCT Art. 52: Registro de trabajadores ante ARCA. Libros digitalizados con misma validez que papel.
+LCT Art. 197 bis: Banco de horas. Método fehaciente de control que registre horas efectivas.
+LCT Art. 198: Descanso 12h entre jornadas, 35h semanal.
+Resolución AFIP/Min Trabajo 5249/2022: Libro de Sueldos Digital reemplaza registros tradicionales.
+
+--- 1.4 Prueba electrónica y cadena de custodia ---
+La validez probatoria depende de cómo se obtiene, conserva y presenta la evidencia, no solo del contenido.
+Cadena de custodia: quién, cuándo, dónde interactuó con la evidencia y sus transferencias.
+Hash: identificador único que garantiza que el documento existió en un momento y no fue modificado.
+
+--- 1.5 Peritaje informático ---
+Peritos COPITEC (y similares): autenticación de mensajes, correos, preconstitución de prueba.
+Servicios: Sello de Tiempo (Blockchain Federal Argentina) — verifica cuándo se almacenó un hash sin subir el archivo.
+
+================================================================================
+2. REQUISITOS QUE FICHAR DEBE CUMPLIR
+================================================================================
+
+--- 2.1 Inalterabilidad ---
+[✓] Cadena de hashes SHA-256 en cada fichaje.
+[✓] Hash incluye registro anterior + datos actuales. Cualquier modificación rompe la cadena.
+[✓] NUNCA UPDATE de registros; correcciones = nuevo registro con referencia al original.
+[✓] Pepper/secreto solo en servidor; cliente no calcula hash.
+
+--- 2.2 Timestamps ---
+[✓] timestamp_servidor (NTP, autoritativo).
+[✓] timestamp_dispositivo (referencia para disputas).
+[✓] Ambos guardados; en conflictos, prioridad dispositivo si diferencia < 5 min.
+
+--- 2.3 Trazabilidad ---
+[✓] Audit logs inmutables (solo INSERT).
+[✓] Registrar: user_id, ip, device_id, user_agent, acción, recurso, details.
+[✓] Retención mínima 10 años (CFG-037, LCT Art. 52).
+[✓] Log de correcciones con justificación y admin_id.
+
+--- 2.4 Exportación para peritaje ---
+[✓] Rol legal_auditor con acceso solo lectura a todo.
+[✓] Export CSV/XLSX con metadatos: fecha exportación, usuario, "Uso exclusivo fines legales".
+[✓] Hash SHA-256 del archivo en el export o en .txt adjunto (integridad post-exportación).
+[✓] Vista cadena de hashes para verificación.
+[✓] Sin fórmulas en XLSX; solo datos raw.
+
+--- 2.5 Autenticación y no repudio ---
+[✓] 2FA obligatorio Admin.
+[✓] Biometría opcional (huella/Face ID) como segundo factor; datos nunca salen del dispositivo.
+[✓] Sesiones por dispositivo con device_id, IP.
+[✓] No revelar si email existe en login/reset (seguridad).
+
+--- 2.6 Geolocalización (validez del lugar) ---
+[✓] Lat/long en cada fichaje cuando geoloc habilitada.
+[✓] Validación zona: distancia <= radio + tolerancia.
+[✓] Lugar_id asociado. Log si intento fuera de zona.
+
+================================================================================
+3. MEJORAS RECOMENDADAS PARA MÁXIMA CONFIANZA
+================================================================================
+
+--- 3.1 Sello de Tiempo (Blockchain Federal Argentina) ---
+Opcional, recomendado para evidencia de máxima solidez:
+- Al registrar cada fichaje, enviar hash a Sello de Tiempo 2.0 (bfa.ar).
+- Permite demostrar que el hash existía en un momento X sin subir datos sensibles.
+- Útil para disputas donde se cuestione la fecha de registro.
+
+--- 3.2 Firma del export por perito ---
+- Incluir en cada export: "Hash SHA-256: XXX" calculado sobre el archivo completo.
+- Perito puede verificar: recalcular hash del archivo recibido = hash declarado → no modificado.
+- Formato: archivo + archivo_checksums.txt con hash y timestamp.
+
+--- 3.3 Certificado de sistema ---
+- Documentar versión de fichAR, esquema de BD, algoritmos usados.
+- Incluir en export legal: version_fichar, schema_version, algoritmo_hash.
+- Facilita que el perito entienda y certifique el origen de los datos.
+
+--- 3.4 Cadena de custodia del export ---
+- Registrar en audit: quién exportó, cuándo, qué filtros, hash del archivo generado.
+- Opcional: log de descargas (quién descargó el archivo, cuándo) para trazabilidad completa.
+
+================================================================================
+4. CHECKLIST PARA POLICÍA/PERITO DE CIBERSEGURIDAD
+================================================================================
+
+Un perito o autoridad puede verificar:
+
+1. Integridad de datos: Recalcular cadena de hashes. Si coincide, no hubo alteración.
+2. Trazabilidad: Audit logs con IP, dispositivo, usuario, timestamp.
+3. Correcciones: Original preservado, nuevo registro con justificación y autor.
+4. Export: Hash del archivo incluido; verificar que no fue modificado tras exportación.
+5. Timestamps: Servidor NTP; dispositivo como referencia.
+6. Acceso: Rol legal_auditor solo lectura; todas las exportaciones logueadas.
+7. Inmutabilidad: No UPDATE ni DELETE en fichajes ni audit_logs.
+
+================================================================================
+5. NORMATIVA DE REFERENCIA
+================================================================================
+
+| Norma | Contenido |
+|-------|-----------|
+| Decreto 1131/2016 | Documentos electrónicos = valor probatorio papel |
+| Ley 27.446 | Documentos oficiales electrónicos firmados |
+| Ley 25.506 | Firma digital: presunción autoría e integridad |
+| LCT 20.744 Art. 52, 197 bis, 198 | Registros, banco horas, descansos |
+| Res. AFIP/Min Trabajo 5249/2022 | Libro Sueldos Digital |
+| CCyCN Art. 293 | Equiparación documento electrónico |
+| Jurisprudencia peritaje | Cadena custodia, hash, obtención/conservación |
+
+================================================================================
+6. LO QUE YA ESTÁ DEFINIDO EN FICHAR
+================================================================================
+
+Ver: clean_definitions/FICHAR-DEFINICION-COMPLETA.txt (secciones 7, 10, 14)
+     definiciones/SEGURIDAD.txt
+     definiciones/ROL-AUDITOR-JUICIOS.txt
+
+La implementación actual de fichAR cumple con los requisitos base. Las mejoras de la sección 3 son opcionales pero aumentan la solidez probatoria ante un peritaje exigente.
+
+================================================================================
+FIN VALIDEZ PROBATORIA
+================================================================================

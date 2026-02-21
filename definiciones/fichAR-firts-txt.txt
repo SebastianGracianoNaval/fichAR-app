@@ -1,0 +1,63 @@
+Esto es importantisimo para mi, puede ser la oportunidad de mi vida de vender una idea, ayudame aca:
+
+Quiero que definamos TODO, realmente TODO desde un principio
+Esta app fichAR tiene que estar 100% planeado y te voy a contar todos mis puntos que siento
+que son importantes
+
+Algunas peticiones generales:
+Quiero que tambien me recomiendes e investigues cosas, nada loco, controlado, y que sean realistas
+Quiero que hagas un markdown con todo todo, el stack, las pantallas que tendremos a que pantallas tendra acceso el empleado y no el empleador, el empleador que le pueda brindar ciertos permisos a un empleado que sea como gerente o similar
+quiero que pienses en todos los casos edge, y todo lo que se pueda hacer, no se solicitar licencias y attach algun file image, pdf, etc
+
+1. Quiero que sea una app mobile, desktop, es decir para pc de escritorio, para notebook
+2. Quiero que pueda trabajar en segundo plano CONSUMIENDO LO MINIMO, importantisimo la optimizacion de todo, escalabilidad
+3. Tiene que funcionar en versiones de Android viejas, en iPhones viejos, versiones de IOS, Windows 10 para arriba
+4. Deberian ser como "dos apps que se comunican entre si" para lograr diferentes versiones optimizadas de la misma app, es decir
+quizas el que tiene iPhone 14 pro tiene mejores look and feel, sensaciones, ruidos, etc, importantisimo que sea lo mas optimizado posible para cualquier dispositivo
+5. Disponible para MACos, Windows, Linux, optimizado y facil instalacion
+
+Funcionalidades:
+6. un boton que al apretarlo es como fichar entrada y salida, es algo que en españa se estila por ley
+6.1 se debe usar geolocalizacion, ya que no deberia poder fichar cuando no esta en su lugar de trabajo
+6.2 se deben poder definir "lugares de trabajo", es decir si el empleado tiene una modalidad hibrida de por ejemplo
+de lunes a miercoles presencial y jueves, viernes remoto, no puede fichar el lunes desde su casa, entonces seria ideal que el empleador
+pueda definir como los lugares de trabajo de su empleador, seria ideal que importando un excel, csv esto se haga automaticamente
+6.3 Importantisimo la seguridad de todo tipo para cumplir con todas las leyes de seguridad informatica y que nuestra app sea posible utilizar en juicios laborales
+7. Tiene que haber notificaciones y facilidades de todo tipo, por ejemplo alguna notificacion de "Que hiciste hoy?" y al entrar esten las tareas que se te asignaron por ejemplo
+y que las pueda sumar al timesheet y poner las horas que estuvo con esa tarea
+8. se deben poder activar y desactivar el 90% de funcionalidades, por ejemplo el empleador puede decidir que no se pueda utilizar la app de telefono, porque solo quieren que trackeen desde la computadora del trabajo
+9. Las pantallas de carga deben tirar datos al empleado o al empleador respecto a la ley "Sabias que..."
+10. Importantisimo el look and feel, sensaciones, sin embargo si hacen que para algunos dispositivos con sistemas operativos viejos vaya mas lento debemos obviarlos
+11. ES CLAVE la optimizacion de procesos, utilizar hilos por ejemplo, la velocidad, el correcto funcionamiento en todos los dispositivos posibles
+12. debemos definir todo desde un comienzo, estructuras, arquitectura, versiones de todo, ambientes de testing
+13. Me parece que utilizar supabase como backend no esta mal, que pensas? o quizas para esto queda pequeño?
+14. Tiene que ser muy facil para el empleador sacar reportes de todo, horas trabajadas, pico de horas, dias que mas trabajo, todo lo que se te ocurra que seria ideal saber del empleado
+que dias no trabajo, quizas empleados con mejor presentismo, aca ponete creativo pero que sea facil y sencillo, me parece que con extracciones de excel es suficiente
+15. compatibilidad con los diferentes softwares o hacerlo muy sencillo de integrar con desarrollo MINIMO es vital
+16. importar datos de los empleados debe ser muy facil, archivos xslx con dni, cuit, nombre, direcciones, etc
+17. voy a estar en linux, me gustaria usar otro gestor de paquetes que no sea npm, quizas bun o yarn
+18. me gustaria que al levantar el backend o el frontend aparezca un mensaje como fichAR gestor y administracion, en la terminal, me gustaria que todo se vea muy profesional, tanto el desarrollo, como los comandos de ejecucion
+estructuras, comandos para ejecutar test, todo sea senior
+19. debemos definir roles robustos
+20. LA SEGURIDAD tiene que ser PRIORIDAD NUMERO 1, no debemos dejar filtraciones de nada
+21. SERIA ideal que el empleador pueda crear cuentas de fichAR de forma facil y sencilla, crear batchs de 50 cuentas al mismo tiempo por ejemplo
+22. tiene que haber 2 o 3 formas de autenticacion, ademas de la cuenta y la contraseña, algun google authenticator, y enviar algun codigo
+23. seria ideal que con loggearse una vez dure 3 horas el log in en esa pc, esa ip especifica o algo asi similar
+24. deberia utilizar en celulares, huella, o face id
+25. logs de todo por seguridad
+26. capacidad de enviar informes programados, no se todos los 3 de cada mes enviar un correo con excels (no se si se puede hacer o que tan complicado es)
+
+
+Recomendacion de GEMINI
+Esta es la hoja de ruta definitiva para fichAR. Este documento está diseñado bajo una mentalidad de arquitectura de software senior, priorizando la seguridad, la optimización extrema y el cumplimiento legal de la reforma laboral argentina.1. Perfil del Proyecto y Personalidad de DesarrolloNombre del Proyecto: fichAR (Gestión y Administración de Cumplimiento Laboral).Filosofía: "Código de Grado Bancario, Interfaz de Grado Humano".Entorno de Desarrollo: Debian 12 (Linux).Gestor de Paquetes: Bun (por su velocidad superior y compatibilidad con scripts de shell).Estándar de Calidad: Clean Architecture + DDD (Domain Driven Design).2. Stack Tecnológico (Optimización y Multiplataforma)CapaTecnologíaJustificaciónFrontend (UI)Flutter 3.xÚnico código base para iOS, Android (viejos y nuevos), Web, Windows, macOS y Linux. Renderizado nativo.BackendGo (Golang)Rendimiento de bajo nivel, manejo de hilos (Goroutines) para procesos pesados y binarios pequeños.Base de Datos / AuthSupabase (PostgreSQL)No queda chico. Soporta RLS (Row Level Security) a nivel de base de datos, vital para la seguridad.Gestor de PaquetesBunEjecución de tests y scripts de despliegue hasta 10 veces más rápido que NPM.Integracionesn8n / WebhooksFacilidad para conectar con cualquier software externo (Jira, SAP, etc.) con desarrollo mínimo.3. Estructura de Roles y PermisosEmpleado (User): Fichaje, visualización de su propio banco de horas, solicitud de licencias, visualización de tareas y noticias legales ("Sabías que").Gerente (Supervisor): Visualización de equipos a cargo, aprobación de licencias, alertas de incumplimiento de descanso (Art. 190) de su equipo.Empleador / Admin: Configuración total del sistema, gestión de lugares de trabajo, reportes masivos, creación de cuentas batch.Auditor (Opcional): Acceso de solo lectura a logs inmutables para peritajes judiciales.4. Arquitectura y Seguridad (Prioridad #1)Para que fichAR sea válida en un juicio laboral, la seguridad debe ser técnica y procedimental:Inalterabilidad (Hashing): Cada registro de entrada/salida genera un Hash SHA-256 único vinculado al registro anterior (Cadena de bloques simplificada). Si un administrador edita una hora, el hash se rompe.Firma Digital: Uso de biometría (FaceID/Huella) para firmar el "Cierre de Jornada" semanal.Audit Logs: Registro de IP, dispositivo, versión de la app y timestamp del servidor (no del celular) para cada acción.2FA / MFA: Integración obligatoria con Google Authenticator para roles de Admin.5. Definición de Pantallas y FuncionalidadesA. App Mobile (iOS/Android - Optimización "Low-End")Dashboard Duolingo Style: Pantalla limpia con un botón central de "Fichar". Barra de progreso del "Banco de Horas".Background Service: Uso de Background Fetch en iOS y WorkManager en Android. Consumo mínimo de batería (solo despierta por geofencing o notificación push).Geofencing: El botón de fichar solo se habilita si el GPS está dentro del radio definido por el empleador (ej. 100m de la oficina).Modo Offline: Permite fichar sin internet; el registro se guarda cifrado localmente y se sincroniza al recuperar conexión con un timestamp firmado.B. App Desktop & WebPanel de Reportes: Generación de XLSX con filtros avanzados:Índice de Presentismo.Ranking de Horas en Banco (Riesgo de pago de extras).Alertas de fatiga (Art. 190).Importador Masivo: Drag & drop de archivos XLSX/CSV para crear 50+ cuentas de una vez o definir perímetros de trabajo hibrido.6. Flujo de Casos Edge (Casos Críticos)Fichaje Remoto no autorizado: El sistema bloquea el fichaje y envía notificación al gerente: "Empleado intentó fichar fuera de zona".Solicitud de Licencia: El empleado sube PDF/Foto de certificado médico. El sistema aplica OCR para extraer fechas y pre-aprobar el período.Cambio de Dispositivo: Si un empleado intenta loguearse en un celular nuevo, requiere validación por correo y código del dispositivo anterior o del Admin.7. Comandos y Entorno de Desarrollo (Senior)Al levantar el proyecto en tu terminal de Debian 12, se verá así:Bash# Script de inicio en Bun (package.json)
+"dev": "echo 'fichAR: Gestor y Administración | v1.0.0-dev' && bun run server.ts"
+Banner de Terminal:Plaintext#################################################
+#   __ _      _        _    ____                #
+#  / _(_) ___| |__    / \  |  _ \               #
+# | |_| |/ __| '_ \  / _ \ | |_) |              #
+# |  _| | (__| | | |/ ___ \|  _ <               #
+# |_| |_|\___|_| |_/_/   \_\_| \_\              #
+#                                               #
+# SISTEMA DE CUMPLIMIENTO LEGAL ARGENTINA 2026  #
+#################################################
+8. Plan de Despliegue y MantenimientoInfraestructura: Supabase para la base de datos (Postgres). Hosting de la API en Render o Railway por su facilidad de logs y escalabilidad.Web/Desktop: Distribución de binarios firmados (.exe / .dmg / .deb) vía una landing page segura con HTTPS y certificados SSL de alta gama.Reportes Programados: Uso de un Cron Job en el backend que ejecute el día 1 de cada mes, genere los archivos XLSX y los envíe vía SendGrid o AWS SES a los correos de los empleadores.9. El "Sabías que..." (Cultura Legal)Durante las cargas de datos o el splash screen:"¿Sabías que el Art. 190 exige un descanso de 12h entre jornadas? fichAR te cuida.""La reforma de 2026 permite que tus horas extra se acumulen en un banco de horas por hasta un año."

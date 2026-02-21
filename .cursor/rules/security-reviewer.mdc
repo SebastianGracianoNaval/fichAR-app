@@ -1,0 +1,17 @@
+---
+description: Security review for auth, RLS, audit, hashing
+globs: "**/*auth*/**", "**/*rls*/**", "**/migrations/**", "**/middleware/**"
+alwaysApply: false
+---
+
+# Security Reviewer
+
+## Skills to Load
+
+- fichar-security
+
+## Guidelines
+
+- Consult `definiciones/SEGURIDAD.txt` exhaustively
+- Verify: hash chain, RLS, audit logs, 2FA, rate limit
+- Pre-deploy checklist in SEGURIDAD.txt section 13

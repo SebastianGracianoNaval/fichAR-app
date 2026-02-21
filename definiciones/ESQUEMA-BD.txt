@@ -1,0 +1,253 @@
+# fichAR — Esquema de Base de Datos
+
+Tablas, FKs, índices, triggers. Escalable: añadir columnas JSONB, tablas nuevas sin romper existentes.
+Referencia: FICHAR-DEFINICION-COMPLETA.txt, ESCALABILIDAD.txt, SEGURIDAD.txt
+
+================================================================================
+1. CONVENCIONES
+================================================================================
+
+- PK: uuid (gen_random_uuid() o default)
+- Timestamps: timestamptz, default now()
+- Soft delete: deleted_at timestamptz nullable
+- Multi-tenant: org_id en toda tabla de datos de org
+- Índices: (org_id, ...) para RLS y queries filtrados
+
+================================================================================
+2. TABLAS CORE
+================================================================================
+
+--- organizations ---
+| columna    | tipo         | notas                    |
+|------------|--------------|--------------------------|
+| id         | uuid PK      |                          |
+| name       | varchar(255) | NOT NULL                 |
+| created_at | timestamptz  | default now()            |
+| updated_at | timestamptz  | default now()            |
+
+--- branches (sucursales, opcional CFG-ORG-001) ---
+| columna    | tipo         | notas                    |
+|------------|--------------|--------------------------|
+| id         | uuid PK      |                          |
+| org_id     | uuid FK      | organizations(id)        |
+| name       | varchar(255) | NOT NULL                 |
+| address    | text         |                          |
+| created_at | timestamptz  |                          |
+
+--- employees ---
+| columna         | tipo         | notas                         |
+|-----------------|--------------|-------------------------------|
+| id              | uuid PK      |                               |
+| org_id          | uuid FK      | organizations(id)             |
+| branch_id       | uuid FK      | branches(id) nullable         |
+| supervisor_id   | uuid FK      | employees(id) nullable        |
+| auth_user_id    | uuid         | Supabase auth.users(id)       |
+| dni             | varchar(20)  | NOT NULL                      |
+| cuil            | varchar(15)  | NOT NULL, unique por org      |
+| name            | varchar(200) | NOT NULL                      |
+| email           | varchar(255) | NOT NULL, unique por org      |
+| role            | varchar(20)  | empleado|supervisor|admin|auditor|legal_auditor |
+| modalidad       | varchar(20)  | presencial|remoto|hibrido|rotativo |
+| status          | varchar(20)  | activo|despedido                   |
+| fecha_ingreso   | date         |                               |
+| fecha_egreso    | date         | nullable                      |
+| custom_attributes | jsonb       | default '{}'                  |
+| created_at      | timestamptz  |                               |
+| updated_at      | timestamptz  |                               |
+
+--- places (lugares de trabajo) ---
+| columna    | tipo         | notas                    |
+|------------|--------------|--------------------------|
+| id         | uuid PK      |                          |
+| org_id     | uuid FK      |                          |
+| branch_id  | uuid FK      | nullable                 |
+| nombre     | varchar(255) | NOT NULL                 |
+| direccion  | text         |                          |
+| lat        | decimal(10,7)| NOT NULL                 |
+| long       | decimal(10,7)| NOT NULL                 |
+| radio_m    | int          | default 100              |
+| dias       | varchar(20)  | L,M,X,J,V,S,D comma-sep  |
+| custom_attributes | jsonb   | default '{}'             |
+| created_at | timestamptz  |                          |
+
+--- employee_places (N:M empleado-lugares) ---
+| columna    | tipo    | notas |
+|------------|---------|-------|
+| employee_id| uuid FK |       |
+| place_id   | uuid FK |       |
+| PRIMARY KEY (employee_id, place_id) |
+
+================================================================================
+3. TABLAS FICHAJE (inalterables)
+================================================================================
+
+--- fichajes ---
+| columna            | tipo         | notas                         |
+|--------------------|--------------|-------------------------------|
+| id                 | uuid PK      |                               |
+| user_id            | uuid FK      | employees(id)                 |
+| org_id             | uuid FK      |                               |
+| tipo               | varchar(10)  | entrada|salida               |
+| timestamp_servidor | timestamptz  | NOT NULL, NTP                 |
+| timestamp_dispositivo | timestamptz | nullable                   |
+| lugar_id           | uuid FK      | places(id) nullable           |
+| lat                | decimal(10,7)| nullable                      |
+| long               | decimal(10,7)| nullable                      |
+| hash_registro      | varchar(64)  | SHA-256 hex                   |
+| hash_anterior_id   | uuid FK      | fichajes(id) nullable         |
+| reemplazado_por_id | uuid FK      | nullable (si corrección)      |
+| idempotency_key    | varchar(64)  | unique, nullable              |
+| created_at         | timestamptz  |                               |
+
+Prohibido: UPDATE, DELETE. Solo INSERT. Corrección = nuevo registro + reemplazado_por_id.
+
+--- Índices fichajes ---
+CREATE INDEX idx_fichajes_user_fecha ON fichajes(user_id, timestamp_servidor);
+CREATE INDEX idx_fichajes_org_fecha ON fichajes(org_id, timestamp_servidor);
+CREATE UNIQUE INDEX idx_fichajes_idempotency ON fichajes(idempotency_key) WHERE idempotency_key IS NOT NULL;
+
+================================================================================
+4. TABLAS LICENCIAS
+================================================================================
+
+--- solicitudes_licencia ---
+| columna     | tipo         | notas                    |
+|-------------|--------------|--------------------------|
+| id          | uuid PK      |                          |
+| employee_id | uuid FK      |                          |
+| org_id      | uuid FK      |                          |
+| tipo        | varchar(50)  | enfermedad, accidente... |
+| fecha_inicio| date         | NOT NULL                 |
+| fecha_fin   | date         | NOT NULL                 |
+| motivo      | text         |                          |
+| estado      | varchar(20)  | pendiente|aprobada|rechazada |
+| aprobado_por| uuid FK      | nullable                 |
+| rechazo_motivo| text        | nullable                 |
+| created_at  | timestamptz  |                          |
+| updated_at  | timestamptz  |                          |
+
+--- licencia_adjuntos ---
+| columna    | tipo    | notas                    |
+|------------|---------|--------------------------|
+| id         | uuid PK |                          |
+| licencia_id| uuid FK |                          |
+| storage_path| varchar | Supabase Storage path    |
+| filename   | varchar |                          |
+| mime_type  | varchar |                          |
+| created_at | timestamptz |                       |
+
+================================================================================
+5. TABLAS AUXILIARES
+================================================================================
+
+--- alertas ---
+| columna     | tipo         | notas                    |
+|-------------|--------------|--------------------------|
+| id          | uuid PK      |                          |
+| org_id      | uuid FK      |                          |
+| employee_id | uuid FK      |                          |
+| tipo        | varchar(50)  | fuera_zona, descanso...  |
+| descripcion | text         |                          |
+| leida       | bool         | default false            |
+| created_at  | timestamptz  |                          |
+
+--- audit_logs (solo INSERT, sin UPDATE/DELETE) ---
+| columna      | tipo    | notas                    |
+|--------------|---------|--------------------------|
+| id           | uuid PK |                          |
+| org_id       | uuid FK | nullable                 |
+| user_id      | uuid FK | nullable                 |
+| timestamp    | timestamptz | NOT NULL              |
+| action       | varchar(80) | NOT NULL              |
+| resource_type| varchar(50) | fichaje, empleado...   |
+| resource_id  | uuid    | nullable                 |
+| details      | jsonb   | default '{}'             |
+| ip           | inet    |                          |
+| user_agent   | text    |                          |
+| device_id    | varchar | nullable                 |
+| severity     | varchar(20) | info|warning|critical  |
+
+--- org_configs (configuraciones CFG-*) ---
+| columna  | tipo    | notas                    |
+|----------|---------|--------------------------|
+| org_id   | uuid FK |                          |
+| key      | varchar(80) | CFG-001, CFG-BH-001... |
+| value    | jsonb   | valor según tipo         |
+| PRIMARY KEY (org_id, key) |
+
+--- org_attribute_definitions (atributos custom) ---
+| columna     | tipo    | notas                    |
+|-------------|---------|--------------------------|
+| id          | uuid PK |                          |
+| org_id      | uuid FK |                          |
+| entity_type | varchar | employee|place|project    |
+| key         | varchar(64) | snake_case            |
+| label       | varchar(100) |                       |
+| data_type   | varchar | string|number|boolean|date|select |
+| required    | bool    | default false            |
+| options     | jsonb   | para select              |
+| created_at  | timestamptz |                      |
+
+--- devices (dispositivos por usuario) ---
+| columna   | tipo    | notas                    |
+|-----------|---------|--------------------------|
+| id        | uuid PK |                          |
+| user_id   | uuid FK | employees(id)            |
+| device_id | varchar | fingerprint único        |
+| name      | varchar | "iPhone 14", etc.        |
+| os        | varchar |                          |
+| last_used | timestamptz |                      |
+| created_at| timestamptz |                      |
+
+================================================================================
+6. TABLAS OPCIONALES (módulos)
+================================================================================
+
+--- clients, projects, tasks (si CFG-PROY-001) ---
+Definir cuando se implemente módulo proyectos. FK a org_id. Ver MODULO-PROYECTOS.txt.
+
+--- reporte_jobs (para exports async) ---
+| columna   | tipo    | notas                    |
+|-----------|---------|--------------------------|
+| id        | uuid PK |                          |
+| org_id    | uuid FK |                          |
+| user_id   | uuid FK |                          |
+| filters   | jsonb   |                          |
+| status    | varchar | pending|processing|done|failed |
+| file_url  | varchar | cuando done              |
+| expires_at| timestamptz | link 24h             |
+| created_at| timestamptz |                      |
+
+================================================================================
+7. TRIGGERS SUGERIDOS
+================================================================================
+
+- updated_at: BEFORE UPDATE SET updated_at = now() en tablas con updated_at
+- RLS: políticas por org_id, ver SEGURIDAD.txt 4.2
+- No triggers en fichajes ni audit_logs (inmutables)
+
+Para añadir trigger: documento en comentario SQL, motivo, tabla afectada.
+
+================================================================================
+8. MIGRACIONES
+================================================================================
+
+- Ubicación: supabase/migrations/
+- Nombre: YYYYMMDDHHMMSS_descripcion.sql
+- Reversibles: incluir DOWN si es posible
+- Orden: 1) crear tabla 2) índices 3) RLS 4) triggers
+
+Para añadir columna: migración ADD COLUMN. No eliminar columnas en producción sin deprecación.
+
+================================================================================
+9. MODIFICAR ESTE DOCUMENTO
+================================================================================
+
+- Nueva tabla: añadir en sección correspondiente (2-6) con mismo formato.
+- Nueva columna: añadir fila en tabla existente.
+- Nuevo índice: añadir en bloque de índices de la tabla.
+- Cambio crítico: documentar en migración y aquí.
+
+================================================================================
+FIN ESQUEMA BD
+================================================================================

@@ -1,0 +1,25 @@
+---
+description: Backend development for fichAR — API, DB, Go, Supabase
+globs: packages/api/**/*, supabase/**/*
+alwaysApply: false
+---
+
+# Backend Developer
+
+## Skills to Load
+
+- fichar-go
+- fichar-supabase
+- fichar-security
+- fichar-postgres
+
+## Guidelines
+
+- Consult `definiciones/ARQUITECTURA-TECNICA.txt` for structure
+- Consult `definiciones/ESQUEMA-BD.txt` for schema
+- Consult `definiciones/SEGURIDAD.txt` for auth, RLS, audit
+- Consult `definiciones/API-CONTRACTS.txt` for endpoints (if exists)
+
+## Golden Rule
+
+Before any change affecting fichaje, schedules, or reports: invoke **fichar-legal-compliance**.

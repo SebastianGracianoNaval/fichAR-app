@@ -1,0 +1,209 @@
+# fichAR — Plan Cronológico de Desarrollo
+
+Plan preciso con puntos de test obligatorios. No avanzar de fase con tests rojos.
+
+================================================================================
+CONVENCIONES
+================================================================================
+[TEST] = Checkpoint obligatorio de tests
+[REVIEW] = Revisión de código/arquitectura
+Duración en semanas laborales (5 días)
+Cada fase termina con: bun test && flutter test && bun run lint && flutter analyze
+
+================================================================================
+FASE 0: SETUP INICIAL (Semana 1)
+================================================================================
+Día 1-2:
+- Crear estructura: apps/mobile, apps/web, packages/api, supabase/
+- Configurar Bun, package.json con scripts
+- Supabase: proyecto, migración inicial (organizations, auth.users)
+- Backend: server básico, health check
+- [TEST] GET /health retorna 200
+
+Día 3:
+- Auth: registro org, registro usuario, login email/password
+- Supabase Auth o implementación propia con JWT
+- [TEST] Crear org → Crear usuario → Login → JWT válido
+- [TEST] Login con credenciales inválidas → 401
+- [TEST] Rate limit en login (5 intentos)
+
+Día 4:
+- Flutter: proyecto base, pantalla Login
+- Integración con API auth
+- [TEST] Login desde app → redirige a dashboard (vacío)
+
+Día 5:
+- RLS básico: org_id en usuarios
+- Documentación: docs/getting-started.md
+- [REVIEW] Estructura lista para fase 1
+
+CHECKPOINT: bun test && flutter test. Cobertura mínima auth.
+
+================================================================================
+FASE 1: CORE FICHAJE (Semanas 2-4)
+================================================================================
+Semana 2:
+- Modelo: fichajes (id, user_id, org_id, tipo, timestamp_servidor, timestamp_dispositivo, lugar_id, lat, long, hash_registro, hash_anterior)
+- Modelo: lugares (id, org_id, branch_id, nombre, direccion, lat, long, radio_m, dias)
+- API: POST /fichaje (validación zona mockeada)
+- Hash chain: función que calcula hash, verifica cadena
+- [TEST] Fichar entrada → registro creado, hash correcto
+- [TEST] Fichar salida → par entrada-salida, horas calculadas
+- [TEST] Fichar segunda entrada sin salida → 400
+
+Semana 3:
+- Geolocalización real (o mock configurable)
+- Validación zona: distancia <= radio + tolerancia
+- Validación descanso 12h
+- [TEST] Fichar fuera de zona → 400, log audit
+- [TEST] Fichar antes de 12h descanso (CFG bloquear) → 400
+- [TEST] Fichar exactamente a las 12h → 200
+- App mobile: Dashboard con botón Fichar, estados
+- [TEST] E2E: Login → Tap Fichar → Ver registro en lista
+
+Semana 4:
+- Modo offline: almacenamiento local cifrado
+- Sync al reconectar
+- Idempotency key en POST /fichaje
+- [TEST] Fichar offline → guarda local → sync → aparece en servidor
+- [TEST] Doble submit con mismo idempotency key → no duplica
+- Corrección de fichaje (flujo Admin con justificación)
+- [TEST] Corrección → nuevo registro, original marcado
+
+CHECKPOINT: Suite completa de fichaje. Cobertura >80% dominio fichaje.
+
+================================================================================
+FASE 2: JERARQUÍA Y EMPLEADOS (Semanas 5-6)
+================================================================================
+Semana 5:
+- Tabla branches (id, org_id, name, address)
+- branch_id, supervisor_id en employees
+- CFG-ORG-001 estructura_sucursales_habilitada
+- CRUD empleados con asignación sucursal/supervisor
+- [TEST] Crear sucursal, asignar empleados
+- [TEST] Supervisor A solo ve empleados asignados
+- [TEST] Admin ve todos
+- Import CSV empleados
+- [TEST] Import 50 empleados → éxito
+- [TEST] Import con email duplicado → error fila, resto OK
+
+Semana 6:
+- Dar de baja empleado (offboarding)
+- Invalidar sesiones al despedir
+- [TEST] Despedir empleado → no puede login
+- [TEST] Empleado despedido en historial, no en activos
+- Pantalla Admin: Empleados, Sucursales (si habilitado)
+- [TEST] Último Admin no puede cambiar su rol
+
+CHECKPOINT: Jerarquía funcionando. Offboarding verificado.
+
+================================================================================
+FASE 3: LICENCIAS Y ALERTAS (Semanas 7-8)
+================================================================================
+Semana 7:
+- Modelo solicitudes_licencia
+- Flujo: crear → pendiente → aprobar/rechazar
+- Adjuntos (Storage), validación tipo obligatorio
+- [TEST] Licencia enfermedad sin adjunto → 400
+- [TEST] Aprobar licencia → estado actualizado, notificación
+- Supervisor: pantalla aprobar licencias
+- [TEST] Supervisor solo ve su equipo
+
+Semana 8:
+- Alertas: fuera zona, descanso insuficiente, banco excedido
+- Notificaciones a Supervisor
+- [TEST] Intentar fichar fuera zona → alerta creada
+- Banco de horas: cálculo, visualización
+- [TEST] Banco se actualiza con fichajes
+
+CHECKPOINT: Licencias y alertas end-to-end.
+
+================================================================================
+FASE 4: REPORTES Y EXPORTACIÓN (Semanas 9-10)
+================================================================================
+Semana 9:
+- Filtros: fecha_desde, fecha_hasta, empleados, sucursal
+- Validación filtros (fechas invertidas, sin empleados)
+- Generación XLSX multi-hoja
+- [TEST] Export con filtros → datos correctos en cada hoja
+- [TEST] Filtro fecha invertida → 400
+- [TEST] Export vacío → mensaje claro
+
+Semana 10:
+- Background job para export >10k filas
+- Email con link descarga (24h)
+- Reportes programados (cron)
+- [TEST] Export 50k filas → async, email recibido
+- [TEST] Límite 500k → error si excede
+
+CHECKPOINT: Exportación con todos los filtros definidos.
+
+================================================================================
+FASE 5: CONFIGURACIONES (Semana 11)
+================================================================================
+- UI Config: todos los CFG en pantalla
+- Paleta A por defecto, selector de paleta
+- Banco horas: vencimiento, límites, FIFO
+- Intercambio jornada: configs, flujo solicitud
+- [TEST] Cambiar CFG → comportamiento actualizado
+- [TEST] Intercambio con max 1/semana → rechaza segundo
+
+CHECKPOINT: 90% configs implementadas y probadas.
+
+================================================================================
+FASE 6: ROL LEGAL Y MÓDULOS (Semanas 12-13)
+================================================================================
+Semana 12:
+- Rol legal_auditor, ruta /legal-audit
+- Pantallas: filtros, preview, export CSV/XLSX
+- Hash de integridad en export
+- [TEST] Auditor solo lectura
+- [TEST] Export incluye hash
+
+Semana 13:
+- Módulo proyectos (si en scope): Cliente, Proyecto, Tarea
+- CFG-PROY-001 desactivable
+- [TEST] Módulo off → no aparece en UI
+
+CHECKPOINT: Rol legal y módulos opcionales.
+
+================================================================================
+FASE 7: PULIDO (Semanas 14-16)
+================================================================================
+Semana 14:
+- Modo low-end: detección, variante UI
+- Optimización: const, keys, ListView.builder
+- [TEST] App en emulador Android 5
+- [TEST] App en emulador iOS 12
+
+Semana 15:
+- E2E completos: Playwright web, Flutter integration_test mobile
+- Documentación: API OpenAPI, guías usuario
+- [TEST] E2E: flujo completo empleado
+- [TEST] E2E: flujo completo admin
+
+Semana 16:
+- Bug fixing, performance
+- Checklist pre-deploy
+- [REVIEW] Código listo para producción
+
+CHECKPOINT FINAL: Todos los tests pasan. Documentación completa.
+
+================================================================================
+RESUMEN DE PUNTOS DE TEST CRÍTICOS
+================================================================================
+- Fase 0: Auth, rate limit
+- Fase 1: Fichaje, hash, zona, descanso, offline, idempotencia
+- Fase 2: Jerarquía, import, offboarding
+- Fase 3: Licencias, alertas, banco horas
+- Fase 4: Filtros export, validaciones, async
+- Fase 5: Configs, intercambio
+- Fase 6: Legal auditor, módulos
+- Fase 7: Low-end, E2E
+
+NUNCA mergear a main con tests rojos.
+CI debe ejecutar: lint, test unitarios, test integración (si aplica).
+
+================================================================================
+FIN PLAN CRONOLÓGICO
+================================================================================

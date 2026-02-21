@@ -1,0 +1,168 @@
+# fichAR — Setup del Programador (Debian 12)
+
+Todo lo necesario para desarrollar fichAR. Instalación en Linux Debian 12.
+
+Referencia: DEFINICION-PROYECTO-FICHAR.md, fichAR-firts-txt.txt
+
+================================================================================
+1. RESUMEN: QUÉ INSTALAR
+================================================================================
+- Git
+- Bun (gestor de paquetes y runtime — recomendado sobre Yarn)
+- Flutter 3.x
+- Go 1.21+
+- Supabase CLI (opcional, para local dev)
+- Docker (opcional, para Postgres local)
+- IDE: VS Code o Cursor con extensiones
+
+================================================================================
+2. BUN vs YARN
+================================================================================
+Recomendación: BUN
+
+Motivos (benchmarks 2024-2025):
+- Bun: ~0.8s install (50 deps) vs Yarn: ~6.8s. Bun ~7-18x más rápido que npm.
+- Bun es runtime + package manager. Compatible con Node.
+- Yarn Berry (PnP) ahorra disco pero Bun gana en velocidad de install.
+- El proyecto especifica Bun (fichAR-firts-txt, recomendación Gemini).
+
+Cuándo usar Yarn:
+- Si el equipo ya tiene ecosistema Yarn establecido
+- Si se prioriza PnP y ahorro de disco sobre velocidad
+- Yarn 4 con PnP es viable para enterprise
+
+Para fichAR: Bun.
+
+================================================================================
+3. INSTALACIÓN EN DEBIAN 12
+================================================================================
+
+--- 3.1 Actualizar sistema ---
+sudo apt update && sudo apt upgrade -y
+
+--- 3.2 Git ---
+sudo apt install git -y
+git config --global user.name "Tu Nombre"
+git config --global user.email "tu@email.com"
+
+--- 3.3 Bun ---
+curl -fsSL https://bun.sh/install | bash
+# Reiniciar terminal o: source ~/.bashrc
+bun --version
+
+--- 3.4 Flutter ---
+# Dependencias
+sudo apt install clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev -y
+
+# Descargar Flutter
+cd ~
+git clone https://github.com/flutter/flutter.git -b stable
+export PATH="$PATH:$HOME/flutter/bin"
+# Añadir a ~/.bashrc: export PATH="$PATH:$HOME/flutter/bin"
+
+flutter doctor
+
+# Aceptar licencias Android si hace falta:
+flutter doctor --android-licenses
+
+# Para desarrollo desktop Linux:
+sudo apt install libssl-dev -y
+
+--- 3.5 Go ---
+wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+# Añadir a ~/.bashrc
+go version
+
+--- 3.6 Supabase CLI (opcional) ---
+# Para desarrollo local con Supabase
+curl -sSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | tar xz
+sudo mv supabase /usr/local/bin/
+supabase --version
+
+--- 3.7 Docker (opcional) ---
+sudo apt install docker.io docker-compose -y
+sudo usermod -aG docker $USER
+# Cerrar sesión y volver a entrar
+
+================================================================================
+4. ESTRUCTURA DEL PROYECTO (cuando exista)
+================================================================================
+fichar-app/
+├── apps/
+│   ├── mobile/     # Flutter
+│   ├── web/        # Flutter Web
+│   └── desktop/    # Tauri o Flutter desktop
+├── packages/
+│   ├── api/        # Go o Node/Bun
+│   └── shared/
+├── definiciones/
+├── supabase/
+└── scripts/
+
+================================================================================
+5. COMANDOS (cuando el proyecto esté creado)
+================================================================================
+
+# Desarrollo
+bun run dev              # Backend
+cd apps/mobile && flutter run   # Mobile
+cd apps/web && flutter run -d chrome   # Web
+
+# Tests
+bun test
+cd apps/mobile && flutter test
+
+# Lint
+bun run lint
+flutter analyze
+
+# Build
+flutter build apk        # Android
+flutter build ios        # iOS
+flutter build web        # Web
+
+================================================================================
+6. VARIABLES DE ENTORNO
+================================================================================
+Crear .env en la raíz (no commitear):
+- SUPABASE_URL
+- SUPABASE_ANON_KEY
+- SUPABASE_SERVICE_ROLE_KEY (solo backend)
+- JWT_SECRET
+- etc.
+
+================================================================================
+7. IDE / CURSOR
+================================================================================
+Extensiones recomendadas:
+- Flutter
+- Dart
+- Go
+- ES Lint (si hay JS/TS)
+- Supabase
+- GitLens
+
+================================================================================
+8. VERIFICACIÓN FINAL
+================================================================================
+bun --version       # 1.x
+flutter --version   # 3.x
+go version          # 1.21+
+git --version
+
+flutter doctor      # Debe pasar todo
+bun install         # En proyecto (cuando exista)
+
+================================================================================
+9. LINKS ÚTILES
+================================================================================
+- Bun: https://bun.sh
+- Flutter: https://docs.flutter.dev
+- Supabase: https://supabase.com/docs
+- Go: https://go.dev/doc
+
+================================================================================
+FIN DOCUMENTO PROGRAMADOR SETUP
+================================================================================

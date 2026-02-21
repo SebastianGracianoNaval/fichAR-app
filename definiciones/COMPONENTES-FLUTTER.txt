@@ -1,0 +1,168 @@
+# fichAR — Componentes Flutter
+
+Estructura de widgets, screens, providers, rutas. Escalable: feature-first, añadir pantallas sin refactor masivo.
+Referencia: FICHAR-DEFINICION-COMPLETA.txt, FRONTEND.txt, PANTALLAS.txt
+
+================================================================================
+1. ESTRUCTURA DE CARPETAS (convención)
+================================================================================
+
+apps/mobile/lib/
+├── main.dart
+├── app.dart                 # MaterialApp, tema, rutas
+├── config/
+│   ├── theme/               # Paletas, AppTheme
+│   ├── routes.dart          # Rutas nombradas
+│   └── constants.dart
+├── core/
+│   ├── api/                 # Cliente HTTP, interceptores
+│   ├── storage/             # Secure storage, offline
+│   └── utils/               # Validators, formatters
+├── features/
+│   ├── auth/
+│   │   ├── screens/
+│   │   ├── widgets/
+│   │   ├── providers/
+│   │   └── models/
+│   ├── dashboard/
+│   ├── fichaje/
+│   ├── licencias/
+│   ├── reportes/
+│   └── admin/
+├── shared/
+│   ├── widgets/             # Botones, inputs, cards reutilizables
+│   ├── layout/              # Scaffold con nav, drawer
+│   └── providers/           # AuthProvider, ThemeProvider
+└── generated/               # código generado (opcional)
+
+Para añadir feature: crear carpeta en features/ con screens, widgets, providers, models.
+
+================================================================================
+2. RUTAS
+================================================================================
+
+Rutas nombradas. Mapa en routes.dart.
+
+| Ruta            | Pantalla   | Rol mínimo | Referencia PANTALLAS |
+|-----------------|------------|------------|----------------------|
+| /login          | Login      | Público    | P-AUTH-01            |
+| /forgot-password| Forgot     | Público    | P-AUTH-02            |
+| /reset-password | Reset      | Público    | P-AUTH-03            |
+| /               | Dashboard  | Empleado   | P-EMP-01             |
+| /mis-horas      | Mis Horas  | Empleado   | P-EMP-02             |
+| /licencias      | Licencias  | Empleado   | P-EMP-03             |
+| /tareas         | Tareas     | Empleado   | P-EMP-04 (si CFG-021)|
+| /perfil         | Perfil     | Empleado   | P-EMP-05             |
+| /equipo         | Mi Equipo  | Supervisor | P-SUP-01             |
+| /licencias/aprobar | Aprobar | Supervisor | P-SUP-02          |
+| /alertas        | Alertas    | Supervisor | P-SUP-03             |
+| /admin          | Panel      | Admin      | P-ADM-01             |
+| /admin/empleados| Empleados  | Admin      | P-ADM-02             |
+| /admin/lugares  | Lugares    | Admin      | P-ADM-03             |
+| /admin/reportes | Reportes   | Admin      | P-ADM-04             |
+| /admin/config   | Config     | Admin      | P-ADM-05             |
+| /admin/logs     | Logs       | Admin      | P-ADM-06             |
+| /admin/sucursales | Sucursales| Admin      | P-ADM-07 (si CFG-ORG)|
+| /legal-audit    | Legal      | Legal_auditor | P-LEGAL-*         |
+
+Guard de ruta: verificar rol antes de navegar. Redirect a / si no autorizado.
+
+================================================================================
+3. WIDGETS COMPARTIDOS
+================================================================================
+
+| Widget           | Uso                        | Props clave                    |
+|------------------|----------------------------|--------------------------------|
+| FicharButton     | Botón principal fichar     | onPressed, enabled, loading, label |
+| BancoHorasBar    | Barra progreso banco       | valor, limite, color           |
+| AppTextField     | Input con label, error     | controller, validator, obscure |
+| AppButton        | Botón estilizado           | label, onPressed, variant      |
+| CardResumen      | Card resumen día/horas     | entrada, salida, horas         |
+| EmptyState       | Estado vacío               | message, icon                  |
+| LoadingOverlay   | Spinner sobre contenido    | visible                        |
+
+Todos en shared/widgets/. Usar tema (Theme.of(context)) para colores.
+
+================================================================================
+4. PROVIDERS (Riverpod sugerido)
+================================================================================
+
+| Provider           | Alcance | Responsabilidad                    |
+|--------------------|---------|------------------------------------|
+| authProvider       | app     | Usuario, token, logout             |
+| themeProvider      | app     | Paleta, modo (light/dark)          |
+| deviceCapability   | app     | lowEnd, hasHaptics, hasAnimations  |
+| fichajeProvider    | feature | Estado fichaje actual, enviar      |
+| licenciasProvider  | feature | Lista, crear, aprobar              |
+| reportesProvider   | feature | Filtros, export, jobs              |
+| configProvider     | app     | CFG cargadas por org               |
+
+Para añadir: crear en feature o shared según alcance. Evitar providers gigantes.
+
+================================================================================
+5. MODOS LOW-END / HIGH-END
+================================================================================
+
+Detección al iniciar (API level, memoria). Guardar en deviceCapability.
+- lowEnd: sin animaciones complejas, geofencing 30s, sin sonidos
+- highEnd: animaciones, haptics, sonidos, geofencing 15s
+
+Widgets condicionales:
+  if (ref.watch(deviceCapabilityProvider).hasAnimations)
+    AnimatedFicharButton(...)
+  else
+    FicharButton(...)
+
+================================================================================
+6. TEMA Y PALETAS
+================================================================================
+
+Extension ThemeData + paleta desde config (CFG-042).
+Colores: primary, secondary, accent, background, error, warning.
+TextTheme: bodyLarge, titleMedium, etc. Consistente en toda la app.
+
+Cambio de paleta: configProvider notifica, ThemeProvider reconstruye.
+
+================================================================================
+7. OFFLINE Y SYNC
+================================================================================
+
+- Fichaje offline: guardar en SQLite local (cifrado). Cola de sync.
+- Al reconectar: syncProvider.sync() envía pendientes en orden.
+- Idempotency: mismo key si reintento. Backend ignora duplicado.
+- UI: indicador "pendiente sync" en Dashboard.
+
+================================================================================
+8. NAVEGACIÓN
+================================================================================
+
+- Mobile: BottomNavigationBar (Dashboard, Mis Horas, Licencias, Perfil) + FAB Fichar.
+- Admin: Drawer o tabs según pantalla.
+- Web: sidebar + contenido. Responsive.
+- Deep links: /reset-password?token=xxx desde email.
+
+================================================================================
+9. DEPENDENCIAS FLUTTER (resumen)
+================================================================================
+
+Ver DEPENDENCIAS.txt para versiones exactas.
+- riverpod o provider
+- go_router o Navigator 2.0
+- dio o http
+- flutter_secure_storage
+- geolocator, geocoding
+- sqflite (offline)
+- shared_preferences (solo no sensible)
+
+================================================================================
+10. MODIFICAR ESTE DOCUMENTO
+================================================================================
+
+- Nueva pantalla: añadir en routes (sección 2), crear carpeta en features/.
+- Nuevo widget compartido: añadir en sección 3.
+- Nuevo provider: añadir en sección 4.
+- Cambio de estructura: documentar migración.
+
+================================================================================
+FIN COMPONENTES FLUTTER
+================================================================================

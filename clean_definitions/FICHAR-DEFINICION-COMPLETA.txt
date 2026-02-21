@@ -1,0 +1,531 @@
+# fichAR — DEFINICIÓN COMPLETA ÚNICA
+
+Documento consolidado que define TODO el proyecto. Sin ambigüedades.
+Referencia única para desarrollo. Actualizar en cada cambio de requisitos.
+
+Versión: 1.0 | Fecha: 2026-02-20
+
+================================================================================
+ÍNDICE
+================================================================================
+1. Visión y contexto
+2. Jerarquía Organización → Sucursal → Supervisor → Empleados
+3. Stack y arquitectura
+4. Roles y permisos (matriz completa)
+5. Pantallas (detalle exhaustivo)
+6. Configuraciones (todas las CFG)
+7. Casos límite y mitigación (CL-001 a CL-043)
+8. Empleado despedido (offboarding)
+9. Exportación y filtros
+10. Seguridad
+11. Frontend (paleta A por defecto)
+12. Escalabilidad, personalización, módulos
+13. Integraciones
+14. Bugs, mitigaciones y skills de auditoría
+15. Plan cronológico con puntos de test
+16. Testing y documentación
+
+================================================================================
+1. VISIÓN Y CONTEXTO
+================================================================================
+fichAR: Sistema de Gestión y Administración de Cumplimiento Laboral para empresas y PyMEs argentinas.
+Filosofía: "Código de Grado Bancario, Interfaz de Grado Humano".
+Contexto 2026: Reforma Laboral, informalidad 40-45%, RIFL, FAL, ARCA.
+Normativa: LCT 20.744, Art. 52, 197 bis, 198, 210, Ley 11.544.
+Compatibilidad: Android API 21+, iOS 12+, Windows 10+, macOS 10.14+, Ubuntu 18.04+.
+
+================================================================================
+2. JERARQUÍA ORGANIZACIÓN → SUCURSAL → SUPERVISOR → EMPLEADOS
+================================================================================
+
+--- 2.1 Estructura ---
+Organización (empresa)
+  └── Sucursal (opcional; una org puede tener 0 o N sucursales)
+        └── Supervisor (asignado a sucursal y/o empleados)
+              └── Empleados (asignados a supervisor y sucursal)
+
+--- 2.2 Reglas ---
+- Org sin sucursales: branch_id nullable, todos en "raíz". Comportamiento como single-location.
+- Org con sucursales: cada empleado pertenece a 0 o 1 sucursal. Lugares de trabajo pertenecen a sucursal.
+- Supervisor: puede estar asignado a una sucursal (ve solo empleados de esa sucursal) o a empleados específicos (independiente de sucursal).
+- Un empleado tiene 0 o 1 supervisor directo.
+- Un supervisor puede tener 0 o N empleados a cargo.
+- Admin ve toda la organización (todas las sucursales).
+- Config por sucursal (opcional): horario, lugar pueden ser por sucursal. Por defecto, config es a nivel org.
+
+--- 2.3 Tablas ---
+organizations (id, name, ...)
+branches (id, org_id, name, address, ...)  -- sucursales
+employees (id, org_id, branch_id, supervisor_id, status, fecha_ingreso, fecha_egreso, ...)
+places (id, org_id, branch_id, nombre, direccion, lat, long, radio_m, dias, ...)
+
+--- 2.4 Flexibilidad ---
+CFG-ORG-001: estructura_sucursales_habilitada (boolean, default false)
+- Si false: branch_id nullable, todos en raíz.
+- Si true: se pueden crear sucursales. Empleados y lugares se asignan a sucursal.
+- Un empleado puede cambiar de sucursal (histórico en audit).
+
+--- 2.5 Reportes por sucursal ---
+Filtro exportación: Todas | Sucursal X | Varias sucursales.
+Supervisor de sucursal A solo ve reportes de sucursal A.
+Admin ve por sucursal o global.
+
+================================================================================
+3. STACK Y ARQUITECTURA
+================================================================================
+Frontend: Flutter 3.x (mobile, web, desktop)
+Backend: Go o Node/Bun
+DB/Auth: Supabase (PostgreSQL, RLS, Auth, Realtime)
+Gestor: Bun
+Desktop: Tauri (recomendado) o Electron
+Integraciones: Webhooks, n8n
+Estructura: apps/mobile, apps/web, packages/api, packages/shared, supabase/
+
+================================================================================
+4. ROLES Y PERMISOS — MATRIZ COMPLETA
+================================================================================
+
+ROLES: Empleado | Supervisor | Admin | Auditor | Legal_auditor (oculto)
+
+--- Autenticación ---
+| Acción                    | Emp | Sup | Admin | Aud | Legal |
+|---------------------------|-----|-----|-------|-----|-------|
+| Login                     | SÍ  | SÍ  | SÍ    | SÍ  | SÍ    |
+| Logout                    | SÍ  | SÍ  | SÍ    | SÍ  | SÍ    |
+| Recuperar contraseña      | SÍ  | SÍ  | SÍ    | SÍ  | SÍ    |
+| Cambiar propia contraseña | SÍ  | SÍ  | SÍ    | SÍ  | SÍ    |
+| Configurar 2FA (propio)   | COND| COND| SÍ    | COND| COND  |
+| Ver/revocar dispositivos  | SÍ  | SÍ  | SÍ    | SÍ  | SÍ    |
+
+--- Fichaje propio ---
+| Acción              | Emp | Sup | Admin | Aud | Legal |
+|---------------------|-----|-----|-------|-----|-------|
+| Fichar entrada/salida | SÍ | SÍ  | SÍ    | NO  | NO    |
+| Ver propios fichajes | SÍ  | SÍ  | SÍ    | NO  | NO    |
+
+--- Licencias propias ---
+| Acción                    | Emp | Sup | Admin | Aud | Legal |
+|---------------------------|-----|-----|-------|-----|-------|
+| Crear solicitud           | SÍ  | SÍ  | SÍ    | NO  | NO    |
+| Ver propias solicitudes   | SÍ  | SÍ  | SÍ    | NO  | NO    |
+| Cancelar/editar pendiente | SÍ  | SÍ  | SÍ    | NO  | NO    |
+
+--- Licencias de otros (aprobación) ---
+| Acción                    | Emp | Sup | Admin | Aud | Legal |
+|---------------------------|-----|-----|-------|-----|-------|
+| Ver solicitudes equipo    | NO  | SÍ  | SÍ    | NO  | NO    |
+| Aprobar/rechazar          | NO  | COND| SÍ    | NO  | NO    |
+
+--- Equipo ---
+| Acción                    | Emp | Sup | Admin | Aud | Legal |
+|---------------------------|-----|-----|-------|-----|-------|
+| Ver lista equipo          | NO  | SÍ  | SÍ    | NO  | NO    |
+| Ver estado fichaje equipo | NO  | SÍ  | SÍ    | NO  | NO    |
+
+--- Empleados (Admin) ---
+| Acción                    | Emp | Sup | Admin | Aud | Legal |
+|---------------------------|-----|-----|-------|-----|-------|
+| Crear/editar/baja         | NO  | NO  | SÍ    | NO  | NO    |
+| Importar Excel/CSV        | NO  | NO  | SÍ    | NO  | NO    |
+| Asignar rol/sucursal      | NO  | NO  | SÍ    | NO  | NO    |
+
+--- Reportes ---
+| Acción                    | Emp | Sup | Admin | Aud | Legal |
+|---------------------------|-----|-----|-------|-----|-------|
+| Ver/descargar (scope)     | NO  | COND| SÍ    | NO  | SÍ*   |
+
+* Legal_auditor: solo export para peritaje, solo lectura.
+Supervisor: solo su equipo (o sucursal si aplica).
+
+--- Configuración ---
+| Acción                    | Emp | Sup | Admin | Aud | Legal |
+|---------------------------|-----|-----|-------|-----|-------|
+| Ver/modificar config org  | NO  | NO  | SÍ    | NO  | NO    |
+
+--- Logs ---
+| Acción                    | Emp | Sup | Admin | Aud | Legal |
+|---------------------------|-----|-----|-------|-----|-------|
+| Ver logs                  | NO  | NO  | SÍ    | SÍ  | SÍ    |
+| Editar/borrar logs        | NO  | NO  | NO    | NO  | NO    |
+
+--- Legal Auditor (oculto) ---
+- URL: /legal-audit. No en menú normal.
+- Lectura TOTAL: fichajes, logs, licencias, empleados, config.
+- Sin crear/editar/eliminar nada.
+- Export con hash integridad.
+
+================================================================================
+5. PANTALLAS — DETALLE EXHAUSTIVO
+================================================================================
+
+--- P-AUTH-01: Login ---
+Ruta: /login. Rol: Público.
+Campos: email, contraseña, recordar sesión, código 2FA (si aplica).
+Estados: loading, error, success, empty.
+Acciones: Iniciar sesión; Olvidé contraseña → P-AUTH-02; Iniciar con Google (si config).
+Mensajes error: "Email o contraseña incorrectos." (no revelar cuál); "Cuenta bloqueada. Intenta en X min."
+
+--- P-AUTH-02: Recuperar contraseña ---
+Ruta: /forgot-password.
+Campo: email. Acción: Enviar enlace. No revelar si email existe.
+
+--- P-AUTH-03: Reset contraseña ---
+Ruta: /reset-password?token=XXX.
+Campos: nueva contraseña, confirmar. Validación: mín 8, 1 mayúsc, 1 núm, 1 especial.
+
+--- P-EMP-01: Dashboard ---
+Ruta: /. Rol: Empleado.
+Botón "FICHAR": grande, verde, texto "Fichar entrada" | "Fichar salida".
+Estados botón: habilitado_entrada, habilitado_salida, deshabilitado_fuera_zona, deshabilitado_descanso, deshabilitado_sin_permiso, loading.
+Barra banco horas. Resumen día (entrada, salida, horas). Accesos: Mis Horas, Licencias, Tareas, Perfil.
+
+--- P-EMP-02: Mis Horas ---
+Ruta: /mis-horas.
+Secciones: Banco actual, historial fichajes (tabla: Fecha, Entrada, Salida, Horas, Lugar), horas extras.
+Paginación: 20 por página. Filtros: mes, rango fechas.
+
+--- P-EMP-03: Licencias ---
+Ruta: /licencias.
+Formulario: tipo, fecha inicio, fecha fin, motivo, adjunto (obligatorio si enfermedad/accidente).
+Tipos: enfermedad, accidente, matrimonio, maternidad, paternidad, duelo, estudio, otro.
+Estados: Pendiente, Aprobada, Rechazada.
+
+--- P-EMP-04: Tareas ---
+Ruta: /tareas. Solo si CFG-021=true.
+Lista tareas. Registrar horas por tarea (horas, fecha). Validar <= horas fichadas.
+
+--- P-EMP-05: Perfil ---
+Ruta: /perfil.
+Campos: nombre, email, CUIL (solo lectura). Editable: preferencias notif. Lista dispositivos con Revocar.
+
+--- P-SUP-01: Mi Equipo ---
+Ruta: /equipo. Rol: Supervisor.
+Lista empleados a cargo: Nombre | Estado (entrada/salida/no fichó) | Último fichaje | Ver detalle.
+
+--- P-SUP-02: Aprobar licencias ---
+Ruta: /licencias/aprobar.
+Cola pendientes. Por cada una: Empleado | Tipo | Fechas | Adjunto | Aprobar | Rechazar (motivo obligatorio).
+
+--- P-SUP-03: Alertas ---
+Ruta: /alertas.
+Tipos: fuera_zona, descanso_insuficiente, banco_excedido, semana_incompleta, semana_excedida.
+Filtros: tipo, empleado, fecha.
+
+--- P-ADM-01: Panel Control ---
+Ruta: /admin.
+KPIs: Total empleados, Fichados hoy, Alertas pendientes, Licencias pendientes.
+Gráficos: Horas por día, Presentismo.
+
+--- P-ADM-02: Empleados ---
+Ruta: /admin/empleados.
+Acciones: Crear, Editar, Importar Excel/CSV, Crear batch 50+.
+Campos: DNI, CUIL, Nombre, Email, Rol, Lugar(es), Modalidad, Sucursal, Supervisor.
+
+--- P-ADM-03: Lugares ---
+Ruta: /admin/lugares.
+Campos: Nombre, Dirección, Lat/Long, Radio m, Días (L,M,X,J,V,S,D). Sucursal si aplica.
+Importar Excel/CSV.
+
+--- P-ADM-04: Reportes ---
+Ruta: /admin/reportes.
+Tipos: Presentismo, Banco horas, Horas trabajadas, Alertas fatiga, Días sin trabajar.
+Filtros: período, empleados, sucursal, formato. Descargar. Reportes programados.
+
+--- P-ADM-05: Configuración ---
+Ruta: /admin/config.
+Todas las CFG en UI. Toggles, selects, inputs.
+
+--- P-ADM-06: Logs ---
+Ruta: /admin/logs.
+Tabla: Timestamp | Usuario | Acción | IP | Dispositivo | Detalle.
+Filtros: fecha, usuario, tipo. Solo lectura Auditor. Inmutable.
+
+--- P-ADM-07: Sucursales ---
+Ruta: /admin/sucursales. Solo si CFG-ORG-001=true.
+CRUD sucursales. Asignar empleados/lugares.
+
+--- P-LEGAL-01 a P-LEGAL-04: Legal Audit ---
+Ruta: /legal-audit. Rol: legal_auditor.
+Dashboard extracción, filtros, preview, export CSV/XLSX, hash integridad, logs, cadena hashes.
+
+================================================================================
+6. CONFIGURACIONES — LISTA EXHAUSTIVA
+================================================================================
+
+--- Plataforma ---
+CFG-001 app_mobile_habilitada: boolean, default true
+CFG-002 app_desktop_habilitada: boolean, default true
+CFG-003 app_web_habilitada: boolean, default true
+CFG-004 dispositivos_maximos: 1|2|3|5|10|-1, default 3
+
+--- Fichaje/Geoloc ---
+CFG-005 geolocalizacion_obligatoria: boolean, default true
+CFG-006 geolocalizacion_radio_default: 50-500, default 100 (m)
+CFG-007 tolerancia_gps_metros: 0-50, default 10
+CFG-008 fichaje_fuera_zona_notificar: boolean, default true
+CFG-009 modo_offline_habilitado: boolean, default true
+CFG-NET-001 sync_preferir_wifi: boolean, default true (diferir sync hasta WiFi)
+
+--- Jornada/Descansos ---
+CFG-010 descanso_minimo_horas: 10|11|12, default 12
+CFG-011 descanso_bloquear_o_advertir: bloquear|advertir_permitir, default bloquear
+CFG-012 descanso_semanal_horas: 35, default 35
+CFG-013 excepcion_turnos_rotativos: boolean, default false
+
+--- Banco horas ---
+CFG-014 banco_horas_habilitado: boolean, default true
+CFG-015 banco_horas_limite_mensual: 0|8|16|24|40, default 24
+CFG-016 banco_horas_alertar_supervisor: boolean, default true
+
+--- Licencias ---
+CFG-017 licencias_adjunto_obligatorio: boolean, default true
+CFG-018 licencias_tipos_permitidos: json array, default ["enfermedad","accidente",...]
+CFG-019 licencias_ocr_habilitado: boolean, default false
+CFG-020 licencias_aprobador: supervisor|admin|ambos, default supervisor
+
+--- Tareas ---
+CFG-021 tareas_habilitado: boolean, default false
+CFG-022 notificacion_que_hiciste_hoy: boolean, default false
+CFG-023 notificacion_hora: time "18:00", default 18:00
+
+--- Auth/Sesiones ---
+CFG-024 sesion_duracion_minutos: 30|60|120|180|480, default 180
+CFG-025 mfa_obligatorio_admin: boolean, default true
+CFG-026 mfa_opcional_empleados: boolean, default true
+CFG-027 biometria_habilitada: boolean, default true
+
+--- Reportes ---
+CFG-028 reportes_formato_default: xlsx|csv, default xlsx
+CFG-029 reportes_programados_habilitado: boolean, default false
+CFG-030 reportes_programados_frecuencia: mensual|quincenal|semanal
+CFG-031 reportes_programados_dia: 1-28, default 3
+CFG-032 reportes_programados_tipos: json array
+CFG-033 reportes_programados_emails: string (lista emails)
+
+--- Integraciones ---
+CFG-034 webhooks_habilitado: boolean, default false
+CFG-035 webhooks_url: string URL
+CFG-036 arca_sync_habilitado: boolean, default false
+
+--- Auditoría ---
+CFG-037 logs_retencion_dias: 365|1825|3650, default 3650
+CFG-038 auditor_rol_habilitado: boolean, default false
+
+--- UX ---
+CFG-039 sabias_que_frecuencia: siempre|una_vez_dia|una_vez_semana|nunca, default una_vez_dia
+CFG-040 timezone_organizacion: IANA "America/Argentina/Buenos_Aires"
+CFG-041 idioma_default: es|en, default es
+
+--- Paleta (default: Profesional) ---
+CFG-042 org_color_palette: profesional|fresco|neutro|custom
+CFG-043 org_color_primary: hex (si custom)
+CFG-044 org_color_secondary: hex (si custom)
+
+--- Banco horas extra ---
+CFG-BH-001 banco_horas_vencimiento_meses: 0|3|6|12, default 12
+CFG-BH-002 banco_horas_consumo_orden: fifo|lifo|acordado, default fifo
+CFG-BH-003 banco_horas_permitir_negativo: boolean, default false
+
+--- Intercambio jornada ---
+CFG-LIM-001 intercambio_jornada_habilitado: boolean, default true
+CFG-LIM-002 intercambio_max_veces_semana: 0|1|2|3|-1, default 1
+CFG-LIM-003 intercambio_jornada_max_horas_dia: number, default 10
+CFG-LIM-004 intercambio_jornada_min_horas_dia: number, default 4
+CFG-LIM-005 intercambio_requiere_aprobacion: automatico|supervisor|admin, default supervisor
+CFG-LIM-006 intercambio_antelacion_minima_horas: number, default 24
+CFG-LIM-007 alerta_semanal_48h: boolean, default true
+CFG-LIM-008 alerta_descanso_12h: boolean, default true
+
+--- Módulo proyectos ---
+CFG-PROY-001 modulo_proyectos_habilitado: boolean, default false
+CFG-PROY-002 timesheet_requiere_100_asignado: boolean, default false
+
+--- Mensajes ---
+CFG-MSG-001 mensaje_bienvenida: string max 500
+CFG-MSG-002 mensaje_fichaje_exitoso: string max 200, default "¡Listo! Fichaste [entrada/salida]."
+
+--- Organización ---
+CFG-ORG-001 estructura_sucursales_habilitada: boolean, default false
+
+================================================================================
+7. CASOS LÍMITE (CL-001 a CL-043)
+================================================================================
+
+CL-001: Fichaje fuera zona → Botón deshabilitado. "Estás fuera de tu zona..." Log + notif Supervisor.
+CL-002: Lugar no asignado para ese día → Permitir si remoto y en cualquier lugar org; rechazar si config estricta.
+CL-003: GPS deshabilitado → "Activa la ubicación para poder fichar."
+CL-004: GPS impreciso (>50m) → "Esperá un momento, mejorando precisión..." timeout 30s.
+CL-005: Zona límite (dentro tolerancia) → PERMITIR.
+CL-006: Dos entradas seguidas → Backend rechaza 400. Debounce 5s frontend.
+CL-007: Descanso <12h → Bloquear o advertir según CFG-011. Mensaje con horas restantes.
+CL-008: Descanso exacto 12h → PERMITIR.
+CL-009: Turno rotativo excepción → Si CFG-013 y descanso_especial config: permitir según convenio.
+CL-010: Fichaje offline → Guardar local cifrado. Sync al reconectar. Timestamps dispositivo + servidor.
+CL-011: Offline prolongado → Sync orden cronológico. Conflictos: más antiguo gana, otro "conflicto".
+CL-012: Offline con CFG-009=false → "Sin conexión. Conectate para fichar."
+CL-013: Dispositivo nuevo (límite) → "Alcanzaste límite. Revocá uno o solicitá a Admin."
+CL-014: Primer login dispositivo nuevo → Email notificación.
+CL-015: Sesión expirada → Redirigir login. "Tu sesión expiró por inactividad."
+CL-016: Licencia sin adjunto (obligatorio) → "Para enfermedad/accidente debés adjuntar certificado."
+CL-017: Adjunto formato no permitido → "Solo PDF, JPG, PNG hasta 5 MB."
+CL-018: Solapamiento licencias → "Las fechas se superponen con licencia del X al Y."
+CL-019: Aprobar sin ver adjunto → Permitir. Advertencia "¿Revisaste el certificado?" checkbox.
+CL-020: Admin editar fichaje → NO directo. Solo corrección con justificación, nuevo registro, original marcado.
+CL-021: Borrar fichaje → NUNCA. Solo soft-delete Admin con motivo.
+CL-022: Manipulación hash → Servidor calcula hash. Cliente no puede. Cadena rompe si modificación directa.
+CL-023: Dispositivo poca memoria → Modo low-end automático.
+CL-024: Batería baja → Reducir geofencing. No bloquear fichaje manual.
+CL-025: Doble click Fichar → Debounce 300ms. Idempotency key. Segundo request no duplica.
+CL-026: Import email duplicado → Error fila. Continuar resto. Resumen final.
+CL-027: Import CUIL inválido → Rechazar fila.
+CL-028: Lugar coordenadas inválidas → Validar lat[-90,90], long[-180,180]. Geocoding si falla.
+CL-029: Licencia futuro >1 año → "Las fechas no pueden superar 1 año desde hoy."
+CL-030: Timesheet horas > fichadas → "Las horas registradas superan las trabajadas."
+CL-031: Empleado a ruta Admin → 403. "No tenés permiso."
+CL-032: Auditor intenta modificar → 403.
+CL-033: Rate limit login → 5 intentos/5min → bloqueo 15min. Mensaje genérico.
+CL-034: JWT expirado → 401. Frontend redirige login.
+CL-035: Webhook falla → Retry 3x backoff. No bloquear flujo. Log.
+CL-036: Export >10k filas → Background. Email con link 24h. Límite 500k.
+CL-037: Empleado despedido intenta fichar → 403. "Tu cuenta fue desactivada."
+CL-038: Empleado despedido intenta login → Auth falla. Mensaje genérico.
+CL-039: Eliminar sucursal con empleados → Rechazar. "Reasignalos antes." O soft-delete.
+CL-040: Supervisor despedido con equipo → Requerir reasignación empleados antes de confirmar.
+CL-041: Filtro fechas invertidas → "La fecha desde debe ser anterior a la hasta."
+CL-042: Export sin empleados seleccionados → "Seleccioná al menos un empleado o 'Todos'."
+CL-043: Último Admin cambiar rol → Rechazar. "Debe haber al menos un administrador."
+
+================================================================================
+8. EMPLEADO DESPEDIDO (OFFBOARDING)
+================================================================================
+
+Acción "Dar de baja": fecha_egreso obligatorio, motivo opcional.
+Confirmación: "¿Desactivar cuenta de [nombre]? No podrá acceder. Datos se conservan."
+Al confirmar: status=despedido, invalidar TODAS sesiones, revocar dispositivos.
+No eliminar datos históricos. Log: empleado_despedido.
+
+Restricciones: No login, no fichar, no licencias. No en listas activos. Sí en reportes históricos.
+Admin puede filtrar "ver despedidos". Legal_auditor ve todo para peritaje.
+
+Reingreso: Opción "Reactivar" → status=activo, fecha_reingreso. Mantener historial.
+
+================================================================================
+9. EXPORTACIÓN Y FILTROS (OBLIGATORIOS)
+================================================================================
+
+| Filtro | Tipo | Obligatorio | Validación |
+|--------|------|-------------|------------|
+| fecha_desde | date | Sí | No futura |
+| fecha_hasta | date | Sí | >= fecha_desde |
+| empleados | multiselect | Condicional | Si "por empleados": al menos 1 |
+| sucursal | select | No | Todas | Sucursal X | Varias |
+| formato | select | Sí | xlsx | csv |
+| incluir_columnas_custom | boolean | No | default true |
+
+Filtros por tipo: Presentismo + período; Banco + fecha corte; Licencias + estado; Alertas + tipo; Logs + usuario.
+Comportamiento: Sin fecha → no permitir. Fechas invertidas → rechazar. Empleados activo sin selección → rechazar.
+Rango máximo default 2 años. >10k filas → background + email.
+
+Estructura XLSX: Fichajes | Resumen_por_empleado | Licencias | Alertas | Banco_horas | Metadatos.
+
+================================================================================
+10. SEGURIDAD
+================================================================================
+
+Requisitos legales para juicios: ver VALIDEZ-PROBATORIA-JUICIOS-ARGENTINA.txt.
+
+Cadena hashes: SHA-256, timestamp servidor, hash_registro, hash_anterior. No UPDATE fichajes. Corrección = nuevo registro.
+Auth: bcrypt/Argon2id. 2FA obligatorio Admin. JWT exp corto + refresh. Rate limit 5 intentos/5min.
+RLS: org_id, branch_id en políticas. Auditor solo SELECT audit_logs.
+Audit logs: Solo INSERT. Sin UPDATE/DELETE. Retención CFG-037.
+Cifrado: HTTPS obligatorio. DB cifrada. Offline local cifrado.
+Headers: X-Content-Type-Options, X-Frame-Options, CSP, Referrer-Policy.
+Idempotency: Fichaje con idempotency key.
+Checklist pre-deploy: env, HTTPS, RLS, audit, rate limit, 2FA Admin, backups, CORS.
+
+================================================================================
+11. FRONTEND — PALETA A (PROFESIONAL) POR DEFECTO
+================================================================================
+
+Nombre: "Profesional"
+Primario:   #1E3A5F (azul oscuro)
+Secundario: #4A90D9 (azul medio)
+Acento:     #00C853 (verde éxito)
+Fondo:      #F5F7FA (gris muy claro)
+Texto:      #1A1A2E (casi negro)
+Error:      #D32F2F
+Advertencia:#FF9800
+
+Look: Botones grandes redondeados, botón Fichar 56px min, feedback <100ms, tipografía sistema.
+Modos: low-end (API<24, mem<2GB) sin animaciones complejas; high-end con animaciones, haptics, sonidos.
+Prioridad velocidad. 60 FPS target.
+
+================================================================================
+12. ESCALABILIDAD, PERSONALIZACIÓN, MÓDULOS
+================================================================================
+
+Atributos custom: JSONB custom_attributes en employees. org_attribute_definitions (entity_type, key, label, data_type).
+GET /schema para formularios dinámicos. Máx 50 atributos por entity_type.
+Módulo proyectos: CFG-PROY-001. Cliente→Proyecto→Tarea. Desactivable. Reporte Horas_por_proyecto.
+Personalización: Banco horas vencimiento, FIFO/LIFO, negativo. Intercambio jornada configs. Licencias max días por tipo.
+Documentos acuerdo: "Descargar acuerdo PDF" con términos (opcional Fase 2).
+
+================================================================================
+13. INTEGRACIONES
+================================================================================
+
+Import empleados: Excel/CSV. Columnas dni, cuil, nombre, email, rol, modalidad, lugar_1, dias_presencial, dias_remoto. UTF-8, Latin1. Límite 1000 filas.
+Import lugares: nombre, direccion, lat, long, radio_m, dias. Geocoding si sin coords.
+Export: XLSX multi-hoja, CSV. Nombre fichar_report_[tipo]_[fecha].xlsx.
+Webhooks: HTTPS, evento, payload JSON, X-Signature HMAC. Eventos: fichaje.creado, licencia.*, empleado.*, alerta.generada. Retry 3x.
+ARCA: Futuro. Altas/bajas. No bloquear si no disponible.
+API integración: GET /integrations/fichajes. API Key. Rate 100 req/min.
+Límites: Import empleados 1000, lugares 200, reporte 500k, adjunto 5MB.
+
+================================================================================
+14. BUGS, MITIGACIONES Y SKILLS
+================================================================================
+
+fichar-bug-audit: Auditar bug, hipótesis causa, archivos afectados, pasos repro, sugerencia fix.
+fichar-bug-fix: Fix mínimo, test que repro y verifica. Usar tras hipótesis confirmada.
+fichar-regression-check: Lista áreas afectadas por fix, tests a ejecutar. Antes de merge.
+
+Errores comunes:
+| Error | Causa | Acción |
+|-------|-------|--------|
+| Fichaje duplicado | Doble click | Idempotency key |
+| "Fuera zona" erróneo | GPS impreciso | Aumentar tolerancia |
+| Session expired | Timeout | Guardar draft, renovar |
+| Export vacío | Filtros excluyen | Validar, mensaje claro |
+| 403 inesperado | RLS/rol | Log, verificar org_id |
+
+================================================================================
+15. PLAN CRONOLÓGICO
+================================================================================
+
+Plan detallado día a día: ver PLAN-CRONOLOGICO-DESARROLLO.txt en esta carpeta.
+
+Resumen:
+Fase 1 (S2-4): Fichaje, hash, zona, descanso, offline, [TEST] E2E fichar
+Fase 2 (S5-6): Jerarquía, empleados, offboarding, [TEST] import, despedir
+Fase 3 (S7-8): Licencias, alertas, banco, [TEST] aprobar licencia
+Fase 4 (S9-10): Reportes, filtros, export async, [TEST] filtros, >10k
+Fase 5 (S11): Configs, paleta, [TEST] cambiar config
+Fase 6 (S12-13): Legal auditor, proyectos, [TEST] export hash
+Fase 7 (S14-16): Low-end, E2E, docs, [TEST] E2E completo
+
+Checkpoint: bun test && flutter test. No avanzar con tests rojos.
+
+================================================================================
+16. TESTING Y DOCUMENTACIÓN
+================================================================================
+
+Pirámide: unitarios (base), integración, E2E (cima).
+Comandos: bun test, flutter test, bun run test:integration, bun run test:e2e, bun run lint, flutter analyze.
+Cobertura: >80% dominio crítico.
+Docs: docs/architecture, docs/api (OpenAPI), docs/guides, docs/user, CHANGELOG.
+Actualizar en cada PR. Si test falla: ¿test o código? Arreglar según corresponda.
+
+================================================================================
+FIN DEFINICIÓN COMPLETA — NADA SIN DEFINIR
+================================================================================

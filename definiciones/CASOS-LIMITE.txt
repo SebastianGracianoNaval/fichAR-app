@@ -1,0 +1,324 @@
+# fichAR — Casos Límite (Edge Cases)
+
+Comportamiento exacto para cada situación excepcional.
+Sin ambigüedades. El código debe implementar exactamente lo aquí definido.
+
+Referencia: DEFINICION-PROYECTO-FICHAR.md, CONFIGURACIONES.txt
+
+================================================================================
+CONVENCIONES
+================================================================================
+- ID: Identificador único (ej. CL-001)
+- Precondiciones: Estado del sistema antes del caso
+- Acción: Qué hace el usuario o el sistema
+- Comportamiento esperado: Qué debe ocurrir
+- Mensaje usuario: Texto exacto a mostrar
+- Log: Qué se registra en auditoría
+- Config relacionada: IDs de CONFIGURACIONES.txt
+
+================================================================================
+1. FICHAJE Y GEOLOCALIZACIÓN
+================================================================================
+
+--- CL-001: Fichaje fuera de zona (día presencial) ---
+ID: CL-001
+Precondiciones: Empleado tiene modalidad presencial o híbrida. Hoy es día presencial. Empleado está en ubicación NO definida como lugar de trabajo (distancia > radio + tolerancia).
+Acción: Empleado intenta tocar botón "Fichar".
+Comportamiento esperado: Botón deshabilitado. No se registra fichaje.
+Mensaje usuario: "Estás fuera de tu zona de trabajo. Acercate a tu lugar asignado para fichar."
+Log: CREAR registro en tabla audit: evento "fichaje_rechazado_fuera_zona", user_id, timestamp, lat, long, lugar_esperado.
+Notificación: Si CFG-008=true, notificar a Supervisor.
+Config: CFG-005 (geoloc obligatoria), CFG-006, CFG-007, CFG-008.
+
+--- CL-002: Fichaje en lugar no asignado para ese día ---
+ID: CL-002
+Precondiciones: Empleado híbrido. Hoy es jueves (día remoto). Empleado está en oficina (lugar presencial). Oficina no está en sus lugares asignados para jueves.
+Acción: Empleado intenta fichar desde oficina un jueves.
+Comportamiento esperado: Depende de configuración. Por defecto: Si el lugar "oficina" existe y el empleado tiene asignado "remoto" para jueves, el sistema puede (a) permitir si está en cualquier lugar de la org, o (b) rechazar. DEFINIR: Opción (a) - permitir fichar desde cualquier lugar de la organización en día remoto. Si está en oficina y tiene remoto, PERMITIR (es más flexible). Si tiene "solo domicilio" para remoto y está en otro lado, RECHAZAR.
+Mensaje si rechazo: "Este lugar no está asignado para hoy. Tu modalidad para hoy es: remoto en [dirección]."
+Config: Lugares con días asignados.
+
+--- CL-003: GPS deshabilitado ---
+ID: CL-003
+Precondiciones: CFG-005=true. Empleado abre app con GPS desactivado.
+Acción: Empleado intenta fichar.
+Comportamiento esperado: Botón deshabilitado. Mensaje: "Activa la ubicación para poder fichar."
+Botón secundario: "Configurar" → abre configuración de ubicación del SO.
+Log: No registrar intento (no hay coords).
+
+--- CL-004: GPS impreciso (precisión > 50m) ---
+ID: CL-004
+Precondiciones: GPS devuelve precisión mala (ej. accuracy > 50m en Android).
+Acción: Empleado intenta fichar.
+Comportamiento esperado: Si precisión > 50m: Mostrar mensaje "Esperá un momento, mejorando la precisión de tu ubicación..." con spinner. Reintentar cada 2 segundos hasta precisión <= 50m o timeout 30 segundos. Si timeout: "No pudimos obtener tu ubicación con precisión. Intentá acercarte a una ventana o salir."
+Log: Si finalmente ficha, registrar precision_m en el registro.
+Config: CFG-007 (tolerancia).
+
+--- CL-005: Empleado en zona límite (dentro de tolerancia) ---
+ID: CL-005
+Precondiciones: Distancia = radio + tolerancia - 1m. Ej: radio 100, tolerancia 10, distancia 109m.
+Acción: Empleado intenta fichar.
+Comportamiento esperado: PERMITIR. Considerar en zona.
+Sin mensaje especial. Fichaje normal.
+
+--- CL-006: Dos fichajes de entrada consecutivos (error usuario) ---
+ID: CL-006
+Precondiciones: Empleado ya fichó entrada hoy. No fichó salida.
+Acción: Empleado toca "Fichar" de nuevo (esperando que sea salida pero el botón dice "Fichar salida").
+Comportamiento esperado: El botón debe decir "Fichar salida" cuando ya fichó entrada. Si por bug toca dos veces entrada: El segundo click en menos de 5 segundos se ignora (debounce). Si pasaron > 5 segundos y el estado mostrado es "entrada", el botón es "salida". NO debe ser posible dos entradas seguidas. Validación en backend: si último evento es entrada y no hay salida, próximo debe ser salida.
+Log: Si se intenta enviar entrada cuando ya hay entrada sin salida, rechazar con 400. Log: "intento_fichaje_duplicado_entrada".
+
+================================================================================
+2. DESCANSOS
+================================================================================
+
+--- CL-007: Descanso insuficiente (menos de 12h) ---
+ID: CL-007
+Precondiciones: Empleado fichó salida ayer a las 22:00. Son las 07:00. Pasaron 9 horas. CFG-010=12, CFG-011=bloquear.
+Acción: Empleado intenta fichar entrada.
+Comportamiento esperado: Botón deshabilitado. Mensaje: "Debés esperar 3 horas más para cumplir el descanso mínimo de 12 horas (Art. 198 LCT). Tu última salida fue a las 22:00."
+Log: fichaje_rechazado_descanso_insuficiente, user_id, horas_transcurridas, horas_requeridas.
+Notificación: Si CFG-011=advertir_permitir y usuario confirma, alerta a Supervisor.
+Config: CFG-010, CFG-011.
+
+--- CL-008: Descanso exactamente 12h ---
+ID: CL-008
+Precondiciones: Salida 22:00, intento de entrada 10:00. Pasaron 12h exactas.
+Acción: Empleado intenta fichar entrada.
+Comportamiento esperado: PERMITIR. 12:00 >= 12:00.
+
+--- CL-009: Turno rotativo con excepción ---
+ID: CL-009
+Precondiciones: CFG-013=true. Empleado tiene modalidad "turno rotativo" y convenio permite descanso 10h.
+Acción: Empleado intenta fichar entrada tras 10h de descanso.
+Comportamiento esperado: Requiere que el empleado tenga un campo "descanso_minimo_especial" configurado (por convenio). Si está configurado a 10, PERMITIR. Si no, aplicar 12h estándar.
+Config: CFG-013.
+
+================================================================================
+3. OFFLINE Y SINCRONIZACIÓN
+================================================================================
+
+--- CL-010: Fichaje offline ---
+ID: CL-010
+Precondiciones: CFG-009=true. Sin conexión a internet. Empleado en zona (GPS funciona offline en muchos dispositivos).
+Acción: Empleado intenta fichar.
+Comportamiento esperado: Registrar localmente con timestamp del dispositivo. Cifrar en almacenamiento local. Mostrar "Fichaje registrado. Se sincronizará cuando haya conexión." Icono de "pendiente sync" en la app.
+Al recuperar conexión: Enviar al servidor. El servidor asigna timestamp de recepción. Para validez legal: usar timestamp del dispositivo como "timestamp_reportado" y timestamp servidor como "timestamp_registro". Ambos se guardan. En disputas, el empleador puede argumentar que el dispositivo pudo ser manipulado; el empleado que el servidor confirma recepción. Definición: Prioridad al timestamp del dispositivo si la diferencia es < 5 minutos. Si > 5 minutos, marcar para revisión manual.
+Log: Incluir device_timestamp y server_timestamp en registro.
+Config: CFG-009.
+
+--- CL-011: Offline prolongado (varios días) ---
+ID: CL-011
+Precondiciones: Empleado sin conexión 5 días. Tiene 5 fichajes pendientes de sync.
+Acción: Empleado recupera conexión.
+Comportamiento esperado: Sincronizar en orden cronológico. Si hay conflicto (ej. servidor tiene un fichaje del mismo día que se registró por otro medio): El más antiguo por device_timestamp gana. El otro se marca como "duplicado" o "conflicto" y requiere revisión Admin.
+Mensaje al usuario: "Se sincronizaron 5 fichajes. Revisá que todo esté correcto en Mis Horas."
+Config: CFG-009.
+
+--- CL-012: Offline con CFG-009=false ---
+ID: CL-012
+Precondiciones: CFG-009=false. Sin conexión.
+Acción: Empleado intenta fichar.
+Comportamiento esperado: Botón deshabilitado. Mensaje: "Sin conexión. Conectate a internet para fichar."
+
+================================================================================
+4. DISPOSITIVOS Y SESIONES
+================================================================================
+
+--- CL-013: Logueo en dispositivo nuevo (límite alcanzado) ---
+ID: CL-013
+Precondiciones: Empleado tiene CFG-004=3 dispositivos. Ya tiene 3 dispositivos registrados. Intenta loguearse en un 4to.
+Acción: Empleado ingresa email/contraseña en dispositivo nuevo.
+Comportamiento esperado: Tras auth OK, mostrar pantalla: "Alcanzaste el límite de 3 dispositivos. Revocá uno desde [Perfil > Dispositivos] en otro dispositivo, o solicitá que un administrador lo autorice." Opciones: "Revocar dispositivo" (envía email con link para revocar desde web) | "Solicitar a Admin" (notifica Admin para que autorice excepcionalmente). Mientras tanto, NO dar sesión en el 4to dispositivo.
+Log: intento_login_dispositivo_extra, user_id, device_info.
+
+--- CL-014: Cambio de dispositivo (validación extra) ---
+ID: CL-014
+Precondiciones: Empleado nunca usó este dispositivo. Primer login desde este device.
+Acción: Login exitoso.
+Comportamiento esperado: Si es primer login desde dispositivo nuevo: Enviar email "Nuevo inicio de sesión desde [dispositivo, ubicación aproximada]". Si 2FA está activo, ya pasó. Opcional: Para cuentas Admin, requerir confirmación por email antes de dar sesión completa en dispositivo nuevo (configurable).
+Log: nuevo_dispositivo_registrado, user_id, device_id, ip, user_agent.
+
+--- CL-015: Sesión expirada durante uso ---
+ID: CL-015
+Precondiciones: Sesión activa. CFG-024=180. Han pasado 181 minutos sin actividad.
+Acción: Usuario realiza cualquier acción.
+Comportamiento esperado: Redirigir a Login. Mensaje: "Tu sesión expiró por inactividad. Volvé a iniciar sesión." Preservar la URL de destino para redirigir tras login exitoso.
+Si estaba escribiendo un formulario: Perder datos (mostrar advertencia antes si es posible detectar inactividad próxima; ej. "Tu sesión expira en 2 minutos. ¿Continuar?" con botón para renovar).
+
+================================================================================
+5. LICENCIAS
+================================================================================
+
+--- CL-016: Licencia sin adjunto cuando es obligatorio ---
+ID: CL-016
+Precondiciones: CFG-017=true. Tipo = enfermedad.
+Acción: Empleado envía solicitud sin adjuntar archivo.
+Comportamiento esperado: Validación en frontend y backend. No crear solicitud. Mensaje: "Para licencias por enfermedad o accidente debés adjuntar el certificado médico."
+Config: CFG-017.
+
+--- CL-017: Adjunto con formato no permitido ---
+ID: CL-017
+Precondiciones: Tipos permitidos: PDF, JPG, PNG. Max 5MB.
+Acción: Empleado sube archivo .docx o archivo de 8MB.
+Comportamiento esperado: Rechazar. "Solo se permiten archivos PDF, JPG o PNG de hasta 5 MB."
+Log: No necesario (error de usuario).
+
+--- CL-018: Solapamiento de licencias ---
+ID: CL-018
+Precondiciones: Empleado tiene licencia aprobada del 1 al 5. Intenta solicitar otra del 4 al 10.
+Acción: Empleado envía nueva solicitud.
+Comportamiento esperado: Validación: fechas no deben solaparse con licencias existentes (pendientes o aprobadas). Si solapa: "Las fechas se superponen con una licencia existente (del X al Y). Ajustá el período o contactá a tu supervisor."
+Permitir solapamiento si la existente está "rechazada".
+
+--- CL-019: Aprobar licencia sin ver adjunto ---
+ID: CL-019
+Precondiciones: Solicitud tiene adjunto. Supervisor intenta aprobar sin abrir el adjunto.
+Comportamiento esperado: PERMITIR. El sistema no puede forzar a que el Supervisor abra el archivo. Pero: Mostrar advertencia "¿Revisaste el certificado adjunto?" con checkbox "Confirmo que revisé el adjunto" antes del botón Aprobar. Opcional: marcar en log que Supervisor aprobó "sin descargar" para auditoría.
+Log: licencia_aprobada, approver_id, solicitud_id, adjunto_revisado: true/false (si se implementa el checkbox).
+
+================================================================================
+6. EDICIÓN Y MANIPULACIÓN
+================================================================================
+
+--- CL-020: Admin intenta editar fichaje pasado ---
+ID: CL-020
+Precondiciones: Existe fichaje de hace 2 días. Admin quiere "corregir" una hora.
+Acción: Admin intenta modificar el registro directamente.
+Comportamiento esperado: NO permitir edición directa de registros de fichaje. Solo permitir "corrección" mediante un flujo especial: (1) Admin crea "corrección" con justificación obligatoria. (2) Se inserta un NUEVO registro que referencia al original y lo "reemplaza" lógicamente para reportes. (3) El registro original permanece intacto pero marcado como "corregido_por_id=X". (4) La cadena de hashes se actualiza: el nuevo registro tiene hash que incluye el anterior. Cualquier auditor puede ver que hubo corrección y por quién.
+Log: correccion_fichaje, admin_id, fichaje_original_id, justificacion, nuevo_valor.
+Config: Seguridad. Siempre aplicable.
+
+--- CL-021: Intento de borrar fichaje ---
+ID: CL-021
+Precondiciones: Cualquiera.
+Acción: Cualquier rol intenta eliminar un fichaje.
+Comportamiento esperado: NUNCA eliminar físicamente. Solo soft-delete con motivo obligatorio para Admin. El registro queda con deleted_at y deleted_by. No aparece en vistas normales pero sí en auditoría.
+Log: fichaje_soft_delete, admin_id, fichaje_id, motivo.
+
+--- CL-022: Manipulación de hash ---
+ID: CL-022
+Precondiciones: Atacante intenta modificar un registro y recalcular el hash para que la cadena siga siendo válida.
+Acción: Cualquier modificación no autorizada en la base.
+Comportamiento esperado: Los hashes se calculan con un secreto del servidor. El cliente no puede generarlos. Cualquier inserción/actualización de fichajes pasa por API que calcula el hash. No hay endpoint que permita pasar un hash arbitrario. La verificación de cadena es server-side. Si alguien modifica la DB directamente, la cadena se rompe y el Auditor lo detecta.
+
+================================================================================
+7. PERFORMANCE Y DISPOSITIVOS ANTIGUOS
+================================================================================
+
+--- CL-023: Dispositivo con poca memoria ---
+ID: CL-023
+Precondiciones: Android 5 con 1GB RAM. App en modo "low-end" (detección por API level o memoria).
+Acción: Usuario abre app.
+Comportamiento esperado: Cargar versión ligera: sin animaciones pesadas, geofencing con polling menos frecuente (cada 30s en lugar de 10s), sin preload de imágenes innecesarias. Mantener funcionalidad core.
+Config: Detección automática. No configurable por usuario.
+
+--- CL-024: Batería baja ---
+ID: CL-024
+Precondiciones: Batería < 15%.
+Acción: Background sync o geofencing.
+Comportamiento esperado: Reducir frecuencia de geofencing. No despertar el dispositivo tan a menudo. Priorizar que el usuario pueda fichar manualmente al abrir la app. No bloquear funcionalidad por batería.
+
+--- CL-025: Múltiples solicitudes simultáneas ---
+ID: CL-025
+Precondiciones: Usuario hace doble-click en "Fichar".
+Acción: Se envían 2 requests al servidor.
+Comportamiento esperado: Debounce en frontend (300ms). Si aun así llegan 2 requests: Backend debe ser idempotente. Usar idempotency key (ej. user_id + date + tipo_entrada_salida + timestamp_aproximado). El segundo request con mismo key retorna éxito pero no crea duplicado.
+Log: Si se detecta duplicado, log "request_duplicado_ignorado".
+
+================================================================================
+8. DATOS Y VALIDACIONES
+================================================================================
+
+--- CL-026: Importar empleados con email duplicado ---
+ID: CL-026
+Precondiciones: CSV tiene 2 filas con mismo email.
+Acción: Admin importa CSV.
+Comportamiento esperado: Primera fila se procesa. Segunda: Error en fila X: "Email duplicado: xxx@mail.com". Continuar con el resto. Al final: Resumen "Importados: N. Errores: M" con detalle de filas con error.
+Log: import_empleados, total_filas, exitosos, fallidos, detalles.
+
+--- CL-027: Importar empleados con CUIL inválido ---
+ID: CL-027
+Precondiciones: CUIL en CSV no pasa validación (dígito verificador).
+Acción: Admin importa.
+Comportamiento esperado: Rechazar fila. "Fila X: CUIL inválido." No crear empleado.
+Validación CUIL: algoritmo estándar Argentina (módulo 11).
+
+--- CL-028: Lugar de trabajo con coordenadas inválidas ---
+ID: CL-028
+Precondiciones: Admin ingresa lat=999 o dirección que no geocodea.
+Acción: Guardar lugar.
+Comportamiento esperado: Validar lat en [-90, 90], long en [-180, 180]. Si dirección: Intentar geocoding. Si falla: "No pudimos ubicar esa dirección. Ingresá coordenadas manualmente."
+Si coordenadas manuales fuera de rango: Rechazar.
+
+--- CL-029: Fecha de licencia en el futuro lejano ---
+ID: CL-029
+Precondiciones: Empleado solicita licencia del 1/1/2027 al 15/1/2027 (hoy es feb 2026).
+Acción: Enviar solicitud.
+Comportamiento esperado: Permitir hasta 1 año en el futuro. Si más: "Las fechas de licencia no pueden superar 1 año desde hoy."
+Config: Constante o configurable. Default 365 días.
+
+--- CL-030: Horas en timesheet que superan jornada ---
+ID: CL-030
+Precondiciones: Empleado trabajó 8h según fichajes. Intenta registrar 10h en tarea A.
+Acción: Guardar timesheet.
+Comportamiento esperado: Validación: suma de horas por tarea en un día no puede superar horas fichadas ese día + margen (ej. 10%). Si fichó 8h, máximo 8.8h en tareas. Si excede: "Las horas registradas (10) superan tus horas trabajadas ese día (8). Ajustá el valor."
+Advertencia si está muy cercano (ej. 7.5h fichadas, 7.5h en tareas) para detectar posible error.
+
+================================================================================
+9. SEGURIDAD
+================================================================================
+
+--- CL-031: Empleado intenta acceder a ruta Admin ---
+ID: CL-031
+Precondiciones: Empleado (rol Empleado) conoce URL /admin/empleados.
+Acción: Navega directamente.
+Comportamiento esperado: 403 Forbidden. Mensaje: "No tenés permiso para acceder a esta sección." Redirigir a Dashboard.
+Log: acceso_denegado, user_id, ruta, rol.
+No revelar que la ruta existe (opcional: mismo mensaje que 404 para rutas Admin; evaluar balance seguridad vs UX).
+
+--- CL-032: Auditor intenta modificar algo ---
+ID: CL-032
+Precondiciones: Usuario con rol Auditor.
+Acción: Cualquier intento de POST/PUT/DELETE (excepto quizás cambio de propia contraseña).
+Comportamiento esperado: 403. Auditor solo puede GET en rutas de lectura. No hay formularios de edición para Auditor.
+Log: auditor_intento_escritura, user_id, accion.
+
+--- CL-033: Rate limiting en login ---
+ID: CL-033
+Precondiciones: 10 intentos fallidos de login en 5 minutos desde misma IP.
+Acción: Intento 11.
+Comportamiento esperado: 429 Too Many Requests. Mensaje genérico: "Demasiados intentos. Intentá en 15 minutos." Bloquear IP temporalmente (15 min) para esa ruta.
+Log: rate_limit_login, ip, intentos.
+No revelar si el email existe. Mismo mensaje para usuario inexistente o contraseña incorrecta.
+
+--- CL-034: Token JWT expirado ---
+ID: CL-034
+Precondiciones: Usuario hace request con token expirado.
+Acción: Cualquier request autenticado.
+Comportamiento esperado: 401 Unauthorized. Response: { "error": "token_expired" }. Frontend redirige a Login con mensaje "Tu sesión expiró."
+No intentar refresh si el refresh token también expiró. Si refresh válido, renovar transparentemente (si está implementado refresh rotation).
+
+================================================================================
+10. INTEGRACIONES
+================================================================================
+
+--- CL-035: Webhook falla (URL no responde) ---
+ID: CL-035
+Precondiciones: CFG-034=true. Evento fichaje dispara webhook. URL responde 500 o timeout.
+Acción: Sistema intenta enviar payload.
+Comportamiento esperado: Reintentar hasta 3 veces con backoff exponencial (1min, 2min, 4min). Si falla: Marcar evento como "webhook_fallido". Log. Notificar a Admin por email si hay muchos fallos (ej. > 10 en 1h). No bloquear el flujo principal: el fichaje ya se registró.
+Almacenar payload fallido para retry manual o inspección.
+Config: CFG-034, CFG-035.
+
+--- CL-036: Exportación Excel con muchos registros ---
+ID: CL-036
+Precondiciones: Admin solicita reporte de 2 años para 200 empleados. ~100k filas.
+Acción: Descargar reporte.
+Comportamiento esperado: Procesar en background. Mostrar "Generando reporte... Te notificaremos cuando esté listo." Enviar email con link de descarga cuando termine (válido 24h). Límite: 500k filas. Si excede: "El reporte supera el límite. Reducí el período o la cantidad de empleados."
+Timeout en request: 30s. Si no termina, pasar a async.
+Config: Límite configurable. Default 500k.
+
+================================================================================
+FIN DOCUMENTO CASOS LÍMITE
+================================================================================

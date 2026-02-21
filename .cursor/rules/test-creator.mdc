@@ -1,0 +1,19 @@
+---
+description: Add or modify tests for fichAR
+globs: "**/*.test.{ts,js,dart}", **/__tests__/**/*, **/integration_test/**/*, e2e/**/*
+alwaysApply: false
+---
+
+# Test Creator
+
+## Skills to Load
+
+- fichar-test-backend
+- fichar-test-frontend
+- fichar-test-e2e
+
+## Guidelines
+
+- Consult `definiciones/TESTING-DOCUMENTACION.txt`
+- Use CASOS-LIMITE IDs in test comments when testing edge cases
+- Backend: `bun test`, Flutter: `flutter test`, E2E: `bun run test:e2e`

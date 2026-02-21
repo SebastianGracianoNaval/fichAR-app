@@ -1,0 +1,287 @@
+# fichAR — Especificación Exhaustiva de Integraciones
+
+Adaptable a TODO tipo de proyectos: viejos, actuales, ERPs, sistemas legacy.
+Formatos, protocolos, adaptadores. Sin ambigüedades.
+
+Referencia: DEFINICION-PROYECTO-FICHAR.md
+
+================================================================================
+1. PRINCIPIOS
+================================================================================
+1.1 Desarrollo mínimo: Las integraciones deben requerir el menor código posible.
+1.2 Adaptadores: Abstraer formatos externos; el core de fichAR no conoce Jira, SAP, etc.
+1.3 Webhooks primero: Eventos push; el consumidor recibe y procesa.
+1.4 Legacy-friendly: Soportar CSV, Excel viejos, encoding latin1, etc.
+1.5 Versionado: APIs versionadas (/v1/, /v2/). No romper contratos.
+
+================================================================================
+2. IMPORTACIÓN DE EMPLEADOS
+================================================================================
+
+--- 2.1 Formato Excel (.xlsx) ---
+Columnas obligatorias (headers en fila 1):
+| Columna    | Tipo   | Obligatorio | Ejemplo        | Validación                    |
+|------------|--------|-------------|----------------|-------------------------------|
+| dni        | string | Sí          | 20123456       | 7-8 dígitos                  |
+| cuil       | string | Sí          | 20-20123456-9  | Formato XX-XXXXXXXX-X, dígito verif |
+| nombre     | string | Sí          | Juan Pérez     | No vacío, max 200             |
+| email      | string | Sí          | juan@mail.com  | Email válido, único en org    |
+| rol        | string | Sí          | empleado       | empleado | supervisor                   |
+| modalidad  | string | Sí          | presencial     | presencial | remoto | hibrido | rotativo |
+| lugar_1    | string | Condicional | Oficina Centro | Nombre de lugar existente     |
+| lugar_2    | string | No          | Sucursal Norte | Idem                          |
+| dias_presencial | string | Condicional | L,M,X | Para híbrido: L,M,X,J,V,S,D comma-sep |
+| dias_remoto     | string | Condicional | J,V    | Idem                          |
+
+Columnas opcionales:
+| Columna    | Tipo   | Ejemplo        |
+|------------|--------|----------------|
+| direccion  | string | Av. Corrientes 1234 |
+| telefono   | string | +54 11 1234-5678 |
+| fecha_ingreso | date | 2025-01-15 |
+| observaciones | string | |
+
+Encoding: UTF-8. Si el archivo viene en Latin1 (common en Argentina), detectar BOM y convertir.
+Límite: 1000 filas por importación. Si más, dividir en múltiples archivos o usar API.
+
+--- 2.2 Formato CSV ---
+Mismo esquema que Excel. Separador: coma (,) o punto y coma (;) para compatibilidad con Excel argentino.
+Quote: comillas dobles para campos con coma.
+Header: Obligatorio en primera fila.
+Ejemplo:
+```
+dni,cuil,nombre,email,rol,modalidad,lugar_1,dias_presencial,dias_remoto
+20123456,20-20123456-9,Juan Pérez,juan@mail.com,empleado,hibrido,Oficina Centro,"L,M,X","J,V"
+```
+
+--- 2.3 Encoding ---
+Soportar: UTF-8, UTF-8 BOM, Latin1 (ISO-8859-1), Windows-1252.
+Detectar por BOM o por sampling. Si hay caracteres raros (ñ, acentos), intentar Latin1 si UTF-8 falla.
+
+--- 2.4 Validación en importación ---
+- Por fila: Si una fila falla, registrar error pero continuar con el resto.
+- Resumen final: "Importados: 45. Errores: 3" con detalle de filas (número de fila, motivo).
+- Empleados válidos se crean. Los erróneos no. No rollback total; parcial.
+- Si email duplicado: Error "Email ya existe: xxx@mail.com". Ver CASOS-LIMITE CL-026, CL-027.
+
+================================================================================
+3. IMPORTACIÓN DE LUGARES DE TRABAJO
+================================================================================
+
+--- 3.1 Formato Excel/CSV ---
+| Columna   | Tipo   | Obligatorio | Ejemplo            | Validación           |
+|-----------|--------|-------------|--------------------|----------------------|
+| nombre    | string | Sí          | Oficina Centro     | Único en org         |
+| direccion | string | Sí          | Av. Corrientes 100 |                      |
+| lat       | number | No*         | -34.6037           | -90 a 90             |
+| long      | number | No*         | -58.3816           | -180 a 180           |
+| radio_m   | number | Sí          | 100                | 50 a 500             |
+| dias      | string | Sí          | L,M,X,J,V          | L,M,X,J,V,S,D sep por coma |
+
+* Si no hay lat/long, geocodificar dirección. Si falla geocoding, error.
+Geocoding: Usar servicio (Google, OpenStreetMap Nominatim, etc.). Rate limit respetar.
+
+--- 3.2 Múltiples ubicaciones por lugar ---
+Algunos "lugares" pueden ser un radio alrededor de varias direcciones (ej. repartidores).
+Formato extendido:
+| nombre | tipo | direccion_1 | lat_1 | long_1 | radio_1 | direccion_2 | ... |
+tipo: single | multiple
+Para multiple: radio aplica a cada punto. Empleado está "en zona" si está dentro de cualquier punto.
+
+================================================================================
+4. EXPORTACIÓN / REPORTES
+================================================================================
+
+--- 4.1 Formato Excel (reportes) ---
+- Librería: xlsx (SheetJS) o similar.
+- Hoja 1: Datos con headers.
+- Estilo: Headers en negrita, filtros automáticos si > 100 filas.
+- Columnas según tipo de reporte (ver definición de cada reporte).
+- Nombre archivo: fichar_report_[tipo]_[fecha].xlsx
+- Encoding: UTF-8.
+
+--- 4.2 Formato CSV (export) ---
+- Separador: coma.
+- Quote campos con coma o salto de línea.
+- Header en primera fila.
+- BOM UTF-8 para Excel en Windows.
+
+--- 4.3 Tipos de reporte y columnas ---
+
+Reporte Presentismo:
+| empleado | email | dias_periodo | dias_trabajados | dias_ausente | dias_licencia | indice_presentismo |
+indice_presentismo = dias_trabajados / dias_periodo * 100
+
+Reporte Banco de Horas:
+| empleado | email | banco_actual_h | limite_h | riesgo | ultima_actualizacion |
+
+Reporte Horas Trabajadas:
+| empleado | email | fecha | entrada | salida | horas | lugar |
+
+Reporte Alertas Fatiga:
+| empleado | fecha | tipo_alerta | descripcion | horas_descanso |
+
+Reporte Días sin Trabajar:
+| empleado | fecha | motivo | dias |
+
+================================================================================
+5. WEBHOOKS
+================================================================================
+
+--- 5.1 Configuración ---
+- URL: HTTPS obligatorio. Validar que responda 2xx en test.
+- Secret: Opcional. Si se configura, se firma el payload con HMAC-SHA256.
+- Eventos: Seleccionables (fichaje_creado, licencia_aprobada, etc.).
+
+--- 5.2 Payload ---
+Content-Type: application/json
+Headers:
+  X-Fichar-Event: [tipo_evento]
+  X-Fichar-Delivery: [uuid único]
+  X-Fichar-Timestamp: [ISO 8601]
+  X-Signature: [si secret configurado] = HMAC-SHA256(body, secret) en hex
+
+Body (ejemplo fichaje_creado):
+```json
+{
+  "event": "fichaje.creado",
+  "timestamp": "2026-02-20T10:30:00Z",
+  "data": {
+    "id": "uuid",
+    "user_id": "uuid",
+    "org_id": "uuid",
+    "tipo": "entrada",
+    "timestamp_servidor": "2026-02-20T10:30:00Z",
+    "lugar_id": "uuid",
+    "lugar_nombre": "Oficina Centro"
+  }
+}
+```
+
+--- 5.3 Eventos disponibles ---
+| Evento            | Cuándo                          |
+|-------------------|----------------------------------|
+| fichaje.creado    | Tras registrar entrada o salida  |
+| licencia.creada   | Nueva solicitud                  |
+| licencia.aprobada | Supervisor/Admin aprueba         |
+| licencia.rechazada| Supervisor/Admin rechaza         |
+| empleado.creado   | Nuevo empleado                   |
+| empleado.importado| Importación batch                |
+| alerta.generada   | Nueva alerta (fuera zona, etc.)  |
+
+--- 5.4 Retry ---
+Ver CASOS-LIMITE CL-035. 3 reintentos, backoff 1-2-4 min.
+Marcar fallido si todos fallan. No bloquear flujo principal.
+
+--- 5.5 Verificación del consumidor ---
+El consumidor puede verificar X-Signature:
+  computed = HMAC_SHA256(raw_body, secret)
+  if (computed != header_value) reject
+
+================================================================================
+6. ARCA (futuro)
+================================================================================
+
+--- 6.1 Objetivo ---
+Sincronizar altas/bajas de empleados con ARCA cuando exista API pública.
+Hoy ARCA tiene servicios web; ver documentación oficial.
+
+--- 6.2 Datos a sincronizar ---
+- Alta: CUIL, fecha ingreso, categoría, actividad, etc.
+- Baja: CUIL, fecha egreso, motivo.
+- No bloquear fichAR si ARCA no está disponible; modo offline para este flujo.
+
+--- 6.3 Autenticación ARCA ---
+- Clave fiscal nivel 3 o superior.
+- Token/certificado según normativa ARCA.
+- Credenciales en env. Rotar según política ARCA.
+
+================================================================================
+7. n8n / ZAPIER / AUTOMATIZACIÓN
+================================================================================
+
+--- 7.1 Estrategia ---
+fichAR no implementa conectores nativos. Los flujos se arman así:
+1. Webhooks: fichAR envía evento → n8n recibe → trigger de flujo.
+2. API REST: n8n puede llamar a fichAR API (con API key de integración) para leer datos.
+3. Zapier: Si Zapier tiene "Webhooks by Zapier", configurar webhook de fichAR como trigger.
+
+--- 7.2 API de integración ---
+Para que n8n/Zapier/otros consuman datos:
+- Endpoint: GET /api/v1/integrations/fichajes?desde=&hasta=
+- Auth: API Key en header X-Api-Key.
+- Rate limit: 100 req/min por API key.
+- Scope: Solo lectura. Las escrituras se hacen por UI o importación.
+
+--- 7.3 API Key ---
+- Admin genera API key en Configuración.
+- Se muestra una sola vez al crear. Guardar en lugar seguro.
+- Rotar periódicamente.
+- Permisos: read_fichajes, read_empleados, read_reportes (scopes configurables).
+
+================================================================================
+8. ADAPTADORES PARA LEGACY
+================================================================================
+
+--- 8.1 ERP antiguo (archivos planos) ---
+Si un ERP exporta empleados en formato propietario:
+- Crear adaptador que lea ese formato y genere CSV en formato fichAR.
+- Script en scripts/adapters/erp_x_to_fichar.ts
+- Documentar formato de entrada.
+- Ejemplo: ERP exporta TXT con ancho fijo. Adapter parsea y genera CSV.
+
+--- 8.2 Sistemas con API SOAP ---
+- Crear cliente SOAP que mapee a modelo fichAR.
+- No modificar core; adapter en capa de integración.
+- Timeout generoso (SOAP suele ser lento).
+
+--- 8.3 Excel con hojas múltiples ---
+- Algunos sistemas exportan "Empleados" en hoja 1, "Lugares" en hoja 2.
+- Soportar: Primera hoja por defecto. O selector "Hoja: Empleados".
+- Nombres de hojas en español e inglés.
+
+--- 8.4 Fechas en formatos variados ---
+- dd/MM/yyyy (Argentina)
+- yyyy-MM-dd (ISO)
+- dd-MM-yyyy
+- MM/dd/yyyy (evitar confusión; preguntar o configurar locale)
+Auto-detectar: Si mes > 12, es dd/MM. Si no, intentar por separador y orden común en Argentina.
+
+================================================================================
+9. PROTOCOLOS Y ESTÁNDARES
+================================================================================
+
+--- 9.1 REST API ---
+- JSON.
+- Verbos: GET, POST, PUT, PATCH, DELETE según recurso.
+- Códigos: 200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 429 Too Many Requests, 500 Error.
+- Paginación: ?page=1&limit=20. Response: { data, meta: { total, page, limit } }.
+
+--- 9.2 WebSockets (Realtime) ---
+- Para notificaciones en tiempo real (Supabase Realtime).
+- Canal por org: org_[org_id]. Eventos: fichaje, alerta, licencia.
+- Auth: JWT en conexión.
+
+--- 9.3 Webhook signature (detalle) ---
+Algoritmo: HMAC-SHA256
+Input: raw request body (string)
+Key: webhook secret
+Output: hex digest
+Header: X-Signature: sha256=abc123...
+
+================================================================================
+10. LÍMITES Y CUOTAS
+================================================================================
+
+| Recurso           | Límite                    |
+|-------------------|---------------------------|
+| Import empleados  | 1000 filas/archivo        |
+| Import lugares    | 200 filas/archivo         |
+| Reporte export    | 500k filas                |
+| Webhook payload   | 1 MB                      |
+| API key requests  | 100/min                   |
+| Archivo adjunto   | 5 MB (licencias)          |
+
+================================================================================
+FIN DOCUMENTO INTEGRACIONES
+================================================================================

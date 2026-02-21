@@ -1,0 +1,13 @@
+{
+  "name": "@fichar/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "start": "bun run src/index.ts",
+    "build": "bun build src/index.ts --outdir=dist",
+    "test": "bun test",
+    "lint": "eslint src/"
+  }
+}
