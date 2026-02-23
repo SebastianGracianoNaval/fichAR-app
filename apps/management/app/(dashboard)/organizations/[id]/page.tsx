@@ -1,8 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,43 +13,74 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ArrowLeft, Building2, Mail, Users } from "lucide-react";
+import { getOrganizationByIdAction } from "../actions";
+import type { OrganizationDetail } from "@/lib/api/management";
 
-const MOCK_ORGS: Record<string, { name: string; employees: number; adminEmail: string; createdAt: string }> = {
-  "1": {
-    name: "Acme Corp",
-    employees: 45,
-    adminEmail: "admin@acme.com",
-    createdAt: "2025-01-15",
-  },
-  "2": {
-    name: "TechStart SA",
-    employees: 12,
-    adminEmail: "contacto@techstart.com",
-    createdAt: "2025-02-01",
-  },
-  "3": {
-    name: "Logística Norte",
-    employees: 78,
-    adminEmail: "admin@logisticanorte.com",
-    createdAt: "2025-02-10",
-  },
-  "4": {
-    name: "Consultora Verde",
-    employees: 8,
-    adminEmail: "info@consultoraverde.com",
-    createdAt: "2025-02-18",
-  },
-  "5": {
-    name: "Industrias del Sur",
-    employees: 156,
-    adminEmail: "rrhh@industriasdelsur.com",
-    createdAt: "2025-02-20",
-  },
-};
+function formatDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("es-AR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  } catch {
+    return iso;
+  }
+}
 
 export default function OrganizationDetailPage() {
   const params = useParams<{ id: string }>();
-  const org = params?.id ? MOCK_ORGS[params.id] : null;
+  const id = params?.id ?? "";
+  const [org, setOrg] = useState<OrganizationDetail | null | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) {
+      setOrg(null);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    getOrganizationByIdAction(id).then((result) => {
+      if (cancelled) return;
+      setLoading(false);
+      if (result.ok) {
+        setOrg(result.data);
+      } else {
+        setOrg(null);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-10 w-32 animate-pulse rounded bg-muted" />
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 animate-pulse rounded-xl bg-muted" />
+                <div className="space-y-2">
+                  <div className="h-6 w-40 animate-pulse rounded bg-muted" />
+                  <div className="h-4 w-48 animate-pulse rounded bg-muted" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="h-4 w-full animate-pulse rounded bg-muted" />
+              <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (!org) {
     return (
@@ -65,7 +97,7 @@ export default function OrganizationDetailPage() {
         </Button>
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            Organización no encontrada
+            Organizacion no encontrada
           </CardContent>
         </Card>
       </motion.div>
@@ -97,7 +129,7 @@ export default function OrganizationDetailPage() {
               </div>
               <div>
                 <CardTitle className="text-xl">{org.name}</CardTitle>
-                <CardDescription>Detalle de la organización</CardDescription>
+                <CardDescription>Detalle de la organizacion</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -105,15 +137,17 @@ export default function OrganizationDetailPage() {
             <div className="flex items-center gap-3 text-sm">
               <Users className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">Empleados:</span>
-              <span className="font-medium">{org.employees}</span>
+              <span className="font-medium">{org.employee_count}</span>
             </div>
-            <div className="flex items-center gap-3 text-sm">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Admin:</span>
-              <span className="font-medium">{org.adminEmail}</span>
-            </div>
+            {org.admin_email && (
+              <div className="flex items-center gap-3 text-sm">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Admin:</span>
+                <span className="font-medium">{org.admin_email}</span>
+              </div>
+            )}
             <div className="pt-2 text-sm text-muted-foreground">
-              Alta: {org.createdAt}
+              Alta: {formatDate(org.created_at)}
             </div>
           </CardContent>
         </Card>
@@ -122,15 +156,15 @@ export default function OrganizationDetailPage() {
           <CardHeader>
             <CardTitle>Acciones</CardTitle>
             <CardDescription>
-              Operaciones disponibles para esta organización
+              Operaciones disponibles para esta organizacion
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             <Button variant="outline" className="w-full justify-start" disabled>
-              Ver empleados (próximamente)
+              Ver empleados (proximamente)
             </Button>
             <Button variant="outline" className="w-full justify-start" disabled>
-              Configuración (próximamente)
+              Configuracion (proximamente)
             </Button>
           </CardContent>
         </Card>

@@ -2,6 +2,33 @@
 
 API para fichar-management. Las organizaciones se crean exclusivamente desde este panel.
 
+## GET /api/v1/management/stats
+
+Metricas agregadas para el dashboard.
+
+### Request
+
+- **Method:** GET
+- **Headers:** `Authorization: Bearer <key>` o `X-API-Key: <key>`
+
+### Response 200
+
+```json
+{
+  "organization_count": number,
+  "employee_count": number
+}
+```
+
+### Errores
+
+| Status | Causa |
+|--------|-------|
+| 403 | Key invalida o ausente |
+| 503 | MANAGEMENT_API_KEY no configurada |
+
+---
+
 ## Autenticación
 
 Todos los endpoints de management requieren `MANAGEMENT_API_KEY`.
@@ -56,3 +83,83 @@ Crea una organización y su primer administrador. Envía email con contraseña t
 | 403 | `{ "error": "Forbidden" }` | Key inválida o ausente |
 | 409 | `{ "error": "El email ya está registrado", "code": "email_exists" }` | Email ya existe en auth |
 | 503 | `{ "error": "Management API not configured" }` | MANAGEMENT_API_KEY no configurada |
+
+---
+
+## GET /api/v1/management/organizations
+
+Listado paginado de organizaciones.
+
+### Request
+
+- **Method:** GET
+- **Headers:** `Authorization: Bearer <key>` o `X-API-Key: <key>`
+
+### Query params
+
+| Param | Tipo | Default | Descripcion |
+|-------|------|---------|-------------|
+| page | number | 1 | Pagina (1-based) |
+| limit | number | 20 | Items por pagina (1-100) |
+| search | string | (opcional) | Filtrar por nombre (max 255 chars) |
+
+### Response 200
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "name": "string",
+      "created_at": "ISO8601",
+      "employee_count": number
+    }
+  ],
+  "total": number,
+  "page": number,
+  "limit": number
+}
+```
+
+### Errores
+
+| Status | Causa |
+|--------|-------|
+| 400 | search > 255 caracteres |
+| 403 | Key invalida o ausente |
+| 503 | MANAGEMENT_API_KEY no configurada |
+
+---
+
+## GET /api/v1/management/organizations/:id
+
+Detalle de una organizacion.
+
+### Request
+
+- **Method:** GET
+- **Headers:** `Authorization: Bearer <key>` o `X-API-Key: <key>`
+- **Path:** id debe ser UUID valido
+
+### Response 200
+
+```json
+{
+  "id": "uuid",
+  "name": "string",
+  "created_at": "ISO8601",
+  "employee_count": number,
+  "admin_email": "string | null"
+}
+```
+
+- admin_email: email del primer admin. null si no hay admin.
+
+### Errores
+
+| Status | Causa |
+|--------|-------|
+| 400 | id no es UUID valido |
+| 404 | Organizacion no encontrada |
+| 403 | Key invalida o ausente |
+| 503 | MANAGEMENT_API_KEY no configurada |

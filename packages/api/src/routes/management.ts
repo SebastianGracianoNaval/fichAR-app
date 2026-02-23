@@ -1,5 +1,5 @@
 import { getSupabaseAdmin } from '../lib/supabase.ts';
-import { parseBody, validateEmail } from '../lib/validators.ts';
+import { parseBody, validateEmail, validateUUID } from '../lib/validators.ts';
 import { logAudit, logError, getRequestMeta } from '../lib/logger.ts';
 import { requireManagementAuth } from '../lib/management-auth.ts';
 import { generateTempPassword } from '../lib/password-generator.ts';
@@ -143,4 +143,156 @@ export async function handleManagementCreateOrg(req: Request): Promise<Response>
     { orgId: result.orgId, userId: result.userId, email_sent: result.emailSent },
     { status: 201 },
   );
+}
+
+function escapeIlikePattern(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
+
+export async function handleManagementGetStats(req: Request): Promise<Response> {
+  const authResult = await requireManagementAuth(req);
+  if (!authResult.ok) return authResult.res;
+
+  const admin = getSupabaseAdmin();
+
+  const { count: orgCount, error: orgErr } = await admin
+    .from('organizations')
+    .select('*', { count: 'exact', head: true });
+
+  if (orgErr) {
+    await logError('warning', 'management_stats_org_failed', undefined, {}, orgErr);
+    return Response.json({ error: 'Error al obtener metricas' }, { status: 500 });
+  }
+
+  const { count: empCount, error: empErr } = await admin
+    .from('employees')
+    .select('*', { count: 'exact', head: true });
+
+  if (empErr) {
+    await logError('warning', 'management_stats_emp_failed', undefined, {}, empErr);
+    return Response.json({ error: 'Error al obtener metricas' }, { status: 500 });
+  }
+
+  return Response.json({
+    organization_count: orgCount ?? 0,
+    employee_count: empCount ?? 0,
+  });
+}
+
+export async function handleManagementListOrgs(req: Request): Promise<Response> {
+  const authResult = await requireManagementAuth(req);
+  if (!authResult.ok) return authResult.res;
+
+  const url = new URL(req.url);
+  const pageParam = url.searchParams.get('page');
+  const limitParam = url.searchParams.get('limit');
+  const searchParam = url.searchParams.get('search')?.trim() ?? '';
+
+  const pageRaw = parseInt(pageParam ?? '1', 10);
+  const limitRaw = parseInt(limitParam ?? '20', 10);
+  const page = Number.isNaN(pageRaw) || pageRaw < 1 ? 1 : pageRaw;
+  const limit = Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : Math.min(Math.max(limitRaw, 1), 100);
+
+  if (searchParam.length > 255) {
+    return Response.json({ error: 'search max 255 caracteres' }, { status: 400 });
+  }
+
+  const admin = getSupabaseAdmin();
+  const offset = (page - 1) * limit;
+
+  let query = admin
+    .from('organizations')
+    .select('id, name, created_at', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: true })
+    .range(offset, offset + limit - 1);
+
+  if (searchParam) {
+    const escaped = escapeIlikePattern(searchParam);
+    query = query.ilike('name', `%${escaped}%`);
+  }
+
+  const { data: orgs, error: orgErr, count } = await query;
+
+  if (orgErr) {
+    await logError('warning', 'management_list_orgs_failed', undefined, {}, orgErr);
+    return Response.json({ error: 'Error al listar organizaciones' }, { status: 500 });
+  }
+
+  const orgIds = (orgs ?? []).map((o: { id: string }) => o.id);
+  const employeeCounts: Record<string, number> = {};
+
+  if (orgIds.length > 0) {
+    const { data: counts } = await admin
+      .from('employees')
+      .select('org_id')
+      .in('org_id', orgIds);
+    const byOrg: Record<string, number> = {};
+    for (const row of counts ?? []) {
+      const oid = (row as { org_id: string }).org_id;
+      byOrg[oid] = (byOrg[oid] ?? 0) + 1;
+    }
+    for (const oid of orgIds) {
+      employeeCounts[oid] = byOrg[oid] ?? 0;
+    }
+  }
+
+  const items = (orgs ?? []).map((o: { id: string; name: string; created_at: string }) => ({
+    id: o.id,
+    name: o.name,
+    created_at: o.created_at,
+    employee_count: employeeCounts[o.id] ?? 0,
+  }));
+
+  return Response.json({
+    items,
+    total: count ?? 0,
+    page,
+    limit,
+  });
+}
+
+export async function handleManagementGetOrgById(req: Request, id: string): Promise<Response> {
+  const authResult = await requireManagementAuth(req);
+  if (!authResult.ok) return authResult.res;
+
+  if (!validateUUID(id)) {
+    return Response.json({ error: 'ID invalido' }, { status: 400 });
+  }
+
+  const admin = getSupabaseAdmin();
+
+  const { data: org, error: orgErr } = await admin
+    .from('organizations')
+    .select('id, name, created_at')
+    .eq('id', id)
+    .single();
+
+  if (orgErr || !org) {
+    return Response.json({ error: 'Organizacion no encontrada' }, { status: 404 });
+  }
+
+  const { count } = await admin
+    .from('employees')
+    .select('*', { count: 'exact', head: true })
+    .eq('org_id', id);
+
+  const { data: adminRow } = await admin
+    .from('employees')
+    .select('email')
+    .eq('org_id', id)
+    .eq('role', 'admin')
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .single();
+
+  const admin_email = (adminRow as { email: string } | null)?.email ?? null;
+
+  return Response.json({
+    id: org.id,
+    name: org.name,
+    created_at: org.created_at,
+    employee_count: count ?? 0,
+    admin_email,
+  });
 }

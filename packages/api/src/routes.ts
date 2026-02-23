@@ -59,7 +59,12 @@ import { handleGetAlertas } from './routes/alertas.ts';
 import { handleGetBanco, handleGetBancoEquipo } from './routes/banco.ts';
 import { handlePostReportesExport } from './routes/reportes.ts';
 import { handleGetAdminDashboard } from './routes/dashboard.ts';
-import { handleManagementCreateOrg } from './routes/management.ts';
+import {
+  handleManagementCreateOrg,
+  handleManagementGetStats,
+  handleManagementListOrgs,
+  handleManagementGetOrgById,
+} from './routes/management.ts';
 
 type Handler = (req: Request) => Promise<Response>;
 type HandlerWithId = (req: Request, id: string) => Promise<Response>;
@@ -162,6 +167,9 @@ const routes: Route[] = [
   dynamic('DELETE', '/webhooks/', '', handleDeleteWebhook),
 
   // Management (fichar-management)
+  exact('GET', '/management/stats', handleManagementGetStats),
+  exact('GET', '/management/organizations', handleManagementListOrgs),
+  dynamic('GET', '/management/organizations/', '', handleManagementGetOrgById, (id) => id.length > 0 && !id.includes('/')),
   exact('POST', '/management/organizations', handleManagementCreateOrg),
 
   // Admin Dashboard, Alertas, Banco, Reportes

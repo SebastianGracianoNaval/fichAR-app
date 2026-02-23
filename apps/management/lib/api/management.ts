@@ -16,13 +16,20 @@ export type CreateOrganizationResult = {
 
 export type ManagementApiError = {
   message: string;
-  code?: "validation_error" | "email_exists" | "forbidden" | "service_unavailable" | "network_error";
+  code?:
+    | "validation_error"
+    | "email_exists"
+    | "forbidden"
+    | "not_found"
+    | "service_unavailable"
+    | "network_error";
   status?: number;
 };
 
 function mapStatusToCode(status: number): ManagementApiError["code"] {
   if (status === 400) return "validation_error";
   if (status === 403) return "forbidden";
+  if (status === 404) return "not_found";
   if (status === 409) return "email_exists";
   if (status >= 500) return "service_unavailable";
   return undefined;
@@ -89,5 +96,199 @@ export async function createOrganization(
       );
     }
     throw new ManagementApiException("Error desconocido", "network_error");
+  }
+}
+
+export type OrganizationListItem = {
+  id: string;
+  name: string;
+  created_at: string;
+  employee_count: number;
+};
+
+export type OrganizationDetail = OrganizationListItem & {
+  admin_email: string | null;
+};
+
+export type ListOrganizationsResult = {
+  items: OrganizationListItem[];
+  total: number;
+  page: number;
+  limit: number;
+};
+
+async function fetchWithRetry(
+  url: string,
+  opts: RequestInit,
+  retries = 1
+): Promise<Response> {
+  let lastErr: unknown;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const res = await fetch(url, opts);
+      if (res.status < 500 || i === retries) return res;
+      lastErr = new Error(`HTTP ${res.status}`);
+    } catch (e) {
+      lastErr = e;
+      if (i === retries) throw e;
+    }
+  }
+  throw lastErr;
+}
+
+export type ManagementStats = {
+  organization_count: number;
+  employee_count: number;
+};
+
+export async function getStats(apiKey: string): Promise<ManagementStats> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+  try {
+    const res = await fetchWithRetry(
+      `${getApiUrl()}/api/v1/management/stats`,
+      {
+        method: "GET",
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: controller.signal,
+      }
+    );
+
+    const data = (await res.json().catch(() => ({}))) as
+      | ManagementStats
+      | { error?: string };
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const code = mapStatusToCode(res.status);
+      const message =
+        (typeof (data as { error?: string }).error === "string"
+          ? (data as { error: string }).error
+          : null) ?? `HTTP ${res.status}`;
+      throw new ManagementApiException(message, code, res.status);
+    }
+
+    return data as ManagementStats;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof ManagementApiException) throw err;
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new ManagementApiException(
+        "Servicio no disponible. Reintente mas tarde.",
+        "service_unavailable"
+      );
+    }
+    throw new ManagementApiException(
+      err instanceof Error ? err.message : "Error desconocido",
+      "network_error"
+    );
+  }
+}
+
+export async function getOrganizations(
+  apiKey: string,
+  opts?: { page?: number; limit?: number; search?: string }
+): Promise<ListOrganizationsResult> {
+  const page = opts?.page ?? 1;
+  const limit = opts?.limit ?? 20;
+  const search = opts?.search?.trim() ?? "";
+
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (search) params.set("search", search);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+  try {
+    const res = await fetchWithRetry(
+      `${getApiUrl()}/api/v1/management/organizations?${params}`,
+      {
+        method: "GET",
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: controller.signal,
+      }
+    );
+
+    const data = (await res.json().catch(() => ({}))) as
+      | ListOrganizationsResult
+      | { error?: string };
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const code = mapStatusToCode(res.status);
+      const message =
+        (typeof (data as { error?: string }).error === "string"
+          ? (data as { error: string }).error
+          : null) ?? `HTTP ${res.status}`;
+      throw new ManagementApiException(message, code, res.status);
+    }
+
+    return data as ListOrganizationsResult;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof ManagementApiException) throw err;
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new ManagementApiException(
+        "Servicio no disponible. Reintente mas tarde.",
+        "service_unavailable"
+      );
+    }
+    throw new ManagementApiException(
+      err instanceof Error ? err.message : "Error desconocido",
+      "network_error"
+    );
+  }
+}
+
+export async function getOrganizationById(
+  apiKey: string,
+  id: string
+): Promise<OrganizationDetail | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+  try {
+    const res = await fetchWithRetry(
+      `${getApiUrl()}/api/v1/management/organizations/${encodeURIComponent(id)}`,
+      {
+        method: "GET",
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: controller.signal,
+      }
+    );
+
+    const data = (await res.json().catch(() => ({}))) as
+      | OrganizationDetail
+      | { error?: string };
+
+    clearTimeout(timeoutId);
+
+    if (res.status === 404) return null;
+    if (!res.ok) {
+      const code = mapStatusToCode(res.status);
+      const message =
+        (typeof (data as { error?: string }).error === "string"
+          ? (data as { error: string }).error
+          : null) ?? `HTTP ${res.status}`;
+      throw new ManagementApiException(message, code, res.status);
+    }
+
+    return data as OrganizationDetail;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof ManagementApiException) throw err;
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new ManagementApiException(
+        "Servicio no disponible. Reintente mas tarde.",
+        "service_unavailable"
+      );
+    }
+    throw new ManagementApiException(
+      err instanceof Error ? err.message : "Error desconocido",
+      "network_error"
+    );
   }
 }
