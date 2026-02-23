@@ -64,6 +64,16 @@ export async function handleRegisterOrg(req: Request): Promise<Response> {
     return Response.json({ error: 'CUIL inválido (formato: XX-XXXXXXXX-X)' }, { status: 400 });
   }
 
+  if (process.env.REGISTER_ORG_ENABLED !== 'true') {
+    return Response.json(
+      {
+        error: 'Self-registration is disabled. Organizations are created by the administrator.',
+        code: 'register_org_disabled',
+      },
+      { status: 410 },
+    );
+  }
+
   const cuilNorm = data.adminCuil.replace(/-/g, '');
 
   const { data: org, error: orgErr } = await getSupabaseAdmin()

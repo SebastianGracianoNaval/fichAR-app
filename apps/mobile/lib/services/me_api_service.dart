@@ -90,7 +90,11 @@ class MeApiService {
     } catch (_) {
       return (result: null, error: 'Respuesta inválida del servidor');
     }
-    return (result: MeResult.fromJson(body), error: null);
+    try {
+      return (result: MeResult.fromJson(body), error: null);
+    } catch (_) {
+      return (result: null, error: 'Datos de usuario incompletos');
+    }
   }
 
   static Future<({List<DeviceSession>? devices, String? error})> getDevices() async {
@@ -127,10 +131,14 @@ class MeApiService {
     }
 
     final data = body['data'] as List<dynamic>? ?? [];
-    final devices = data
-        .map((e) => DeviceSession.fromJson(e as Map<String, dynamic>))
-        .toList();
-    return (devices: devices, error: null);
+    try {
+      final devices = data
+          .map((e) => DeviceSession.fromJson(e as Map<String, dynamic>))
+          .toList();
+      return (devices: devices, error: null);
+    } catch (_) {
+      return (devices: null, error: 'Datos de dispositivos incompletos');
+    }
   }
 
   static Future<({bool ok, String? error})> revokeDevice(String sessionId) async {

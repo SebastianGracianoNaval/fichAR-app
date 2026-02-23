@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/device_capabilities.dart';
 import '../services/me_api_service.dart';
 import '../theme.dart';
+import '../utils/error_utils.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -31,22 +32,32 @@ class _PerfilScreenState extends State<PerfilScreen> {
       _error = null;
     });
 
-    final results = await Future.wait([
-      MeApiService.getMe(),
-      MeApiService.getDevices(),
-    ]);
+    try {
+      final results = await Future.wait([
+        MeApiService.getMe(),
+        MeApiService.getDevices(),
+      ]);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    final meResult = results[0] as (MeResult?, String?);
-    final devicesResult = results[1] as (List<DeviceSession>?, String?);
+      final meResult = results[0] as ({MeResult? result, String? error});
+      final devicesResult = results[1] as ({List<DeviceSession>? devices, String? error});
 
-    setState(() {
-      _loading = false;
-      _me = meResult.$1;
-      _error = meResult.$2 ?? devicesResult.$2;
-      _devices = devicesResult.$1 ?? [];
-    });
+      setState(() {
+        _loading = false;
+        _me = meResult.result;
+        _error = meResult.error ?? devicesResult.error;
+        _devices = devicesResult.devices ?? [];
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = friendlyError(e);
+        _me = null;
+        _devices = [];
+      });
+    }
   }
 
   Future<void> _revokeDevice(DeviceSession device) async {

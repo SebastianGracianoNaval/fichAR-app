@@ -6,7 +6,7 @@ const BANNER = `
 # |  _| | (__| | | |/ ___ \\|  _ <               #
 # |_| |_|\\___|_| |_/_/   \\_\\_| \\_\\              #
 #                                               #
-# SISTEMA DE CUMPLIMIENTO LEGAL ARGENTINA 2026  #
+# SISTEMA DE GESTIÓN ARGENTINA 2026             #
 #################################################
 `;
 

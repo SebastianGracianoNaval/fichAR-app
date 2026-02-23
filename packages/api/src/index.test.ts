@@ -95,6 +95,25 @@ describe('Auth validation', () => {
     expect(res.status).toBe(401);
   });
 
+  it('POST /auth/register-org returns 410 when REGISTER_ORG_ENABLED is not true', async () => {
+    const req = new Request('http://localhost/api/v1/auth/register-org', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orgName: 'Test Org',
+        adminEmail: 'admin@test.com',
+        adminPassword: 'Password123',
+        adminName: 'Admin',
+        adminDni: '12345678',
+        adminCuil: '20-12345678-6',
+      }),
+    });
+    const res = await handleRequest(req);
+    expect(res.status).toBe(410);
+    const body = (await res.json()) as { code?: string };
+    expect(body.code).toBe('register_org_disabled');
+  });
+
   it('POST /auth/register rejects missing inviteToken', async () => {
     const req = new Request('http://localhost/api/v1/auth/register', {
       method: 'POST',

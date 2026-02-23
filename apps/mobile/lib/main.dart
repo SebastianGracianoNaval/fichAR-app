@@ -1,5 +1,5 @@
 import 'package:device_preview/device_preview.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -41,7 +41,7 @@ Future<void> main() async {
 
   runApp(
     DevicePreview(
-      enabled: !kReleaseMode && !kIsWeb,
+      enabled: !kReleaseMode,
       builder: (context) => const FicharApp(),
     ),
   );

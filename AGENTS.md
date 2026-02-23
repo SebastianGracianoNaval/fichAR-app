@@ -106,6 +106,7 @@ Follow these rules for consistent, professional code:
 | Android Material Design (Flutter) | mobile-android-design | fichar-android |
 | iOS HIG (Flutter) | mobile-ios-design | fichar-ios |
 | Accessibility (WCAG, contrast, focus) | accessibility-compliance | fichar-flutter |
+| fichar-management (Next.js, shadcn, dashboard) | management-nextjs-shadcn | next-best-practices, design-system-patterns |
 | Supabase Postgres, queries, RLS | supabase-postgres-best-practices | fichar-postgres, fichar-supabase |
 | Node/Bun API patterns | nodejs-backend-patterns | fichar-bun |
 | API design, REST contracts | api-design-principles | fichar-go, fichar-integrations |
@@ -253,6 +254,7 @@ Installed in `.cursor/skills/` with fichAR context (compatibility, palettes, mul
 | nodejs-backend-patterns | Bun/Node API patterns. |
 | api-design-principles | REST, versioning, contracts. |
 | webapp-testing, e2e-testing-patterns | Testing web/Flutter flows. |
+| management-nextjs-shadcn | fichar-management: Next.js App Router, shadcn/ui, auth, forms, Vercel. |
 
 ---
 

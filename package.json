@@ -8,6 +8,7 @@
   },
   "private": true,
   "scripts": {
+    "management": "bun run --cwd apps/management dev",
     "dev": "bun run --cwd packages/api dev",
     "start": "bun run --cwd packages/api start",
     "test": "bun test",

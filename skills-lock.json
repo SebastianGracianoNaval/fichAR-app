@@ -11,10 +11,30 @@
       "sourceType": "github",
       "computedHash": "09ab9af75ba1d132c32f169fb63153414bd401ffa9b31e844b7d9debe8ab072d"
     },
+    "airflow-dag-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f4ae33f38309ea5631dcde1bdd9089167f25ffe05c313bd745dc39c8dfe7f358"
+    },
+    "algorithmic-art": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "5c2804e8f0d4944c7ce6939a2e4afdcf0cb69c966a505481ed8b96e20bb32eee"
+    },
     "angular-architect": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "f3c7bb5ac0bfb6235cc5627bcc4a2e6b2f6085671b179f14fbcf3973975fbacd"
+    },
+    "angular-migration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "34bd61d6efb70b3a62ec8c84a557239ee58445cb02c373112db6981c26e37e97"
+    },
+    "anti-reversing-techniques": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "dc780e541982b17178af7b8c7ae700b4f24d56c4dcede312d16220b08326a25d"
     },
     "api-design-principles": {
       "source": "wshobson/agents",
@@ -26,20 +46,185 @@
       "sourceType": "github",
       "computedHash": "6bf9703cffb9d21fbf9c2f0211f38524c21e3400aee9130358638d6b784aa729"
     },
+    "architecture-decision-records": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "1826e3562ec0c97fb75a0037112672e21cf450c8a4c347ad08005b3d0c6fc461"
+    },
     "architecture-designer": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "9c8c07bda69e9c28ef291dbffac9beed05cb015970bffcd3102f5dc3410bcf73"
+    },
+    "architecture-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "67711f2580e7196ad1730ca61513783f31943fb56fa5e308373f2dfd38ee15f4"
+    },
+    "async-python-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "e6bbd64217595e7235d9b064aa1613ff331f8518e09a4cf65d8d9a0e266e2717"
     },
     "atlassian-mcp": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "c06e96ebf39d77594dcace41e0323e92bd9475831bf4244e3a12e7ff42915af7"
     },
+    "attack-tree-construction": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "d852ac27cf75464d2fda28c120864aeb32b09e9e2324acf11016faf56961421e"
+    },
+    "auth-implementation-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "66d7a9f369b078b38cc3375bb93aedfea2435fba6f5a1f23187215491612b5c4"
+    },
+    "aws-lambda-java-integration": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "0d80f6fc9e727cd7d4924d245d855097c31da48792671cc900c000eed5038236"
+    },
+    "aws-lambda-php-integration": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "66dcb3a4424feea4f457b0e48757cca1371b2c6e8499f2375f23bc4bb6c6f835"
+    },
+    "aws-lambda-python-integration": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "2496aca1e6ffda98b6debd074e568aebc3f1e0364d2911a1f749cc1fa6e7ea73"
+    },
+    "aws-lambda-typescript-integration": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "6305bc83c46abf5c956a18a74c620a26e1061dd1bf6d4307debdecd939d03970"
+    },
+    "aws-rds-spring-boot-integration": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "c12c5b6af97fd2c9ce59d1e66e4cb6eb0811e1b15bdfd21a71fdcba3727ac5fe"
+    },
+    "aws-sdk-java-v2-bedrock": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "3f2808f5ccd48ba8343788f17ab8e5f0e0e09c35668542d1512adea4606b192a"
+    },
+    "aws-sdk-java-v2-core": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "3166655fc3b88fb7fedb93be80dc47abd96d68eb4b3a4a0b93fac1323d52b138"
+    },
+    "aws-sdk-java-v2-dynamodb": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "90ff575ce1667a48d25bddb9ded99c20fcdce979a1ac31b4056978346078f93a"
+    },
+    "aws-sdk-java-v2-kms": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "7992f560e5f43ad6c33a0c1de1ff9ae245c980cfff89e0d5217ea7f83c5981c2"
+    },
+    "aws-sdk-java-v2-lambda": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "b06c72305dfd4a1f8ca844643ce9ae1c1691bf5cdafbef779dd127bf4e7c5a70"
+    },
+    "aws-sdk-java-v2-messaging": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "4cc69db3ffa7067cbcebaea99e750af1bf8575b372a473b5d6d65e18c1896425"
+    },
+    "aws-sdk-java-v2-rds": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "3ca0c9bd65f4db1b0d5b2ffa1c54e3ba202008a945a4fa3d9ffe59481cf0f569"
+    },
+    "aws-sdk-java-v2-s3": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "eb76d503462352aab2ca3cb7c089ea541dd3f73801471db19ad1841c9448bd1f"
+    },
+    "aws-sdk-java-v2-secrets-manager": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "d7350841e6a9ad97e4cd86c86a4ffa27a0e4b72fdf50c1c6aa7aa46abd7055e9"
+    },
+    "backtesting-frameworks": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "d6891f66bce9315628d7fb559cc04dabaa120d172e71d20ecd4093a580c75a80"
+    },
+    "bash-defensive-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "27306f35e146e1f7c56c7ab30e136d3e9fa2dd86b3816b0efd436c1129105377"
+    },
+    "bats-testing-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "85ba84b4d81d0600d93bfdc54743ac8c6b21b66ec1b3909d3ceb0cd8c5aefbf8"
+    },
+    "bazel-build-optimization": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "cc3118b02fb484431b26a0bba5ad95ff3bbf1c2a0890049d210024bf2ba16e88"
+    },
+    "better-auth": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "40f27401fa55819da7ea92c5f91f7c8e4d56eb56e6cf1b6e3b5bb606f65fee69"
+    },
+    "billing-automation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "7a4adf6d16d78e6f657277db841d20deaa99c07dda8a22aa8119a472087c009c"
+    },
+    "binary-analysis-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f59bd6d2d34ffe42503dd2d33660d8a40a720f70a7bb0bca8d06aaca42db44a8"
+    },
+    "brand-guidelines": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "4aa754f4f7fc54ac3e7f6e2fb55c0e2fb14b7d70da077b41a86bd1889ff9094c"
+    },
+    "canvas-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "a2fe47d24b3fd8e52faef731fff099c557e698083cd644b2e5695cc4dd8c7715"
+    },
+    "changelog-automation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "802b14ccd3a9305555bd52554414c31c87c07f09fb7566be6e1ece3316c91e98"
+    },
     "chaos-engineer": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "3ca4b7dda46aa2f184e031a98b92fedfdede9a8fcd08b02185dcb34c3583c73f"
+    },
+    "chunking-strategy": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "1cabf665bbea98eb0ce45bc7ff7b03bf19cf5c4526cadeb5875d6920a59a58da"
+    },
+    "claude-md-management": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "2a9f4f7f38dcf189e667f5e8b2438c36fec91fc710f42dc2892b0781b0c33b8a"
+    },
+    "clean-architecture": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "2d2ce0ba66df8afda6b3ea7ae5096da08c98844100821ba2d74ba0a170aea0a8"
+    },
+    "clean-architecture-php": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "3e4762f5b9bc218a615791b458ae5ed7a958ce2b3fcc440f5d1457ff99b196d1"
     },
     "cli-developer": {
       "source": "jeffallan/claude-skills",
@@ -56,15 +241,40 @@
       "sourceType": "github",
       "computedHash": "edec2253aff66dd27cd3c15e6330f5800cec7336337cdfe3e0abaa58f5d38379"
     },
+    "code-review-excellence": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "7437cac5798603b94ce1019fa701c659a3deddcfc8c482a3ac42b8bcb65f6d4e"
+    },
     "code-reviewer": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "1ff8d5d3e89a5de621726a8451f67ff1ad4732a4ef996100cbb2ae4198603303"
     },
+    "competitive-landscape": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "cd7540325fb8227c8a5d189e03042dcc31813c5bdf19b5d5728fbf46f38b2146"
+    },
+    "context-driven-development": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "3c1f0ac51a407035a55d114fd621e4a078ee7764831f6d46be8865bf2fd5d5ef"
+    },
+    "cost-optimization": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "29047070a84c925f9a29760bb6daa67fe4638a944e69e03ffe6db12d65968e2d"
+    },
     "cpp-pro": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "d13a1a12b4a902c5054c05e5fb4a8bfd1e132093f65adff2827b54ec0b1f8bea"
+    },
+    "cqrs-implementation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "38e762f70cb42a6894911194eb89edc6b2b051c8d0d77c8e5ef5f13b7f23b381"
     },
     "csharp-developer": {
       "source": "jeffallan/claude-skills",
@@ -76,15 +286,55 @@
       "sourceType": "github",
       "computedHash": "d12807e3a22b9934f7e05120333991e78d6cea49148c36ba76ebdaff83928e87"
     },
+    "data-quality-frameworks": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "15f994f1cc994c1b2d099f94d877c8d9aaf8589231dd9540ce5aec28b2406e0f"
+    },
+    "data-storytelling": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "5c0aa1bc88abed7c47a8878c8ef50e8b338e728d3d457b6faf683ddd2e5a1253"
+    },
+    "database-migration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "3d1846b0c60f0ffaa211da66e50709e688038458620ee90608adbc27e846bbfc"
+    },
     "database-optimizer": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "4336026e2f06026d8937a989ace990446cb287a33924ed182902d0c4365e1113"
     },
+    "dbt-transformation-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "27cdfcccfa62ef544ef8aa299aec7c1afca7b71a36606f992df3073aa058fe4f"
+    },
+    "debugging-strategies": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "36ff7a9fd0653993e4dda12c55bfa54dbc38602ff2c31445e53adf201a4fc089"
+    },
     "debugging-wizard": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "c321887cef7201eb64f8c7dab175c81984697ac5e30908429c7e17876ab80dc8"
+    },
+    "defi-protocol-templates": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "ec93243b4df90e4b19f9226191b4955f1ac3ee0a0ca03422f87ebe685464ed3e"
+    },
+    "dependency-upgrade": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "e3395b03bd201de170a21ca9d0746cf8644750b32ff9e35c3a713bd8f074ae7c"
+    },
+    "deployment-pipeline-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "1b5368bcf29ed6a08aded1cf4f3ff790edcd0c6c31db4e694592195d25f3d03c"
     },
     "design-system-patterns": {
       "source": "wshobson/agents",
@@ -96,15 +346,45 @@
       "sourceType": "github",
       "computedHash": "efd7d477e1964f2288214c44e6b52c1576cd690080738e6e6525a37668220047"
     },
+    "distributed-tracing": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f02a5e738e6b6ccb498d8fc3270899d6b3b37f8e7d82a791e12636c8eb916218"
+    },
     "django-expert": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "9cf6c23a147c29e14ca711cc104e05e128a747f68360d9537b26386bf99dd646"
     },
+    "doc-coauthoring": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "b964e4c3ffe13f66f76dd7919073e60c7aec622cd8a8363bb36323188100cf8e"
+    },
+    "docx": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "8e582fc228f15d80126e2e10be07304b7c320f398d2cf529339642a8a06ebfdf"
+    },
+    "dotnet-backend-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "8e3f80d9f1c4fa28d9903ee027fc0ed741b6d0f213532a6b9ef78e192674ce86"
+    },
     "dotnet-core-expert": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "e36f46969a022d239e053e87a9e6100c4956402ab087d23f3bd88bb8d7c8c8cb"
+    },
+    "drawio-logical-diagrams": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "0a6d296e29eaf33982424850cb708f3f94efcfebc2b35d206a14f857eb072532"
+    },
+    "drizzle-orm-patterns": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "ffdd618661691c704999d913228c84212af7ff1e33a6c6811d711084a97ac1d8"
     },
     "e2e-testing-patterns": {
       "source": "wshobson/agents",
@@ -116,10 +396,35 @@
       "sourceType": "github",
       "computedHash": "881df10e010df1de1425e9401c1bc03e29320df453bac139b492687de5bca7cf"
     },
+    "embedding-strategies": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "e68fb8437a47041b797b1445a722e85a7a74b4c508954fac323b29e445eccbec"
+    },
+    "employment-contract-templates": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "5694688095a190ca05a4c7ead5ff956ddb45c1abb388608614dd4db68ed01699"
+    },
+    "error-handling-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "4930af6f5c144997c6d43a1cbbabc9776eb98cc0926cde29db6e92623dcf78a0"
+    },
+    "event-store-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "ed0130cc40bc64cddd6b08235f3cc7ed1dfc2257620eb9b62afa07cf69dbe8dd"
+    },
     "fastapi-expert": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "b445b45fd23883d030fbd39489a9fdee7a7520c58732b544c27ab788b0e70f7e"
+    },
+    "fastapi-templates": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "fa51843cda87fc738f819c937cc697691255684d27d598dbc64a3a121e480064"
     },
     "feature-forge": {
       "source": "jeffallan/claude-skills",
@@ -196,15 +501,90 @@
       "sourceType": "github",
       "computedHash": "d58fc7cbe659b521a527a2ddf8a2503d7cd95ae9c51b633df3c57f1f2f0023d0"
     },
+    "gdpr-data-handling": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "53855cd5a9c62b68a56e9137bf2f4a2621a7d716cc51857dcd902ad2fbfd1eb7"
+    },
+    "git-advanced-workflows": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "d46ca590d97215674b986dbc8d0085739032117669483bead7eba739948abbdd"
+    },
+    "github-actions-templates": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "7a28cb13b9fa427ae39c943ceb25d81f8135f848e1a1d434dc86a75926f51035"
+    },
+    "gitlab-ci-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "1cd576fc26f99d44ad7e1650655f971925bd503a409995ec0384de3c865671ab"
+    },
+    "gitops-workflow": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "e8df22024090440fce624e6a99faca4b66aa267a428b5a63a0c0416fa4eb2629"
+    },
+    "go-concurrency-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "32fc5e9ecfe5ec234eff490c60ff95f0e918786c7a877599d65ca0fd1a7f9ee9"
+    },
+    "godot-gdscript-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "6fae8f8e181231c710e90d4e9b002533059f0e4fa69d1222e3eef76996f724a9"
+    },
     "golang-pro": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "709f35fe79694533e7e8f1059eecb627cced758a1e31ae2d0c0c6f4bffa91277"
     },
+    "grafana-dashboards": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "0bbc8f7f88dfb799eff73bca43aef5274d009083f6cf54a280a9c16e47e22807"
+    },
     "graphql-architect": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "811d081ec4453583b2362fdad567cfaab4e4a16b8e9591c5ff3add1307c1e5c6"
+    },
+    "helm-chart-scaffolding": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "244e0c7c25ddf1554c08abb6a22b0fb30048fe4daaebc1d3c399633ad8c331b7"
+    },
+    "hybrid-cloud-networking": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "dd28b61ad1e32be4147f3d89a9ba814a25a04f9ebced614c053e14c28007ff74"
+    },
+    "hybrid-search-implementation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "0015d0f51e0f6e8ccab2865dea8837dd9f67281bdbc5511330bd5149818bd4aa"
+    },
+    "incident-runbook-templates": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "035308b8a33b724bbfc9b10d0dfdbcda5f90dfb9611b44042df80f1dad690947"
+    },
+    "interaction-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "05088780c348108baaabdaf55c672a7967c2a82c4843c259343141f91a0da55a"
+    },
+    "internal-comms": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "b36b333bee983462008af46d74689ae5832c2f79ae5f2c18680ee82f6e6bef56"
+    },
+    "istio-traffic-management": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "96bbea3744dd274d8fee9aefd73052abeb0c3a080cede164e1a4acc6e0bdbed0"
     },
     "java-architect": {
       "source": "jeffallan/claude-skills",
@@ -216,15 +596,75 @@
       "sourceType": "github",
       "computedHash": "bb68df06fc25aef2e79dc9ef09e4d611e4c2080fd505a6b57ee559d17cefdc74"
     },
+    "javascript-testing-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "34219092e71607f9257720b3b43ecd37c8af0d3dbf695e3263f4c68ab0b019e2"
+    },
+    "k8s-manifest-generator": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "64ded08ae46246e5d7b34840d45ecb762d63a28740e03dd6f09db1d8fb136276"
+    },
+    "k8s-security-policies": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "b70bc969fc2bfb74d486e169dd09f9ecb07b11de9da71086b96973488544883b"
+    },
     "kotlin-specialist": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "ca08c7e647ac94eeb14837d382d01dce76f0487c81a96194159090ccddc2b1f6"
     },
+    "kpi-dashboard-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "cfa794da381bc10350be1a846859788d984717179bd317e3e7273ba9b211e493"
+    },
     "kubernetes-specialist": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "5649a06b54a2327d930e7473912b23e111afc0e84160b88842bb42b954725ea2"
+    },
+    "langchain-architecture": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "0cdd844e5af5d2c47e3faf31ba9b9f1b86a611edecc72e2021688c0b6cce6938"
+    },
+    "langchain4j-ai-services-patterns": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "cd519d2020ea9de5a1f6f4160c3ef134b1a8e63a8228c12774dfbb77578925c1"
+    },
+    "langchain4j-mcp-server-patterns": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "de669c25bf4c0cdccb80f3ee49292698ac2293fc34c3b1bbb7016e56061cdc91"
+    },
+    "langchain4j-rag-implementation-patterns": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "5bd046465760b3799da3b9ffe53dffd518a7b3553e9e63643e8703e946029457"
+    },
+    "langchain4j-spring-boot-integration": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "2748f418ca4286773d86083e522c9fe0d3794a029ed889ae0fb880f8ee1e635a"
+    },
+    "langchain4j-testing-strategies": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "877e049693ae593f381d89b3e30404c7f714ab0d737e47ee0e698eac5e702b52"
+    },
+    "langchain4j-tool-function-calling-patterns": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "7468d95314f45b6d7a48597446e0463e4530ad1d374a3218084f6a9ed2ea5777"
+    },
+    "langchain4j-vector-stores-configuration": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "607b41c8d38bf6f7b92c19f283f46fc8ad2a8448f3e406709e25f5ef14ff3458"
     },
     "laravel-specialist": {
       "source": "jeffallan/claude-skills",
@@ -236,20 +676,60 @@
       "sourceType": "github",
       "computedHash": "45fdc1e571aecdd11b70d55aa5ff99f4b48956f0b162d481c234f8c4cba10866"
     },
+    "linkerd-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "158eeb47b7a2805f9e92e9515b527e1a92a44a9753bb28a010d35aa0841516fb"
+    },
+    "llm-evaluation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "bfc96be76749f7ea01b52ce269521b7bd1b782343564c9834961366cd0c692db"
+    },
+    "market-sizing-analysis": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "05d7ed505adcb56398f932ef75940ca5b0dfddee7cdba922797be657ddb6543a"
+    },
+    "mcp-builder": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "fc68038c900eb801f73ff96130c9f9dba533cc94212ed8435833242f196dedcf"
+    },
     "mcp-developer": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "517609e546d937f332ef813b873cdfd25972422130ad6906ef8d8b627437957a"
+    },
+    "memory-forensics": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "082e9e851d3870b91116dbd6e13368b31de183807e5b1be8a155c63bdda5c77b"
+    },
+    "memory-safety-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "1702f5d0ed3958145cdf8d6c2410972ecfcfa3a570cc290728d0ed7e7e7f358e"
     },
     "microservices-architect": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "43c0f5798974e489dc1fd1399c41cdc907d5804b7ba30a2251fed2ce28d6178c"
     },
+    "microservices-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "40e17df3a23306b6caf2cd940d37df8da5e470577e10dba27c8ee19ef49ae933"
+    },
     "ml-pipeline": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "48720fb0ae6f881ff4dc096f6587e6e1d9d1211ec55ff4c428d7e63c8740d044"
+    },
+    "ml-pipeline-workflow": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "fe1d420e796cfbe9a1cb0134cf2615d9fc78f4fae82d1c4faaea9b6e18313040"
     },
     "mobile-android-design": {
       "source": "wshobson/agents",
@@ -261,30 +741,160 @@
       "sourceType": "github",
       "computedHash": "b7652af80989c86dd8945a89c6cb188acf6de8a3ca2205c427adf2ed478e63c3"
     },
+    "modern-javascript-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "70bc273dcb90ed035be512862b658d1bd80daa135e24d346c7111f1830f934c5"
+    },
     "monitoring-expert": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "979232bc65f24ebe7bf7526fd76398d3b57be3799b7fd12ed668ee58e56140d5"
+    },
+    "monorepo-management": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "38d2b028c93fb90fd7071dd7ffb4d8b4925ce970f6a16a151524f9be60e0d64b"
+    },
+    "mtls-configuration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "1611b196488971af107dd37f6753074a22e7a8bec53ffbfa446b5289aaae65e0"
+    },
+    "multi-cloud-architecture": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "db3b9bd3489b64a3ac95f4706fc3ed3c492a54830f2cd4d68f7180e0cd37b701"
+    },
+    "multi-reviewer-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "9e2f76e06a3a0d4e76b4955469b9ca65951a1f0229c39ec961b1e8ff8a03a31e"
+    },
+    "nestjs": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "9f8a977d7f0c0b9d7f095913d09a2208f38a50ae9bf6a676cbfcb66998ef5fc4"
+    },
+    "nestjs-drizzle-crud-generator": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "874c9be5388f059c819141d69c5d1042a9dc775e719ed6191d4f8b628e6ddcbd"
     },
     "nestjs-expert": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "0d1acc233de14c469ce283561835330528ba37bf83328d3e72b5443afa2ecd07"
     },
+    "next-best-practices": {
+      "source": "vercel-labs/next-skills",
+      "sourceType": "github",
+      "computedHash": "515ba75178bd44875812d9a560bdf14651f86709f89cf1d4f209638e879807f3"
+    },
+    "next-cache-components": {
+      "source": "vercel-labs/next-skills",
+      "sourceType": "github",
+      "computedHash": "a94b83ddcd2ff1c30722577f693b1bfe32f2e1a83abdd6c08c2d6cc6753b53c8"
+    },
+    "next-upgrade": {
+      "source": "vercel-labs/next-skills",
+      "sourceType": "github",
+      "computedHash": "be6bbf6ab1dc2cc6f2505cea52d497920c04f5b532c0846ee201f6029b803fb0"
+    },
+    "nextjs-app-router": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "0e87e87ef1b5cb0b1063f3e1b1083c07bbd9b7019da2e87102d0a81158101ac8"
+    },
+    "nextjs-app-router-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "59fb01d2fad75636fbf99b505b7212490cc0e2a79a99bbf103a255c8e18904f1"
+    },
+    "nextjs-authentication": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "8bbf116d9f061cede7853c5767a16a3ac20ad2fa6fd0d7b80ea61c7fa09729c2"
+    },
+    "nextjs-data-fetching": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "8f1e0ceec1903d0e0e27ae18d80fd8ffd02646f573fb7bed80822aee4673b288"
+    },
+    "nextjs-deployment": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "1ba60f2dc3557daf4cd9b5ecc1123e4b78e2f1441352aa2662bc332fda454edd"
+    },
     "nextjs-developer": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "383ac97c3adafa90570ff54948ad777158d0677b84b6fa87f85df756ca383875"
+    },
+    "nextjs-performance": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "16cf920bed00f318fb93a9a3981b1f5015d9fc42fec56e08a09e3cb2576fa239"
+    },
+    "nft-standards": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "35a49c5ec73e2b3bd53812989b71ec7336052c323d33caf7037a0315fe969cc1"
     },
     "nodejs-backend-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "4c6bf8fbd9a13d61e326ddeb210af5854fea3b253922a7981bd7718f3b765c08"
     },
+    "nx-monorepo": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "c48245b446523c1a148569547f49522639eb1f90389f0177639d680a87017e5b"
+    },
+    "nx-workspace-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "bb80635f07ca56f46174c7f4a6f8e8c224d045e93fea0ea1ac33cb100eaaf94c"
+    },
+    "on-call-handoff-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "a516f23e2fc11510ae7c7c07fe8d89efc42c5a078d7bda337184eb4b529bea9c"
+    },
+    "openapi-spec-generation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "354af02e46d43ba8a0beb83d5cf4ba659ef4b2749ad9ce881adc18682b0e5075"
+    },
     "pandas-pro": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "e1b995875a89a40b4fc9357ca52cd19c9574992b07a697ebc50f53ab0f8e0419"
+    },
+    "parallel-debugging": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f3ecac29dca6b28b0fb32a22b37f80a0e3ec3fd7dd1e7ebf869095f9a9b996b8"
+    },
+    "parallel-feature-development": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "4ad12905237c5b7d7430766201c3cd37a99671786207b73613dd940fb7ac7470"
+    },
+    "paypal-integration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "43629eb010603461d1846d710623b1f5b31d21862518c8e8503bd4cad5c03993"
+    },
+    "pci-compliance": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "51b4be1f59e0452990d51221e9ead17b08a3e4070368b521ab9bfc91113d0c77"
+    },
+    "pdf": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "cfbc539377088ca7e44a813b30c306327385bbd973cd7a721e1743f60837dd62"
     },
     "php-pro": {
       "source": "jeffallan/claude-skills",
@@ -301,20 +911,145 @@
       "sourceType": "github",
       "computedHash": "a28e7ff7ea2c4a3fdf7f32249541844922ece536dae163fecadbd73c3957988b"
     },
+    "postgresql-table-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "0728424e6f56972333bd60e4f45da0322ac6db273744d863aa2b94f1e95d61ec"
+    },
+    "postmortem-writing": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "c905cd4116e37a69fc92a8871b8258ffb1c8df67eb81059a5a71738ce314924a"
+    },
+    "pptx": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "6b8b859d26f93aa059c9870d1ab76b44ab69e3d6757ce4a03cc94cb760888073"
+    },
+    "projection-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "e7749bacd523db831aae895d9e052093378ad9b70ffa6c7794d3b0220d16b813"
+    },
+    "prometheus-configuration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "cd29329107ab228834f6c08a8a17c5463ece4c0c2a19ac193ba39a8b3d8c734c"
+    },
     "prompt-engineer": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "03501d25f9851b459945a1e7f9a83c20ba9cf93b3fb3061805f2735840df8764"
+    },
+    "prompt-engineering": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "7bfd1c9dd195729de029e575a1a1de3c66e970e7e21a3813665c5b5eb466993c"
+    },
+    "prompt-engineering-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "4ffe23560a80e45aec947fbd3e7c54a8c180bfa40985b81065f1e0e326af1e62"
+    },
+    "protocol-reverse-engineering": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "9937cd621efd79a150ee15df6b6532fd08688b09484989466845b692271dd7ac"
+    },
+    "python-anti-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "1f9a75f8f8bfb4baeced54c254f29301f2fa162b8befc92b509fd27d10f0eba6"
+    },
+    "python-background-jobs": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "fad6a58871cfac542c5fd457585cf42f65cd64b6cff81ff52f9bd0b4e3f8e36a"
+    },
+    "python-code-style": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "35ed0c437f33462187b0a89da8e5bfe9ac259dbc8731257c5445f1a5e1229acf"
+    },
+    "python-configuration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "a7b8fa332a3550fac69fcca491f75d61ce879fbc1274454c9be729b1462f8406"
+    },
+    "python-design-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "b70500bae0d16740d8a359be63c4645a0ab0f9b839d11d181c45d20958313698"
+    },
+    "python-error-handling": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "05d1fd2762d38e6afac8533e28554038e27fc8620b2df63f1e806de3c4d77fe3"
+    },
+    "python-observability": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "2c0db2a638bf3145be591f085d17b98d62d204e5f674c305070def055c779068"
+    },
+    "python-packaging": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "61b9f47d88272c44b734b7d42b3d9993e486bf77c6addf89e3f836b09a777344"
+    },
+    "python-performance-optimization": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "a25abb5b2d224eee9d572b09fa13937a45831c5de1560c41c3f739e6630b7380"
     },
     "python-pro": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "ca6d96c74f76a5a9cf90b22cd71b9ffe1a12224923474daaf26766940c4eee4a"
     },
+    "python-project-structure": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "2f4f560964af8ecad4d54666c044baa54671d0abd1136c848b539befe24db170"
+    },
+    "python-resilience": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "2f109425df447de4618fed93808ecea89e037c07ab1d2676cf7349d0d320c885"
+    },
+    "python-resource-management": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "74e97b123578f66e6c333ca930bcd0d623bb508ccca693b114b630cb2596365e"
+    },
+    "python-testing-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "a2cc64d28bbda77aeac8ec634ae38102a3b8d2314f3aa802811a44281c5d7838"
+    },
+    "python-type-safety": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f011d9018935ae01209f30c0a0f9d2f15f3058867baeb7a8c820bc54c8394645"
+    },
+    "qdrant": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "df907f88ab51755421923d959efcbb6f85895a577e657e81dc65c821b91df4be"
+    },
+    "rag": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "4c73dbff74a8d6cf819f368ca9d622fea6abe7b2029309aa59270edc87793445"
+    },
     "rag-architect": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "f2c50d46fbf53771173aaee1abc15cf780e597d5ecff3f89d635a2924864186f"
+    },
+    "rag-implementation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "593f3b12b946a67978bccd5c2ddd599b060aec60d35f83fbda5764dfd982f099"
     },
     "rails-expert": {
       "source": "jeffallan/claude-skills",
@@ -326,55 +1061,235 @@
       "sourceType": "github",
       "computedHash": "9e3995830a55f2b0a403a227a5616160c4d90ddc6eaa8eeb0ce0eefb9dfc5377"
     },
+    "react-modernization": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "9cc6a02dc54119eedafac54a503b9275f73ba37c46d82022dfdc84f12f805219"
+    },
+    "react-native-architecture": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "12174e2a3f79ffa969a92c69fc7dcd81bb8e3cfdb00af495f0d00f3eaf04b240"
+    },
+    "react-native-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "26c9e2198b8534330ff7862a6c33d2eee07e2302810b80473deaced469db1b12"
+    },
     "react-native-expert": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "e98281d545a3b08845ad11164d2476b276b4dc277af1f32d28c7b6524c6fa760"
+    },
+    "react-patterns": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "1d12e97a6176d850ac21d86a7fd9309e424c47ad812d03e6bf1889eed5e07746"
+    },
+    "react-state-management": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "ab7ca5f3ff515b873a8446bdf88b9edc156741cf32c07accbbb3804f25543179"
     },
     "responsive-design": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "9df1908623814c4c93cc1fde25caa211b2d28c8ffcdc2b5a12c6b7ae456f0f89"
     },
+    "risk-metrics-calculation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "bc2eab9147752e9933fe3ed5c26b1b00b3bf8614c1567b570c8b94e57d7b95f5"
+    },
+    "rust-async-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "5fe69efa702aabf6dcdf939d07bf6e5920594de3215c3902414bef26e5c74c0c"
+    },
     "rust-engineer": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "d88f327bdb51590405f90c0e440ab6a7ccbba6f41eae3525196455b3ecbc250d"
+    },
+    "saga-orchestration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "1a037950df4da0e4fbc3791a8e265d499b9d1adef2b3aeefc4d7dbcdefca24cf"
     },
     "salesforce-developer": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "7e449d45e1b3f7d3fc82808d7ad70180d31ebb89f3959db2cb9b8c511eb74c51"
     },
+    "sast-configuration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "1798dca8633f65696ce5e9ccac1f0ca1bb811d820da7b17f34514f43b181ec72"
+    },
+    "screen-reader-testing": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "5ab5ca0875b2983c3218ad5a17282a5b1a0dc4c55d6137a94e391b6167ce9e4e"
+    },
+    "secrets-management": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "9b51d1c97b4ee0df6ea0ba6d1bb9c8a6b4437ea38a2ac77e8a8a927b57d36067"
+    },
     "secure-code-guardian": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "bfbc5a9fa4f09f0e95d5893417a6a4244ef36727fa7ca15bbddf61778503f0da"
+    },
+    "security-requirement-extraction": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "c796bd74b38588245666c83913784929bb3c57ea876fcb981fc9a42d4a113dff"
     },
     "security-reviewer": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "b110bd28f9009518261829525c4480acd7d045a75da0ebeaf6ffdd6a39cde18d"
     },
+    "service-mesh-observability": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "a2669e2456cc804aa8de858959077c639acd45eb87fc1a30efcd8624ed302217"
+    },
+    "shadcn-ui": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "fc286bef24c7ed9f6d22410ee524b3a83cc38825fb06313d46b5b13a90454135"
+    },
+    "shellcheck-configuration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "c43ccb9eaceb37abc7c5efc6e5ee444fedd13eea54a71020d3f9a4bd91586320"
+    },
     "shopify-expert": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "5388ee3b7dbc70ca85db354eff8a8ffda6780120afdb92b3bf5c930c4a793af4"
+    },
+    "similarity-search-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "2a0fbf9dae26b45bce72c58fc151bf3d6cfce93765d56f0f1f1eeb032b1e9204"
+    },
+    "skill-creator": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "a096b9af85c9d954374ebe3f7a23b5b7737ed3f35fe2a8f5893742c4e00dba1c"
+    },
+    "slack-gif-creator": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "146d0f407e3f04aac0378b74bb238833b24bbd5e6387b932e82cfbf228f219b4"
+    },
+    "slo-implementation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "0eb1cc2fcb2d504bdf83e6feb49dbff5d5ec7c7ee9463d80065fb80127cfb826"
+    },
+    "solidity-security": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "5e6bd96aa573db546f027ba29730af40903224470661afe833dd9bc131196f8e"
     },
     "spark-engineer": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "dbe01fee87d57c0b19aa77b45b27e60dd28119918840bbb3e2ac6a879a2a34c4"
     },
+    "spark-optimization": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "173d3aa4f53ea678cb25d62eb3c0dea4869a929f8d7e11993a25b9255bc19ed6"
+    },
     "spec-miner": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "54d990cdf9f4921b9e8ed4635393c6e343a174a8e224b84a5a66652059bb8ebb"
     },
+    "spring-ai-mcp-server-patterns": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "d555cd1c9da9237295a2e1b5b753ae744bee0475f43a7c55e791d5c28adc4d17"
+    },
+    "spring-boot-actuator": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "13c30d370725ba3dbdb1243ff8029916bef45582b9a28793cf0b369c3aa58ca4"
+    },
+    "spring-boot-cache": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "c5fb34f538582b3884d7f98d68a9fd7b4e6d0f577a6d4bc5ff2b7c0e9dab7fa9"
+    },
+    "spring-boot-crud-patterns": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "30e4423764ff86b18490a63ad6bc1668478645ba731c2651752f5d01c975127e"
+    },
+    "spring-boot-dependency-injection": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "fe6d9468ccd42a053f672b88de24fafafe510fa6229ce39d74e3fb14a6e2b67f"
+    },
     "spring-boot-engineer": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "e1d2a67bbd62ad760b36aeae7b7abd6edcf3aaab28029515b218c84dfeb5889a"
+    },
+    "spring-boot-event-driven-patterns": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "8680bca8a4b34c0ab8369073322a83cbb6ff8df3a1d6b006951127e554f96899"
+    },
+    "spring-boot-openapi-documentation": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "8820d19aabaae6981d6e46e067d58d3cf2b0e148b70dc6df288803504066acd8"
+    },
+    "spring-boot-resilience4j": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "b05483dbf6ac44f1b861995c5c8f122d930b97154766bc2b91b1e245dbf95b57"
+    },
+    "spring-boot-rest-api-standards": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "da302c509538ba6b896e6253a2857ba0c6f50c29428ce29377bf981b4df71c9d"
+    },
+    "spring-boot-saga-pattern": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "76d6359eceb0ef8790910ba33392d9cc3d446c466d45e50668818b8205433c0d"
+    },
+    "spring-boot-security-jwt": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "e26ea9274667ee934990c198786ada90576d571faa31a668fa55b0860b8402b3"
+    },
+    "spring-boot-test-patterns": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "141ef86a127054ba9b71b70b7b6c7502046f8d834ab23265dc0b6e76eb4b3ae1"
+    },
+    "spring-data-jpa": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "5321d461cab832d8d69714169335674c66d26cd234cb026ee78227b245c558bd"
+    },
+    "spring-data-neo4j": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "8a94341e8bf82c63c7e7d20fe79727ba237220994168dde1233c7a6e812ab985"
+    },
+    "sql-optimization-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "5d182f85b327275d3b159d4ebc864691baa6f8fdec30a9cce1f04a0cf10dce2b"
     },
     "sql-pro": {
       "source": "jeffallan/claude-skills",
@@ -386,6 +1301,26 @@
       "sourceType": "github",
       "computedHash": "50c083433924b65f43a99aca0091dff06fcce01b8813135d910a83d3b53b48c8"
     },
+    "startup-financial-modeling": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "0a87d8128b9a264465c5485b6cb1299711a40cd0a4de70ed9a0015a6b7666c8b"
+    },
+    "startup-metrics-framework": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "61666d86b14b360954e2b021a69fbea0bc76d82b8296b3de011cd0afce99fa8a"
+    },
+    "stride-analysis-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "05df4bd9824e35968dacce84fe291421c8f08d44728bae6cde34504a81cb3964"
+    },
+    "stripe-integration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f2e459132f83ed98e30a6ff74757b08be2772056c7c6b91f3afb95823b224dc6"
+    },
     "supabase-postgres-best-practices": {
       "source": "supabase/agent-skills",
       "sourceType": "github",
@@ -396,10 +1331,55 @@
       "sourceType": "github",
       "computedHash": "38063d1ecfb433ab3d0c5d5e8e5a22f630ee50896a18cfd049aeb792bc54d715"
     },
+    "tailwind-css-patterns": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "a9d14dbb31901e53f37a33cf4d7495da95c66781dc67fe62b3e70a944bd050e0"
+    },
+    "tailwind-design-system": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "d0e4d2ba5a99cdc6e264d3927d1d81e85e79f551c8e246fa0a86123217eaad94"
+    },
+    "task-coordination-strategies": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "ed4d1652bdc81a055e2ab2e13bf288836c3a6174009d9a780e4dd4b4be42d1ae"
+    },
+    "team-communication-protocols": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "4d516f704f962e8731ba905b2505c313cae9442e9baf8528d0409481df051be5"
+    },
+    "team-composition-analysis": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "526de5db63884f37fe2c2d25954948c561385781989c510e6dbd173aee3fc25e"
+    },
+    "team-composition-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "fa13c60eb0c26da5a8f169182718261074c876c6d51b5dd8215a3de768841f4c"
+    },
+    "template-skill": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "38c88f722b574a922311d334a70c2008a2a5b896f06eaa75516d716e5725b26f"
+    },
+    "temporal-python-testing": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "749b486daa5a8c68d33dff3e3fbc523cec2728db729bdd9366f2c8bcabc8f992"
+    },
     "terraform-engineer": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "6602529277c975ee9c97db9da7b1f9189a6763a2a42c6acb468172e596f6d0be"
+    },
+    "terraform-module-library": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "16938fa3d950af827d53ea9c5621795712dd7d9779cfb4a21a2faf4bd420ace9"
     },
     "test-master": {
       "source": "jeffallan/claude-skills",
@@ -411,6 +1391,41 @@
       "sourceType": "github",
       "computedHash": "ff233e9bbbb9d967c0057c7927f587d7625772275d9c8e41f0d7feb7cb032d2b"
     },
+    "theme-factory": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "93e78aa44f8fa00bb2c0608f400de1e1dcd6494611dd8ea27c867654240c7bcd"
+    },
+    "threat-mitigation-mapping": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f02cedeac154f4afdcf89290e21af30ea6366e23c7c62768cacc76cdd50ec4b5"
+    },
+    "track-management": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "7f086653348bd02f86992a189c8fe78bede343cea1724a7c2ea701e6a4d76b04"
+    },
+    "turborepo-caching": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "726243c7c25600a4c9e8feb948e57e83ae592bc570328d0b079fb442642c55cc"
+    },
+    "turborepo-monorepo": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "551759a936ebfc6c4dc8a36e9603f84b79969df057e47a6e56be58736b0d0824"
+    },
+    "typescript-advanced-types": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "a03a83996ae9d2f4dd6d4db08899d61761c7d5351bce4c695d20a21197742a36"
+    },
+    "typescript-docs": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "56256a98730cb98eb51a0f66db50984cb78bedebfe97b3b63ae1054478c365de"
+    },
     "typescript-pro": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
@@ -420,6 +1435,116 @@
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
       "sourceType": "github",
       "computedHash": "e688fcd4c5693e14ebd00d48e982dbd2be060fbea89f5f60531e79c704a1bc28"
+    },
+    "unit-test-application-events": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "a9a220e7c237d6f0331119388bd7c93db0a0172b2364b8e2cb7145d4e2a08ceb"
+    },
+    "unit-test-bean-validation": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "1369d8d47dd50ff00574a458a9d74d1d6e03b5026edf5791f4e46b491fd0945a"
+    },
+    "unit-test-boundary-conditions": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "48f07545cf6a5a8e22891ab78e1dcef263d30830bb31ba6fb59f8ab5711cc6ec"
+    },
+    "unit-test-caching": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "39f83d80f5872cc215f5037500c92cfc30df587e66baab3dd39a4c48be25bf65"
+    },
+    "unit-test-config-properties": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "fa79d6dd4c6ecd008afa630bfcf725dfe3fba0a48be6c9e1e46a60cb2beb4b36"
+    },
+    "unit-test-controller-layer": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "59b7052a0ffe621db80c248cf6549c18943e124e0b2549254e7627175639f2b6"
+    },
+    "unit-test-exception-handler": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "0da61b4e66c7299dc0ff379ee0566aaf62972516b0e08699f719060e76873f8b"
+    },
+    "unit-test-json-serialization": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "f4cc6eefe4c0a37250a10ad74541ee4d2609e8907cfb3937a46a1c239737eb25"
+    },
+    "unit-test-mapper-converter": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "771a3e65ee0bae1e4e2826867269fc3adbd42bba1ff648a0860d98e03b40afe4"
+    },
+    "unit-test-parameterized": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "ba7d5cc2b6a549a7070766950ced1e371c0d6b6cdc07d3bba9b4bf631b570e3b"
+    },
+    "unit-test-scheduled-async": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "346d179186741f188b4177318dd13455a4e40b423068f478e315c59699cef13c"
+    },
+    "unit-test-security-authorization": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "f1055167246d73384224ad48a5f13c5165471a451c77028c86075a81f20d5732"
+    },
+    "unit-test-service-layer": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "627d76d1d502b4e91f4ef14ef53743cbb1f2497cc38b35b9ca30403329471a29"
+    },
+    "unit-test-utility-methods": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "0276fe9ea21a93f8bafcaf7744aeb2cee34afbda289f4c94bacf80c078f32dd6"
+    },
+    "unit-test-wiremock-rest-api": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "56fbd7c62f4cce7a5426c1db9f62265d3122e72246f6756786f63de6c3266ad6"
+    },
+    "unity-ecs-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "e464e2ca3d12e91ba1c3bb9a6a8dfd04ddda66588bc00a884bd21cabd1986977"
+    },
+    "uv-package-manager": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "c12c51350e6a7a8d35bbbaee138765b4f7d317a3046ee5e7024b8985bb6f8db9"
+    },
+    "vector-index-tuning": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "d78666da88eb8a42f6ec6a81691bbe0cb709ac172ab1134f120207b4c2540658"
+    },
+    "vercel-composition-patterns": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "f98931159fa9c7fed043bcd18a891a46dcf89ababa38df13a4c5b7b30dc0ce07"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "4365be772fd3b41994a72ad478472c6d680678e7f3859860ab010e9c46e48ee0"
+    },
+    "vercel-react-native-skills": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "2e9088a7333666d8c2833b8ff58bd51b955501c42b4c7244f72b4cbf22dafcc4"
+    },
+    "visual-design-foundations": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "5c5e091d61e2f6e465b77650b99d36acfe779cb70f29e9a103b5ba443065a3a9"
     },
     "vue-expert": {
       "source": "jeffallan/claude-skills",
@@ -431,10 +1556,30 @@
       "sourceType": "github",
       "computedHash": "a051ec5913f3d50f4c23fb7f0a0db449ad9fb026e91f12af7551448e415d364e"
     },
+    "wcag-audit-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "63f744e6a907e9d7800e47aeb9e754255e8de525de30881ab823eddd6e91880b"
+    },
+    "web-artifacts-builder": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "143730c6db11d82d8c5db4d0cf8f435421983f1fc510b24f77ee9a0e8bae7704"
+    },
+    "web-component-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "07de4469d88b18ae2e9cbc5cc1d41d46b86756fe7fae53765f6dd7f1db7916ca"
+    },
     "web-design-guidelines": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
       "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
+    },
+    "web3-testing": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "98012ca2d7130ca144af286b8141609573869fbd8fd021fbe8edef484e1712f8"
     },
     "webapp-testing": {
       "source": "anthropics/skills",
@@ -450,6 +1595,21 @@
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "computedHash": "64017aea810dfd5324988ece94380ec097947f0e6e9314f9e2b5e3a86847e3bd"
+    },
+    "workflow-orchestration-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "d12e6620618a62f76928b3eadc24720953581ea47700fe92ba07aa511e338617"
+    },
+    "workflow-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "55e043c64a3b5255da0818d9723730d64a23c359744da56983edc7c1a1a4c628"
+    },
+    "xlsx": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "efd0c8011cf0677d8075cf93867ecec804f9a8754a777e1d2fdb46197e9c247f"
     }
   }
 }

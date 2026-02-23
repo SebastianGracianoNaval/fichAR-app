@@ -26,6 +26,11 @@ import 'mis_horas_screen.dart';
 import 'perfil_screen.dart';
 import 'reportes_screen.dart';
 
+// Breakpoints (flutter-adaptive-ui, definiciones/FRONTEND.md)
+const double _kBreakpointTablet = 600;
+const double _kBreakpointDesktop = 840;
+const double _kContentMaxWidth = 1100;
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key, required this.role});
 
@@ -181,21 +186,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
           if (_isEmployee) await _loadDayData();
           if (widget.role == 'admin') await _loadKpis();
         },
-        child: ListView(
-          padding: const EdgeInsets.all(kSpacingMd),
-          children: [
-            if (widget.role == 'admin') ...[
-              _buildAdminKpiSection(theme),
-              const SizedBox(height: kSpacingLg),
-            ],
-            if (_isEmployee) ...[
-              _buildFicharSection(theme),
-              const SizedBox(height: kSpacingMd),
-              _buildDaySummary(theme),
-              const SizedBox(height: kSpacingLg),
-            ],
-            _buildNavGrid(context),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final isWide = width >= _kBreakpointDesktop;
+
+            return Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: isWide ? _kContentMaxWidth : double.infinity),
+                child: ListView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: kSpacingMd,
+                    vertical: kSpacingMd,
+                  ),
+                  children: [
+                    if (widget.role == 'admin') ...[
+                      _buildAdminKpiSection(theme, width),
+                      const SizedBox(height: kSpacingLg),
+                    ],
+                    if (_isEmployee) ...[
+                      if (width >= _kBreakpointTablet)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: _buildFicharSection(theme)),
+                            const SizedBox(width: kSpacingMd),
+                            SizedBox(
+                              width: width >= _kBreakpointDesktop ? 280 : 220,
+                              child: _buildDaySummary(theme),
+                            ),
+                          ],
+                        )
+                      else ...[
+                        _buildFicharSection(theme),
+                        const SizedBox(height: kSpacingMd),
+                        _buildDaySummary(theme),
+                      ],
+                      const SizedBox(height: kSpacingLg),
+                    ],
+                    _buildNavGrid(context, width),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -328,9 +362,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildAdminKpiSection(ThemeData theme) {
+  Widget _buildAdminKpiSection(ThemeData theme, double screenWidth) {
     if (_kpisLoading) {
-      return _buildKpiSkeleton(theme);
+      return _buildKpiSkeleton(theme, screenWidth);
     }
     if (_kpisError != null) {
       return Container(
@@ -365,18 +399,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
     if (_kpis == null) return const SizedBox.shrink();
-    return _buildKpiCards(theme, _kpis!);
+    return _buildKpiCards(theme, _kpis!, screenWidth);
   }
 
-  Widget _buildKpiSkeleton(ThemeData theme) {
-    return Wrap(
-      spacing: kSpacingMd,
-      runSpacing: kSpacingMd,
+  Widget _buildKpiSkeleton(ThemeData theme, double screenWidth) {
+    final crossAxisCount =
+        screenWidth >= _kBreakpointDesktop ? 4 : 2;
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: crossAxisCount,
+      mainAxisSpacing: kSpacingMd,
+      crossAxisSpacing: kSpacingMd,
+      childAspectRatio: 1.1,
       children: List.generate(
         4,
         (_) => Container(
-          width: (MediaQuery.of(context).size.width - kSpacingMd * 3) / 2,
-          height: 100,
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(kRadiusLg),
@@ -386,7 +424,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildKpiCards(ThemeData theme, DashboardKpis kpis) {
+  Widget _buildKpiCards(ThemeData theme, DashboardKpis kpis, double screenWidth) {
+    final crossAxisCount =
+        screenWidth >= _kBreakpointDesktop ? 4 : 2;
+    final cardPadding = screenWidth >= _kBreakpointDesktop ? kSpacingLg : 16.0;
+
     final cards = [
       _KpiCard(
         icon: Icons.people,
@@ -413,14 +455,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
         color: const Color(0xFF7B1FA2),
       ),
     ];
-    return Wrap(
-      spacing: kSpacingMd,
-      runSpacing: kSpacingMd,
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: crossAxisCount,
+      mainAxisSpacing: kSpacingMd,
+      crossAxisSpacing: kSpacingMd,
+      childAspectRatio: screenWidth >= _kBreakpointDesktop ? 1.2 : 1.1,
       children: cards
           .map(
             (c) => Container(
-              width: (MediaQuery.of(context).size.width - kSpacingMd * 3) / 2,
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(cardPadding),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLowest,
                 borderRadius: BorderRadius.circular(12),
@@ -450,11 +495,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Widget _buildNavGrid(BuildContext context) {
-    return Wrap(
-      spacing: kSpacingMd,
-      runSpacing: kSpacingMd,
-      alignment: WrapAlignment.center,
+  Widget _buildNavGrid(BuildContext context, double screenWidth) {
+    final crossAxisCount = screenWidth >= _kBreakpointDesktop
+        ? 6
+        : screenWidth >= _kBreakpointTablet
+            ? 4
+            : 2;
+    final childAspectRatio = screenWidth >= _kBreakpointDesktop ? 1.15 : 0.95;
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: crossAxisCount,
+      mainAxisSpacing: kSpacingMd,
+      crossAxisSpacing: kSpacingMd,
+      childAspectRatio: childAspectRatio,
       children: [
         _NavCard(
           icon: Icons.person,
@@ -642,6 +697,9 @@ class _NavCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isWide = MediaQuery.sizeOf(context).width >= _kBreakpointDesktop;
+    final iconSize = isWide ? 40.0 : 48.0;
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
@@ -662,13 +720,26 @@ class _NavCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(kRadiusMd),
           child: Padding(
-            padding: const EdgeInsets.all(kSpacingLg),
+            padding: EdgeInsets.symmetric(
+              horizontal: isWide ? kSpacingMd : kSpacingLg,
+              vertical: isWide ? kSpacingMd : kSpacingLg,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(icon, size: 48),
-                const SizedBox(height: kSpacingSm),
-                Text(title),
+                Icon(icon, size: iconSize, color: theme.colorScheme.primary),
+                SizedBox(height: isWide ? kSpacingXs : kSpacingSm),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
