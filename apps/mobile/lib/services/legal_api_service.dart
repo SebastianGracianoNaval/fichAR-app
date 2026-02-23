@@ -23,22 +23,31 @@ class LegalApiService {
     return _parseListResponse(res);
   }
 
-  static Future<({List<Map<String, dynamic>> data, int total, String? error})> getAuditLogs({
+  static Future<({
+    List<Map<String, dynamic>> data,
+    int total,
+    int limit,
+    int offset,
+    String? error,
+  })> getAuditLogs({
     required String desde,
     required String hasta,
     String? action,
+    String? userId,
     int limit = 50,
+    int offset = 0,
   }) async {
-    var uri = Uri.parse('${ApiClient.baseUrl}/api/v1/legal/audit-logs').replace(
-      queryParameters: {
-        'desde': desde,
-        'hasta': hasta,
-        'limit': limit.toString(),
-        if (action != null && action.isNotEmpty) 'action': action,
-      },
-    );
+    final params = <String, String>{
+      'desde': desde,
+      'hasta': hasta,
+      'limit': limit.toString(),
+      'offset': offset.toString(),
+    };
+    if (action != null && action.isNotEmpty) params['action'] = action;
+    if (userId != null && userId.isNotEmpty) params['user_id'] = userId;
+    final uri = Uri.parse('${ApiClient.baseUrl}/api/v1/legal/audit-logs').replace(queryParameters: params);
     final res = await ApiClient.client.get(uri, headers: await ApiClient.authHeaders()).timeout(ApiClient.defaultTimeout);
-    return _parseListResponse(res);
+    return _parseAuditLogsResponse(res);
   }
 
   static Future<({List<Map<String, dynamic>> data, int total, String? error})> getLicencias({
@@ -73,6 +82,40 @@ class LegalApiService {
     final uri = Uri.parse('${ApiClient.baseUrl}/api/v1/legal/hash-chain').replace(queryParameters: params);
     final res = await ApiClient.client.get(uri, headers: await ApiClient.authHeaders()).timeout(ApiClient.defaultTimeout);
     return _parseListResponse(res);
+  }
+
+  static ({
+    List<Map<String, dynamic>> data,
+    int total,
+    int limit,
+    int offset,
+    String? error,
+  }) _parseAuditLogsResponse(http.Response res) {
+    if (res.statusCode != 200) {
+      final body = res.body.isNotEmpty
+          ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
+          : <String, dynamic>{};
+      return (
+        data: [],
+        total: 0,
+        limit: 50,
+        offset: 0,
+        error: body['error'] as String? ?? 'Error al obtener logs',
+      );
+    }
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    final data = (body['data'] as List<dynamic>?)
+            ?.map((e) => Map<String, dynamic>.from(e as Map))
+            .toList() ??
+        [];
+    final meta = body['meta'] as Map<String, dynamic>?;
+    return (
+      data: data,
+      total: meta?['total'] as int? ?? 0,
+      limit: meta?['limit'] as int? ?? 50,
+      offset: meta?['offset'] as int? ?? 0,
+      error: null,
+    );
   }
 
   static ({List<Map<String, dynamic>> data, int total, String? error}) _parseListResponse(

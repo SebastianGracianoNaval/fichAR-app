@@ -14,8 +14,8 @@ alwaysApply: false
 
 ## Guidelines
 
-- Consult `definiciones/FRONTEND.txt` for low-end vs high-end
-- Consult `definiciones/OPTIMIZACION.txt` for battery and geofencing
-- Consult `definiciones/PANTALLAS.txt` for screens
+- Consult `definiciones/FRONTEND.md` for low-end vs high-end
+- Consult `definiciones/OPTIMIZACION.md` for battery and geofencing
+- Consult `definiciones/PANTALLAS.md` for screens
 - Android: API 21+, WorkManager, Fused Location
 - iOS: iOS 12+, Background Fetch, Face ID

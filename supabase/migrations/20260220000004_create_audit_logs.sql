@@ -1,5 +1,5 @@
 -- fichAR Migration 4: audit_logs (INSERT only, immutable)
--- Referencia: definiciones/SEGURIDAD.txt, definiciones/ESQUEMA-BD.txt
+-- Referencia: definiciones/SEGURIDAD.md, definiciones/ESQUEMA-BD.md
 
 CREATE TABLE IF NOT EXISTS public.audit_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

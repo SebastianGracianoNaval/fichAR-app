@@ -13,8 +13,8 @@ description: Flutter widget tests, integration tests. Use when adding or modifyi
 
 ## Source of Truth
 
-- `definiciones/TESTING-DOCUMENTACION.txt`
-- `definiciones/PANTALLAS.txt`
+- `definiciones/TESTING-DOCUMENTACION.md`
+- `definiciones/PANTALLAS.md`
 
 ## Commands
 

@@ -15,10 +15,10 @@ alwaysApply: false
 
 ## Guidelines
 
-- Consult `definiciones/ARQUITECTURA-TECNICA.txt` for structure
-- Consult `definiciones/ESQUEMA-BD.txt` for schema
-- Consult `definiciones/SEGURIDAD.txt` for auth, RLS, audit
-- Consult `definiciones/API-CONTRACTS.txt` for endpoints (if exists)
+- Consult `definiciones/ARQUITECTURA-TECNICA.md` for structure
+- Consult `definiciones/ESQUEMA-BD.md` for schema
+- Consult `definiciones/SEGURIDAD.md` for auth, RLS, audit
+- Consult `definiciones/API-CONTRACTS.md` for endpoints (if exists)
 
 ## Golden Rule
 

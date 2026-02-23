@@ -14,8 +14,8 @@ alwaysApply: false
 
 ## Guidelines
 
-- Consult `definiciones/ESQUEMA-BD.txt` for schema
-- Consult `definiciones/SEGURIDAD.txt` for RLS, auth, audit
+- Consult `definiciones/ESQUEMA-BD.md` for schema
+- Consult `definiciones/SEGURIDAD.md` for RLS, auth, audit
 - Migraciones en `supabase/migrations/` con formato `YYYYMMDDHHMMSS_descripcion.sql`
 
 ## MCP

@@ -1,5 +1,5 @@
 -- fichAR Migration 1: organizations
--- Referencia: plans/phase-1-2-mobile-web-implementation.md, definiciones/ESQUEMA-BD.txt
+-- Referencia: plans/phase-1-2-mobile-web-implementation.md, definiciones/ESQUEMA-BD.md
 
 CREATE TABLE IF NOT EXISTS public.organizations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

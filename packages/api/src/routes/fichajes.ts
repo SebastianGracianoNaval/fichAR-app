@@ -1,6 +1,6 @@
 import { getSupabaseAdmin } from '../lib/supabase.ts';
 import { requireAuth } from '../lib/auth-middleware.ts';
-import { parseBody } from '../lib/validators.ts';
+import { parseBody, validatePagination } from '../lib/validators.ts';
 import { computeHash } from '../services/fichaje-hash.ts';
 import { validateEntrada } from '../services/fichaje-rules.ts';
 import { dispatchWebhooks } from '../services/webhook-dispatch.ts';
@@ -235,8 +235,11 @@ export async function handleGetFichajes(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const desde = url.searchParams.get('desde');
   const hasta = url.searchParams.get('hasta');
-  const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '50', 10) || 50, 100);
-  const offset = parseInt(url.searchParams.get('offset') ?? '0', 10) || 0;
+  const { limit, offset } = validatePagination(
+    url.searchParams.get('limit'),
+    url.searchParams.get('offset'),
+    { defaultLimit: 50 },
+  );
 
   const admin = getSupabaseAdmin();
   let query = admin
@@ -253,10 +256,10 @@ export async function handleGetFichajes(req: Request): Promise<Response> {
 
   if (error) {
     await logError('critical', 'fichajes_select_failed', { orgId: ctx.orgId, employeeId: ctx.employeeId }, {}, error);
-    return Response.json({ error: 'Error al listar fichajes' }, { status: 500 });
+    return Response.json({ error: 'Error al listar fichajes', code: 'internal' }, { status: 500 });
   }
 
-  return Response.json({ data: data ?? [], meta: { total: count ?? 0 } });
+  return Response.json({ data: data ?? [], meta: { total: count ?? 0, limit, offset } });
 }
 
 const BATCH_MAX = 50;

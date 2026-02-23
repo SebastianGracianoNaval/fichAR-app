@@ -3,7 +3,7 @@ import { getSupabaseAdmin } from '../lib/supabase.ts';
 import { requireAuth } from '../lib/auth-middleware.ts';
 import { requireAdmin } from '../lib/require-admin.ts';
 import { logAudit, logError, getRequestMeta } from '../lib/logger.ts';
-import { validateCuil, validateEmail } from '../lib/validators.ts';
+import { validateCuil, validateEmail, validatePagination } from '../lib/validators.ts';
 import { sendWelcomeWithLink } from '../lib/email-service.ts';
 import { VALID_ROLES } from '@fichar/shared';
 
@@ -32,8 +32,11 @@ export async function handleGetEmployees(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const branchId = url.searchParams.get('branch_id');
   const status = url.searchParams.get('status') ?? 'activo';
-  const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '50', 10) || 50, 100);
-  const offset = parseInt(url.searchParams.get('offset') ?? '0', 10) || 0;
+  const { limit, offset } = validatePagination(
+    url.searchParams.get('limit'),
+    url.searchParams.get('offset'),
+    { defaultLimit: 50 },
+  );
 
   const admin = getSupabaseAdmin();
   let query = admin
@@ -53,10 +56,10 @@ export async function handleGetEmployees(req: Request): Promise<Response> {
 
   if (error) {
     await logError('critical', 'employees_list_failed', { orgId: ctx.orgId }, {}, error);
-    return Response.json({ error: 'Error al listar empleados' }, { status: 500 });
+    return Response.json({ error: 'Error al listar empleados', code: 'internal' }, { status: 500 });
   }
 
-  return Response.json({ data: data ?? [], meta: { total: count ?? 0 } });
+  return Response.json({ data: data ?? [], meta: { total: count ?? 0, limit, offset } });
 }
 
 export async function handleGetEmployeeById(req: Request, employeeId: string): Promise<Response> {
@@ -77,14 +80,20 @@ export async function handleGetEmployeeById(req: Request, employeeId: string): P
     .single();
 
   if (error || !emp) {
-    return Response.json({ error: 'Empleado no encontrado' }, { status: 404 });
+    return Response.json({ error: 'Empleado no encontrado', code: 'not_found' }, { status: 404 });
   }
 
   if (ctx.role === 'supervisor' && emp.supervisor_id !== ctx.employeeId && emp.id !== ctx.employeeId) {
     return Response.json({ error: 'No tenés permiso para ver este empleado', code: 'sin_permiso' }, { status: 403 });
   }
 
-  return Response.json(emp);
+  const { data: empPlaces } = await admin
+    .from('employee_places')
+    .select('place_id')
+    .eq('employee_id', employeeId);
+  const placeIds = (empPlaces ?? []).map((p: { place_id: string }) => p.place_id);
+
+  return Response.json({ ...emp, place_ids: placeIds });
 }
 
 interface PatchEmployeeBody {
@@ -92,6 +101,7 @@ interface PatchEmployeeBody {
   branch_id?: string | null;
   supervisor_id?: string | null;
   modalidad?: string;
+  place_ids?: string[];
 }
 
 export async function handlePatchEmployee(req: Request, employeeId: string): Promise<Response> {
@@ -137,6 +147,48 @@ export async function handlePatchEmployee(req: Request, employeeId: string): Pro
     updates.modalidad = data.modalidad;
   }
 
+  if (data.place_ids !== undefined) {
+    if (!Array.isArray(data.place_ids)) {
+      return Response.json({ error: 'place_ids debe ser un array', code: 'validation' }, { status: 400 });
+    }
+    const placeIds = data.place_ids as string[];
+    const uniqueIds = [...new Set(placeIds)];
+    for (const pid of uniqueIds) {
+      if (typeof pid !== 'string' || !pid.trim()) {
+        return Response.json({ error: 'place_ids inválido', code: 'validation' }, { status: 400 });
+      }
+    }
+    const { data: validPlaces } = await admin
+      .from('places')
+      .select('id')
+      .eq('org_id', ctx.orgId)
+      .in('id', uniqueIds);
+    const validIds = (validPlaces ?? []).map((p: { id: string }) => p.id);
+    if (validIds.length !== uniqueIds.length) {
+      const invalid = uniqueIds.filter((id) => !validIds.includes(id));
+      return Response.json(
+        { error: `Lugares no encontrados: ${invalid.join(', ')}`, code: 'validation' },
+        { status: 400 },
+      );
+    }
+    const { error: delErr } = await admin
+      .from('employee_places')
+      .delete()
+      .eq('employee_id', employeeId);
+    if (delErr) {
+      await logError('critical', 'employee_places_delete_failed', { orgId: ctx.orgId, employeeId }, {}, delErr);
+      return Response.json({ error: 'Error al actualizar lugares', code: 'internal' }, { status: 500 });
+    }
+    if (validIds.length > 0) {
+      const rows = validIds.map((placeId) => ({ employee_id: employeeId, place_id: placeId }));
+      const { error: insErr } = await admin.from('employee_places').insert(rows);
+      if (insErr) {
+        await logError('critical', 'employee_places_insert_failed', { orgId: ctx.orgId, employeeId }, {}, insErr);
+        return Response.json({ error: 'Error al actualizar lugares', code: 'internal' }, { status: 500 });
+      }
+    }
+  }
+
   const { data: emp, error } = await admin
     .from('employees')
     .update(updates)
@@ -147,11 +199,13 @@ export async function handlePatchEmployee(req: Request, employeeId: string): Pro
 
   if (error) {
     await logError('critical', 'employee_patch_failed', { orgId: ctx.orgId, employeeId }, {}, error);
-    return Response.json({ error: 'Error al actualizar empleado' }, { status: 500 });
+    return Response.json({ error: 'Error al actualizar empleado', code: 'internal' }, { status: 500 });
   }
 
   const meta = getRequestMeta(req);
-  await logAudit('empleado_actualizado', { orgId: ctx.orgId, employeeId: ctx.employeeId, ip: meta.ip }, { target_id: employeeId, updates }, 'info');
+  const auditUpdates = { ...updates };
+  if (data.place_ids !== undefined) auditUpdates.place_ids = data.place_ids;
+  await logAudit('empleado_actualizado', { orgId: ctx.orgId, employeeId: ctx.employeeId, ip: meta.ip }, { target_id: employeeId, updates: auditUpdates }, 'info');
 
   return Response.json(emp);
 }
@@ -187,7 +241,7 @@ export async function handleOffboardEmployee(req: Request, employeeId: string): 
     .single();
 
   if (empErr || !emp) {
-    return Response.json({ error: 'Empleado no encontrado' }, { status: 404 });
+    return Response.json({ error: 'Empleado no encontrado', code: 'not_found' }, { status: 404 });
   }
 
   if (emp.role === 'supervisor') {
@@ -216,7 +270,7 @@ export async function handleOffboardEmployee(req: Request, employeeId: string): 
 
   if (updateErr) {
     await logError('critical', 'offboard_failed', { orgId: ctx.orgId, employeeId }, {}, updateErr);
-    return Response.json({ error: 'Error al dar de baja' }, { status: 500 });
+    return Response.json({ error: 'Error al dar de baja', code: 'internal' }, { status: 500 });
   }
 
   const meta = getRequestMeta(req);
@@ -328,6 +382,8 @@ export async function handleImportEmployees(req: Request): Promise<Response> {
   const emailIdx = headers.indexOf('email');
   const rolIdx = headers.indexOf('rol');
   const modalidadIdx = headers.indexOf('modalidad');
+  const lugar1Idx = headers.indexOf('lugar_1');
+  const lugar2Idx = headers.indexOf('lugar_2');
 
   if (dniIdx < 0 || cuilIdx < 0 || nombreIdx < 0 || emailIdx < 0 || rolIdx < 0) {
     return Response.json({ error: 'Columnas requeridas: dni, cuil, nombre, email, rol' }, { status: 400 });
@@ -339,14 +395,31 @@ export async function handleImportEmployees(req: Request): Promise<Response> {
   const admin = getSupabaseAdmin();
   const seenEmails = new Set<string>();
 
-  // Fetch org name and welcome email config once before loop (avoid N+1)
-  const [orgResult, cfgResult] = await Promise.all([
+  // Fetch org name, welcome config, places, and existing emails once (VOIS-O: pre-fetch, avoid N+1)
+  const [orgResult, cfgResult, placesResult, emailsResult] = await Promise.all([
     admin.from('organizations').select('name').eq('id', ctx.orgId).single(),
     admin.from('org_configs').select('value').eq('org_id', ctx.orgId).eq('key', 'import_welcome').maybeSingle(),
+    admin.from('places').select('id, nombre').eq('org_id', ctx.orgId),
+    admin.from('employees').select('email').eq('org_id', ctx.orgId),
   ]);
   const orgName = (orgResult.data?.name as string | undefined) ?? 'fichAR';
   const welcomeMethod = (cfgResult.data?.value as string | undefined) ?? 'link';
   const sendWelcomeEmails = welcomeMethod === 'link';
+
+  const existingEmails = new Set(
+    (emailsResult.data ?? [])
+      .filter((r: { email?: string }) => r.email)
+      .map((r: { email: string }) => r.email.toLowerCase()),
+  );
+
+  const placeNameToId = new Map<string, string>();
+  for (const p of placesResult.data ?? []) {
+    const name = (p as { nombre: string }).nombre?.trim();
+    if (name) {
+      const key = name.toLowerCase();
+      if (!placeNameToId.has(key)) placeNameToId.set(key, (p as { id: string }).id);
+    }
+  }
 
   const redirectTo =
     process.env.IMPORT_WELCOME_REDIRECT_URL?.trim() ||
@@ -355,6 +428,7 @@ export async function handleImportEmployees(req: Request): Promise<Response> {
 
   // Collect { email, nombre, link } for batch email sending after loop
   const emailQueue: { email: string; nombre: string; link: string }[] = [];
+  const pendingEmployeePlaces: { employeeId: string; placeIds: string[] }[] = [];
 
   for (let i = 0; i < dataRows.length; i++) {
     const row = dataRows[i];
@@ -365,6 +439,8 @@ export async function handleImportEmployees(req: Request): Promise<Response> {
     const email = String(row[emailIdx] ?? '').trim().toLowerCase();
     const rol = String(row[rolIdx] ?? 'empleado').trim().toLowerCase();
     const modalidad = modalidadIdx >= 0 ? String(row[modalidadIdx] ?? 'presencial').trim().toLowerCase() : 'presencial';
+    const lugar1Raw = lugar1Idx >= 0 ? String(row[lugar1Idx] ?? '').trim() : '';
+    const lugar2Raw = lugar2Idx >= 0 ? String(row[lugar2Idx] ?? '').trim() : '';
 
     if (!dni || !nombre || !email) {
       errors.push({ row: rowNum, reason: 'Campos obligatorios vacíos' });
@@ -375,7 +451,7 @@ export async function handleImportEmployees(req: Request): Promise<Response> {
       continue;
     }
     if (!validateCuil(cuilRaw)) {
-      errors.push({ row: rowNum, reason: 'CUIL inválido' });
+      errors.push({ row: rowNum, reason: `Fila ${rowNum}: CUIL inválido` });
       continue;
     }
     if (!(VALID_ROLES as readonly string[]).includes(rol)) {
@@ -391,15 +467,24 @@ export async function handleImportEmployees(req: Request): Promise<Response> {
       continue;
     }
 
-    const { data: existing } = await admin
-      .from('employees')
-      .select('id')
-      .eq('org_id', ctx.orgId)
-      .eq('email', email)
-      .maybeSingle();
-
-    if (existing) {
+    if (existingEmails.has(email)) {
       errors.push({ row: rowNum, reason: `Email ya existe: ${email}` });
+      continue;
+    }
+
+    const placeIds: string[] = [];
+    const missingPlaces: string[] = [];
+    for (const raw of [lugar1Raw, lugar2Raw]) {
+      if (!raw) continue;
+      const placeId = placeNameToId.get(raw.toLowerCase());
+      if (!placeId) {
+        missingPlaces.push(raw);
+      } else if (!placeIds.includes(placeId)) {
+        placeIds.push(placeId);
+      }
+    }
+    if (missingPlaces.length > 0) {
+      errors.push({ row: rowNum, reason: `Lugar no encontrado: ${missingPlaces.join(', ')}` });
       continue;
     }
 
@@ -417,22 +502,33 @@ export async function handleImportEmployees(req: Request): Promise<Response> {
       continue;
     }
 
-    const { error: empErr } = await admin.from('employees').insert({
-      org_id: ctx.orgId,
-      auth_user_id: authUser.user.id,
-      email,
-      role: rol,
-      status: 'activo',
-      dni,
-      cuil: cuilNorm,
-      name: nombre,
-      modalidad,
-    });
+    const { data: newEmp, error: empErr } = await admin
+      .from('employees')
+      .insert({
+        org_id: ctx.orgId,
+        auth_user_id: authUser.user.id,
+        email,
+        role: rol,
+        status: 'activo',
+        dni,
+        cuil: cuilNorm,
+        name: nombre,
+        modalidad,
+      })
+      .select('id')
+      .single();
 
-    if (empErr) {
+    if (empErr || !newEmp) {
       await admin.auth.admin.deleteUser(authUser.user.id);
       errors.push({ row: rowNum, reason: 'Error al crear empleado' });
       continue;
+    }
+
+    if (placeIds.length > 0) {
+      pendingEmployeePlaces.push({
+        employeeId: (newEmp as { id: string }).id,
+        placeIds,
+      });
     }
 
     seenEmails.add(email);
@@ -454,6 +550,24 @@ export async function handleImportEmployees(req: Request): Promise<Response> {
           emailQueue.push({ email, nombre, link: actionLink });
         } else {
           await logError('warning', 'import_welcome_link_empty', { orgId: ctx.orgId, employeeId: ctx.employeeId }, { email });
+        }
+      }
+    }
+  }
+
+  const allEmployeePlacesRows = pendingEmployeePlaces.flatMap(({ employeeId, placeIds }) =>
+    placeIds.map((placeId) => ({ employee_id: employeeId, place_id: placeId })),
+  );
+  if (allEmployeePlacesRows.length > 0) {
+    const { error } = await admin.from('employee_places').insert(allEmployeePlacesRows);
+    if (error) {
+      await logError('warning', 'import_employee_places_batch_failed', { orgId: ctx.orgId }, { count: allEmployeePlacesRows.length }, error);
+      for (const { employeeId, placeIds } of pendingEmployeePlaces) {
+        const { error: epErr } = await admin
+          .from('employee_places')
+          .insert(placeIds.map((placeId) => ({ employee_id: employeeId, place_id: placeId })));
+        if (epErr) {
+          await logError('warning', 'import_employee_places_fallback_failed', { orgId: ctx.orgId, employeeId }, {}, epErr);
         }
       }
     }

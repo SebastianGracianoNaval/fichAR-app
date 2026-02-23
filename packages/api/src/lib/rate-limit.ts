@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis';
+import { logError } from './logger.ts';
 
 export const FAIL_THRESHOLD = 5;
 const WINDOW_SEC = 5 * 60;
@@ -128,7 +129,7 @@ export async function checkLoginRateLimit(req: Request): Promise<{ allowed: bool
 
   if (!hasWarnedMemory) {
     hasWarnedMemory = true;
-    console.warn('Rate limit: Redis not configured, using in-memory store (single instance only)');
+    void logError('warning', 'redis_fallback', undefined, { reason: 'in-memory store, single instance only' }, undefined);
   }
   return checkMemory(ip);
 }

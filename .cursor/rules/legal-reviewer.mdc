@@ -12,7 +12,7 @@ alwaysApply: false
 
 ## Guidelines
 
-- Consult `clean_definitions/VALIDEZ-PROBATORIA-JUICIOS-ARGENTINA.txt`
+- Consult `definiciones/VALIDEZ-PROBATORIA-JUICIOS-ARGENTINA.md`
 - Consult `definiciones/DEFINICION-PROYECTO-FICHAR.md` section 3 (Marco Legal)
 - Output legal checklist before approving changes
 - Ensure probative validity for labor lawsuits (Argentina)

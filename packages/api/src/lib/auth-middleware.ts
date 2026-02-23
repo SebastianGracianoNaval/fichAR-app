@@ -12,12 +12,12 @@ export async function requireAuth(req: Request): Promise<{ ok: true; ctx: AuthCo
   const authHeader = req.headers.get('Authorization');
   const token = authHeader?.replace(/^Bearer\s+/i, '');
   if (!token) {
-    return { ok: false, res: Response.json({ error: 'Authorization required' }, { status: 401 }) };
+    return { ok: false, res: Response.json({ error: 'Token inválido o expirado', code: 'unauthorized' }, { status: 401 }) };
   }
 
   const { data: { user }, error } = await getSupabaseAdmin().auth.getUser(token);
   if (error || !user) {
-    return { ok: false, res: Response.json({ error: 'Token inválido' }, { status: 401 }) };
+    return { ok: false, res: Response.json({ error: 'Token inválido o expirado', code: 'unauthorized' }, { status: 401 }) };
   }
 
   const { data: emp, error: empErr } = await getSupabaseAdmin()
@@ -27,7 +27,7 @@ export async function requireAuth(req: Request): Promise<{ ok: true; ctx: AuthCo
     .single();
 
   if (empErr || !emp) {
-    return { ok: false, res: Response.json({ error: 'Token inválido' }, { status: 401 }) };
+    return { ok: false, res: Response.json({ error: 'Token inválido o expirado', code: 'unauthorized' }, { status: 401 }) };
   }
 
   if (emp.status !== 'activo') {

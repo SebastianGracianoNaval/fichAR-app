@@ -6,17 +6,24 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/device_capabilities.dart';
 import '../core/offline_queue.dart';
+import '../theme.dart';
+import '../widgets/fichar_button.dart';
+import '../services/dashboard_api_service.dart';
 import '../services/fichajes_api_service.dart';
 import '../services/licencias_api_service.dart';
 import '../utils/error_utils.dart';
 import 'admin_config_screen.dart';
 import 'admin_empleados_screen.dart';
+import 'admin_lugares_screen.dart';
+import 'legal_audit_logs_screen.dart';
 import 'alertas_screen.dart';
 import 'equipo_screen.dart';
 import 'licencias_aprobar_screen.dart';
 import 'licencias_screen.dart';
 import 'mis_horas_screen.dart';
+import 'perfil_screen.dart';
 import 'reportes_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -36,10 +43,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double? _saldoHoras;
   bool _dayLoading = true;
 
+  DashboardKpis? _kpis;
+  bool _kpisLoading = true;
+  String? _kpisError;
+
   @override
   void initState() {
     super.initState();
     if (_isEmployee) _loadDayData();
+    if (widget.role == 'admin') _loadKpis();
+  }
+
+  Future<void> _loadKpis() async {
+    setState(() {
+      _kpisLoading = true;
+      _kpisError = null;
+    });
+    final result = await DashboardApiService.getAdminDashboard();
+    if (!mounted) return;
+    setState(() {
+      _kpisLoading = false;
+      _kpis = result.data;
+      _kpisError = result.error;
+    });
   }
 
   bool get _isEmployee =>
@@ -96,6 +122,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _fichajeLoading = false;
         });
       } else {
+        if (DeviceCapabilities.hasHaptics) HapticFeedback.heavyImpact();
         setState(() {
           _fichajeError = result.error;
           _fichajeLoading = false;
@@ -109,6 +136,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await _queueOffline();
     } catch (e) {
       if (!mounted) return;
+      if (DeviceCapabilities.hasHaptics) HapticFeedback.heavyImpact();
       setState(() {
         _fichajeError = formatApiError(e);
         _fichajeLoading = false;
@@ -149,15 +177,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _isEmployee ? _loadDayData : () async {},
+        onRefresh: () async {
+          if (_isEmployee) await _loadDayData();
+          if (widget.role == 'admin') await _loadKpis();
+        },
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(kSpacingMd),
           children: [
+            if (widget.role == 'admin') ...[
+              _buildAdminKpiSection(theme),
+              const SizedBox(height: kSpacingLg),
+            ],
             if (_isEmployee) ...[
               _buildFicharSection(theme),
-              const SizedBox(height: 16),
+              const SizedBox(height: kSpacingMd),
               _buildDaySummary(theme),
-              const SizedBox(height: 24),
+              const SizedBox(height: kSpacingLg),
             ],
             _buildNavGrid(context),
           ],
@@ -177,55 +212,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ? 'FICHAR ENTRADA'
             : 'FICHAR SALIDA';
 
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-        child: Column(
-          children: [
-            SizedBox(
-              width: double.infinity,
-              height: 64,
-              child: FilledButton.icon(
-                onPressed: _fichajeLoading || _dayLoading ? null : _fichar,
-                icon: _fichajeLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : Icon(isEntrada ? Icons.login : Icons.logout),
-                label: Text(
-                  buttonLabel,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: kSpacingXl, horizontal: kSpacingLg),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(kRadiusXl),
+        boxShadow: DeviceCapabilities.isLowEnd
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: buttonColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-              ),
+              ],
+      ),
+      child: Column(
+        children: [
+          FicharButton(
+            onPressed: _fichajeLoading || _dayLoading ? null : _fichar,
+            loading: _fichajeLoading,
+            backgroundColor: buttonColor,
+            semanticLabel: buttonLabel,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (!_fichajeLoading)
+                  Icon(isEntrada ? Icons.login : Icons.logout, color: theme.colorScheme.onPrimary),
+                if (!_fichajeLoading) const SizedBox(width: kSpacingSm),
+                Text(buttonLabel),
+              ],
             ),
-            if (_fichajeError != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                _fichajeError!,
-                style: TextStyle(color: theme.colorScheme.error, fontSize: 13),
-                textAlign: TextAlign.center,
-              ),
-            ],
+          ),
+          if (_fichajeError != null) ...[
+            const SizedBox(height: kSpacingMd),
+            Text(
+              _fichajeError!,
+              style: TextStyle(color: theme.colorScheme.error, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildDaySummary(ThemeData theme) {
     if (_dayLoading) {
-      return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Center(child: CircularProgressIndicator()),
+      return Container(
+        padding: const EdgeInsets.all(kSpacingLg),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(kRadiusXl),
+          boxShadow: DeviceCapabilities.isLowEnd
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
+        child: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -235,35 +285,159 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ? _formatTime(_lastFichaje!.timestampServidor)
             : '--:--';
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Resumen del dia', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _SummaryChip(
-                  icon: Icons.access_time,
-                  label: 'Ultimo fichaje',
-                  value: entradaHoy,
-                ),
-                _SummaryChip(
-                  icon: Icons.account_balance_wallet,
-                  label: 'Banco',
-                  value: '${_saldoHoras?.toStringAsFixed(1) ?? '0'} h',
-                  color: (_saldoHoras ?? 0) >= 0
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.error,
+    return Container(
+      padding: const EdgeInsets.all(kSpacingMd),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(kRadiusLg),
+        boxShadow: DeviceCapabilities.isLowEnd
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
               ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Resumen del dia', style: theme.textTheme.titleMedium),
+          const SizedBox(height: kSpacingMd),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _SummaryChip(
+                icon: Icons.access_time,
+                label: 'Ultimo fichaje',
+                value: entradaHoy,
+              ),
+              _SummaryChip(
+                icon: Icons.account_balance_wallet,
+                label: 'Banco',
+                value: '${_saldoHoras?.toStringAsFixed(1) ?? '0'} h',
+                color: (_saldoHoras ?? 0) >= 0
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.error,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdminKpiSection(ThemeData theme) {
+    if (_kpisLoading) {
+      return _buildKpiSkeleton(theme);
+    }
+    if (_kpisError != null) {
+      return Container(
+        padding: const EdgeInsets.all(kSpacingLg),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(kRadiusLg),
+          boxShadow: DeviceCapabilities.isLowEnd
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Column(
+          children: [
+            Text(
+              _kpisError!,
+              style: TextStyle(color: theme.colorScheme.error),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: kSpacingMd),
+            FilledButton(
+              onPressed: _loadKpis,
+              child: const Text('Reintentar'),
             ),
           ],
         ),
+      );
+    }
+    if (_kpis == null) return const SizedBox.shrink();
+    return _buildKpiCards(theme, _kpis!);
+  }
+
+  Widget _buildKpiSkeleton(ThemeData theme) {
+    return Wrap(
+      spacing: kSpacingMd,
+      runSpacing: kSpacingMd,
+      children: List.generate(
+        4,
+        (_) => Container(
+          width: (MediaQuery.of(context).size.width - kSpacingMd * 3) / 2,
+          height: 100,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(kRadiusLg),
+          ),
+        ),
       ),
+    );
+  }
+
+  Widget _buildKpiCards(ThemeData theme, DashboardKpis kpis) {
+    final cards = [
+      _KpiCard(
+        icon: Icons.people,
+        label: 'Empleados',
+        value: kpis.totalEmpleados.toString(),
+        color: theme.colorScheme.primary,
+      ),
+      _KpiCard(
+        icon: Icons.login,
+        label: 'Fichados hoy',
+        value: kpis.fichadosHoy.toString(),
+        color: const Color(0xFF00C853),
+      ),
+      _KpiCard(
+        icon: Icons.warning,
+        label: 'Alertas pendientes',
+        value: kpis.alertasPendientes.toString(),
+        color: const Color(0xFFF57C00),
+      ),
+      _KpiCard(
+        icon: Icons.medical_services,
+        label: 'Licencias pendientes',
+        value: kpis.licenciasPendientes.toString(),
+        color: const Color(0xFF7B1FA2),
+      ),
+    ];
+    return Wrap(
+      spacing: kSpacingMd,
+      runSpacing: kSpacingMd,
+      children: cards
+          .map(
+            (c) => Container(
+              width: (MediaQuery.of(context).size.width - kSpacingMd * 3) / 2,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: DeviceCapabilities.isLowEnd
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+              ),
+              child: c,
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -278,10 +452,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildNavGrid(BuildContext context) {
     return Wrap(
-      spacing: 16,
-      runSpacing: 16,
+      spacing: kSpacingMd,
+      runSpacing: kSpacingMd,
       alignment: WrapAlignment.center,
       children: [
+        _NavCard(
+          icon: Icons.person,
+          title: 'Perfil',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PerfilScreen()),
+          ),
+        ),
         if (_isEmployee)
           _NavCard(
             icon: Icons.schedule,
@@ -307,6 +489,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AdminEmpleadosScreen()),
+            ),
+          ),
+        if (['admin'].contains(widget.role))
+          _NavCard(
+            icon: Icons.location_on,
+            title: 'Lugares',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminLugaresScreen()),
             ),
           ),
         if (['admin', 'supervisor'].contains(widget.role))
@@ -347,6 +538,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         if (['admin'].contains(widget.role))
           _NavCard(
+            icon: Icons.history,
+            title: 'Logs',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LegalAuditLogsScreen()),
+            ),
+          ),
+        if (['admin'].contains(widget.role))
+          _NavCard(
             icon: Icons.settings,
             title: 'Configuracion',
             onTap: () => Navigator.push(
@@ -354,6 +554,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
               MaterialPageRoute(builder: (_) => const AdminConfigScreen()),
             ),
           ),
+      ],
+    );
+  }
+}
+
+class _KpiCard extends StatelessWidget {
+  const _KpiCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 24, color: color),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
       ],
     );
   }
@@ -402,19 +641,36 @@ class _NavCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 48),
-              const SizedBox(height: 8),
-              Text(title),
-            ],
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(kRadiusMd),
+        boxShadow: DeviceCapabilities.isLowEnd
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(kRadiusMd),
+          child: Padding(
+            padding: const EdgeInsets.all(kSpacingLg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 48),
+                const SizedBox(height: kSpacingSm),
+                Text(title),
+              ],
+            ),
           ),
         ),
       ),

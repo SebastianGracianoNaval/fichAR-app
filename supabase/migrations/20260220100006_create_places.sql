@@ -1,5 +1,5 @@
 -- fichAR Migration 6: places (lugares de trabajo)
--- Referencia: definiciones/ESQUEMA-BD.txt
+-- Referencia: definiciones/ESQUEMA-BD.md
 
 CREATE TABLE IF NOT EXISTS public.places (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

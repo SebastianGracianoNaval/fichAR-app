@@ -1,6 +1,6 @@
 ---
 name: fichar-audit
-description: Harsh, critical, perfectionist project audit. No leniency. Identifies every gap against AGENTS.md, VOIS+P (Velocity, Optimization, Integration, Security, Personalization), SEGURIDAD.txt, ISO 27001, Reforma Laboral, and judicial readiness. Must guide solutions for each finding. Use when auditing before releases or when user requests honest status. Output goes to audits/ (gitignored).
+description: Harsh, critical, perfectionist project audit. No leniency. Identifies every gap against AGENTS.md, VOIS+P (Velocity, Optimization, Integration, Security, Personalization), SEGURIDAD.md, ISO 27001, Reforma Laboral, and judicial readiness. Must guide solutions for each finding. Use when auditing before releases or when user requests honest status. Output goes to audits/ (gitignored).
 ---
 
 # fichAR Project Audit — Critical Mode
@@ -11,7 +11,7 @@ description: Harsh, critical, perfectionist project audit. No leniency. Identifi
 
 ## Audit Principles
 
-1. **Assume nothing.** Verify each claim against source (definiciones/, AGENTS.md, SEGURIDAD.txt).
+1. **Assume nothing.** Verify each claim against source (definiciones/, AGENTS.md, SEGURIDAD.md).
 2. **Fail explicitly.** If something is missing, state it as FAIL, not "Parcial" or "Pendiente". Use severity: CRITICAL | HIGH | MEDIUM | LOW.
 3. **Guide the fix.** Every finding must include: what is wrong, where it is, what to do, and which file/plan to follow.
 4. **No partial credit.** "We have RLS" is irrelevant if login bypasses it. "We have rate limit" is irrelevant if the app does not use the API.
@@ -21,7 +21,7 @@ description: Harsh, critical, perfectionist project audit. No leniency. Identifi
 
 ## Audit Checklist (Exhaustive)
 
-### 1. Security (SEGURIDAD.txt, ISO 27001)
+### 1. Security (SEGURIDAD.md, ISO 27001)
 
 App must be completely secure: no cyber-attack weak points. Data must be legally admissible in Argentine labor lawsuits. Align with ISO 27001 controls where applicable.
 
@@ -47,7 +47,7 @@ App must be completely secure: no cyber-attack weak points. Data must be legally
 | **S**ecurity | Completely secure. No cyber-attack weak points. Compliant with Argentine labor laws (LCT, Reforma) and ISO 27001. Data legally admissible in labor lawsuits. See S1–S9, RL1–RL3, J1–J5. | Any CRITICAL or HIGH from Security/Reforma/Judicial fails. |
 | **P**ersonalization | Highly configurable and customizable. Law obliges employer control. Admin configures CFG-* via org_configs. Configs exposed and editable without code changes. | CFG-* defined but not implemented; no Admin UI to change configs; hardcoded behavior. |
 
-### 3. Reforma Laboral (Reforma-Laboral-Proyecto-con-cambios-Senado.txt)
+### 3. Reforma Laboral (Reforma-Laboral-Proyecto-con-cambios-Senado.md)
 
 | ID | Article | Check | Fail if |
 |----|---------|-------|---------|
@@ -55,15 +55,15 @@ App must be completely secure: no cyber-attack weak points. Data must be legally
 | RL2 | Art. 197 bis | Hash chain, método fehaciente | Client sends hash; pepper in client; no hash_anterior chain. |
 | RL3 | Art. 52 | Registro ARCA | Future; document as OUT OF SCOPE Phase 1. |
 
-### 4. Judicial Readiness (ROL-AUDITOR-JUICIOS.txt)
+### 4. Judicial Readiness (ROL-INTEGRITY-VIEWER.md)
 
 | ID | Check | Severity | Solution |
 |----|-------|----------|----------|
 | J1 | Fichajes immutable (no UPDATE/DELETE) | CRITICAL | Migration and API must not allow. Verify. |
-| J2 | legal_auditor in RLS for SELECT fichajes, audit_logs | HIGH | Policy must include legal_auditor. |
+| J2 | integrity_viewer in RLS for SELECT fichajes, audit_logs | HIGH | Policy must include integrity_viewer. |
 | J3 | P-LEGAL-01 to P-LEGAL-04 implemented | HIGH | Dashboard /legal-audit, export CSV/XLSX, logs, hash chain view. |
-| J4 | Export includes "Exportado por [user], [fecha]. Uso legal." | MEDIUM | ROL-AUDITOR-JUICIOS §4.1. |
-| J5 | Export SHA-256 of file for integrity | MEDIUM | ROL-AUDITOR-JUICIOS §4.3. |
+| J4 | Export includes "Exportado por [user], [fecha]. Integridad verificable." | MEDIUM | ROL-INTEGRITY-VIEWER §4.1. |
+| J5 | Export SHA-256 of file for integrity | MEDIUM | ROL-INTEGRITY-VIEWER §4.3. |
 
 ### 5. Code Quality (AGENTS.md)
 
@@ -76,11 +76,11 @@ App must be completely secure: no cyber-attack weak points. Data must be legally
 | C5 | logError with severity, context, stack (non-prod) | console.error without structured format. |
 | C6 | Tests for CASOS-LIMITE edge cases | No tests for CL-006, CL-007, CL-025. |
 
-### 6. Personalization (CONFIGURACIONES.txt)
+### 6. Personalization (CONFIGURACIONES.md)
 
 | ID | Check | Severity if FAIL | Solution |
 |----|-------|------------------|----------|
-| P1 | CFG-* from CONFIGURACIONES.txt implemented in org_configs | HIGH | Add keys to org_configs; read via getOrgConfig*. |
+| P1 | CFG-* from CONFIGURACIONES.md implemented in org_configs | HIGH | Add keys to org_configs; read via getOrgConfig*. |
 | P2 | Admin UI to edit org configs (or API PATCH /org-configs) | HIGH | Create endpoint and screen; law requires employer control. |
 | P3 | Configs affect behavior (geoloc, offline, MFA, etc.) | CRITICAL | No hardcoded defaults; read from org_configs. |
 

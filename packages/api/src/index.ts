@@ -1,5 +1,7 @@
 import './load-env.ts';
 import { API_VERSION, printBanner } from '@fichar/shared';
+import { errJson } from './lib/errors.ts';
+import { runWithOrgConfigCache } from './lib/org-config-cache.ts';
 import { matchRoute } from './routes.ts';
 
 export function handleHealth(): Response {
@@ -59,7 +61,7 @@ async function maybeCompress(res: Response, req: Request): Promise<Response> {
   if (res.status < 200 || res.status >= 300) return res;
 
   try {
-    const buf = await res.arrayBuffer();
+    const buf = await res.clone().arrayBuffer();
     if (buf.byteLength < 256) return res;
     const compressed = Bun.gzipSync(new Uint8Array(buf));
     const headers = new Headers(res.headers);
@@ -86,9 +88,9 @@ async function fetchHandler(req: Request): Promise<Response> {
 
   const matched = matchRoute(req.method, path);
   if (!matched) {
-    return applySecurityHeaders(new Response('Not Found', { status: 404 }), req);
+    return applySecurityHeaders(errJson(404, 'Ruta no encontrada', 'not_found'), req);
   }
-  const res = await matched.handler(req);
+  const res = await runWithOrgConfigCache(() => matched.handler(req));
 
   const compressed = await maybeCompress(res, req);
   return applySecurityHeaders(compressed, req);

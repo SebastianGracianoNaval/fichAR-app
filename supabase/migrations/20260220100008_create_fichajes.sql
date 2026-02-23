@@ -1,5 +1,5 @@
 -- fichAR Migration 8: fichajes (inalterables, solo INSERT)
--- Referencia: definiciones/ESQUEMA-BD.txt, SEGURIDAD.txt, CASOS-LIMITE
+-- Referencia: definiciones/ESQUEMA-BD.md, SEGURIDAD.md, CASOS-LIMITE
 
 CREATE TABLE IF NOT EXISTS public.fichajes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -35,39 +35,68 @@ class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
       _previewData = [];
     });
 
-    final result = switch (_tipo) {
-      'fichajes' || 'todo' => await LegalApiService.getFichajes(
+    List<Map<String, dynamic>> data = [];
+    int total = 0;
+    String? err;
+
+    switch (_tipo) {
+      case 'fichajes' || 'todo':
+        final r = await LegalApiService.getFichajes(
           desde: _toIso(_desde!),
           hasta: _toIso(_hasta!),
           limit: 50,
-        ),
-      'logs' => await LegalApiService.getAuditLogs(
+        );
+        data = r.data;
+        total = r.total;
+        err = r.error;
+        break;
+      case 'logs':
+        final r = await LegalApiService.getAuditLogs(
           desde: _toIso(_desde!),
           hasta: _toIso(_hasta!),
           limit: 50,
-        ),
-      'hash_chain' => await LegalApiService.getHashChain(
+        );
+        data = r.data;
+        total = r.total;
+        err = r.error;
+        break;
+      case 'hash_chain':
+        final r = await LegalApiService.getHashChain(
           desde: _toIso(_desde!),
           hasta: _toIso(_hasta!),
           limit: 50,
-        ),
-      'licencias' => await LegalApiService.getLicencias(
+        );
+        data = r.data;
+        total = r.total;
+        err = r.error;
+        break;
+      case 'licencias':
+        final r = await LegalApiService.getLicencias(
           desde: '${_desde!.year}-${_desde!.month.toString().padLeft(2, '0')}-${_desde!.day.toString().padLeft(2, '0')}',
           hasta: '${_hasta!.year}-${_hasta!.month.toString().padLeft(2, '0')}-${_hasta!.day.toString().padLeft(2, '0')}',
           limit: 50,
-        ),
-      _ => await LegalApiService.getFichajes(
+        );
+        data = r.data;
+        total = r.total;
+        err = r.error;
+        break;
+      default:
+        final r = await LegalApiService.getFichajes(
           desde: _toIso(_desde!),
           hasta: _toIso(_hasta!),
           limit: 50,
-        ),
-    };
+        );
+        data = r.data;
+        total = r.total;
+        err = r.error;
+    }
 
+    if (!mounted) return;
     setState(() {
       _loading = false;
-      _previewData = result.data;
-      _total = result.total;
-      _error = result.error;
+      _previewData = data;
+      _total = total;
+      _error = err;
     });
   }
 
@@ -99,12 +128,11 @@ class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
     }
 
     final now = DateTime.now().toUtc().toIso8601String();
-    final ext = formato == 'csv' ? 'csv' : 'xlsx';
-    final filename = 'fichar-legal-$tipo-${DateTime.now().millisecondsSinceEpoch}.$ext';
+    final filename = 'fichar-legal-$tipo-${DateTime.now().millisecondsSinceEpoch}.zip';
 
     if (kIsWeb) {
       setState(() {
-        _exportMessage = 'Exportado el $now. Uso exclusivo fines legales.';
+        _exportMessage = 'Exportado el $now. Exportación con integridad verificable.';
         _exportSha256 = result.sha256;
       });
       return;
@@ -113,7 +141,7 @@ class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
     try {
       await shareExportBytes(result.bytes, filename);
       setState(() {
-        _exportMessage = 'Exportado el $now. Uso exclusivo fines legales.';
+        _exportMessage = 'Exportado el $now. Exportación con integridad verificable.';
         _exportSha256 = result.sha256;
       });
     } catch (e) {

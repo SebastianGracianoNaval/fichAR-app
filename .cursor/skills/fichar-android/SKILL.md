@@ -14,8 +14,8 @@ description: Android API 21+, WorkManager, geofencing, low-end optimization. Use
 
 ## Source of Truth
 
-- `definiciones/OPTIMIZACION.txt`
-- `definiciones/FRONTEND.txt` (low-end mode)
+- `definiciones/OPTIMIZACION.md`
+- `definiciones/FRONTEND.md` (low-end mode)
 
 ## Compatibility
 

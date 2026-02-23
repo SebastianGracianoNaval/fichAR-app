@@ -16,12 +16,15 @@ class _LegalAuditLogsScreenState extends State<LegalAuditLogsScreen> {
   DateTime? _hasta;
   List<Map<String, dynamic>> _data = [];
   int _total = 0;
+  int _limit = 50;
+  int _offset = 0;
   String? _error;
   bool _loading = false;
+  bool _hasLoaded = false;
 
   String _toIso(DateTime d) => d.toUtc().toIso8601String();
 
-  Future<void> _load() async {
+  Future<void> _load({int offset = 0}) async {
     if (_desde == null || _hasta == null) {
       setState(() => _error = 'Seleccioná desde y hasta');
       return;
@@ -34,13 +37,18 @@ class _LegalAuditLogsScreenState extends State<LegalAuditLogsScreen> {
     final result = await LegalApiService.getAuditLogs(
       desde: _toIso(_desde!),
       hasta: _toIso(_hasta!),
-      limit: 200,
+      limit: _limit,
+      offset: offset,
     );
 
+    if (!mounted) return;
     setState(() {
       _loading = false;
+      _hasLoaded = true;
       _data = result.data;
       _total = result.total;
+      _limit = result.limit;
+      _offset = result.offset;
       _error = result.error;
     });
   }
@@ -68,7 +76,7 @@ class _LegalAuditLogsScreenState extends State<LegalAuditLogsScreen> {
 
     if (!kIsWeb) {
       try {
-        await shareExportBytes(result.bytes, 'fichar-legal-logs-${DateTime.now().millisecondsSinceEpoch}.csv');
+        await shareExportBytes(result.bytes, 'fichar-legal-logs-${DateTime.now().millisecondsSinceEpoch}.zip');
       } catch (e) {
         setState(() => _error = 'Error al exportar: $e');
       }
@@ -79,9 +87,25 @@ class _LegalAuditLogsScreenState extends State<LegalAuditLogsScreen> {
   Widget build(BuildContext context) {
     const headers = ['timestamp', 'action', 'user_id', 'resource_type', 'ip'];
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'Volver',
+        ),
+        title: const Text('Logs de auditoría'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loading ? null : () => _load(offset: 0),
+            tooltip: 'Recargar',
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
@@ -121,7 +145,7 @@ class _LegalAuditLogsScreenState extends State<LegalAuditLogsScreen> {
           ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: _loading ? null : _load,
+            onPressed: _loading ? null : () => _load(offset: 0),
             child: _loading
                 ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Text('Cargar logs'),
@@ -129,6 +153,20 @@ class _LegalAuditLogsScreenState extends State<LegalAuditLogsScreen> {
           if (_error != null) ...[
             const SizedBox(height: 8),
             Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ],
+          if (_hasLoaded && _data.isEmpty) ...[
+            const SizedBox(height: 16),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'No hay registros para el período seleccionado',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ),
+            ),
           ],
           if (_data.isNotEmpty) ...[
             const SizedBox(height: 16),
@@ -143,6 +181,35 @@ class _LegalAuditLogsScreenState extends State<LegalAuditLogsScreen> {
                 ),
               ],
             ),
+            if (_total > _limit) ...[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton.icon(
+                    onPressed: _loading || _offset <= 0
+                        ? null
+                        : () => _load(offset: _offset - _limit),
+                    icon: const Icon(Icons.chevron_left, size: 20),
+                    label: const Text('Anterior'),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      '${_offset + 1}-${_offset + _data.length} de $_total',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: _loading || _offset + _data.length >= _total
+                        ? null
+                        : () => _load(offset: _offset + _limit),
+                    icon: const Icon(Icons.chevron_right, size: 20),
+                    label: const Text('Siguiente'),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 8),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -158,6 +225,7 @@ class _LegalAuditLogsScreenState extends State<LegalAuditLogsScreen> {
           ],
         ],
       ),
+    ),
     );
   }
 }

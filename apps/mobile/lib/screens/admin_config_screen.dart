@@ -6,16 +6,20 @@ import '../services/org_configs_api_service.dart';
 const _labels = {
   'geolocalizacion_obligatoria': 'Geolocalizacion obligatoria para fichar',
   'tolerancia_gps_metros': 'Tolerancia GPS (metros)',
+  'geolocalizacion_radio_default': 'Radio default de zona (metros)',
   'descanso_minimo_horas': 'Descanso minimo entre jornadas (horas)',
   'mfa_obligatorio_admin': '2FA obligatorio para Admin',
   'modo_offline_habilitado': 'Permitir fichaje offline',
   'import_welcome': 'Enviar email de bienvenida al importar',
   'logs_retencion_dias': 'Retencion de logs (dias)',
+  'licencias_aprobador': 'Quien aprueba licencias',
+  'dispositivos_maximos': 'Maximo de dispositivos por empleado',
 };
 
 const _sections = {
-  'Fichaje': ['geolocalizacion_obligatoria', 'tolerancia_gps_metros', 'descanso_minimo_horas', 'modo_offline_habilitado'],
-  'Seguridad': ['mfa_obligatorio_admin'],
+  'Fichaje': ['geolocalizacion_obligatoria', 'tolerancia_gps_metros', 'geolocalizacion_radio_default', 'descanso_minimo_horas', 'modo_offline_habilitado'],
+  'Licencias': ['licencias_aprobador'],
+  'Seguridad': ['mfa_obligatorio_admin', 'dispositivos_maximos'],
   'Importacion': ['import_welcome'],
   'Logs': ['logs_retencion_dias'],
 };
@@ -63,7 +67,7 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
     _draft.clear();
     for (final c in result.data) {
       _draft[c.key] = c.value;
-      if (c.type == 'number') {
+      if (c.type == 'number' && (c.options == null || c.options!.isEmpty)) {
         _controllers[c.key] = TextEditingController(text: (c.value as num?)?.toString() ?? '');
       }
     }
@@ -86,7 +90,7 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
     final changed = <String, dynamic>{};
     for (final c in _configs) {
       dynamic draftVal = _draft[c.key];
-      if (c.type == 'number') {
+      if (c.type == 'number' && (c.options == null || c.options!.isEmpty)) {
         final controller = _controllers[c.key];
         if (controller != null && controller.text.isNotEmpty) {
           final n = int.tryParse(controller.text);
@@ -201,7 +205,10 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
   }
 
   Widget _buildConfigRow(ThemeData theme, String key) {
-    final config = _configs.firstWhere((c) => c.key == key, orElse: () => OrgConfigItem(key: key, value: null, type: 'string'));
+    final config = _configs.firstWhere(
+      (c) => c.key == key,
+      orElse: () => OrgConfigItem(key: key, value: null, type: 'string'),
+    );
     final label = _labels[key] ?? key;
     final isBool = config.type == 'boolean';
     final value = _getValue(key);
@@ -212,6 +219,55 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
         subtitle: _getSubtitle(key),
         value: value == true,
         onChanged: (v) => _setValue(key, v),
+      );
+    }
+
+    if (config.type == 'select' && config.options != null && config.options!.isNotEmpty) {
+      final options = config.options!.map((o) => o as String).toList();
+      final current = value as String? ?? config.value as String? ?? options.first;
+      return ListTile(
+        title: Text(label),
+        subtitle: _getSubtitle(key),
+        trailing: SizedBox(
+          width: 140,
+          child: DropdownButtonFormField<String>(
+            initialValue: options.contains(current) ? current : options.first,
+            decoration: const InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              border: InputBorder.none,
+            ),
+            items: options.map((o) => DropdownMenuItem(value: o, child: Text(o))).toList(),
+            onChanged: (v) => _setValue(key, v),
+          ),
+        ),
+      );
+    }
+
+    if (config.type == 'number' && config.options != null && config.options!.isNotEmpty) {
+      final options = config.options!.map((o) => o as num).map((n) => n.toInt()).toList();
+      final current = value is num ? value.toInt() : (config.value is num ? (config.value as num).toInt() : 3);
+      return ListTile(
+        title: Text(label),
+        subtitle: _getSubtitle(key),
+        trailing: SizedBox(
+          width: 140,
+          child: DropdownButtonFormField<int>(
+            initialValue: options.contains(current) ? current : options.first,
+            decoration: const InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              border: InputBorder.none,
+            ),
+            items: options
+                .map((v) => DropdownMenuItem(
+                      value: v,
+                      child: Text(v == -1 ? 'Ilimitado' : v.toString()),
+                    ))
+                .toList(),
+            onChanged: (v) => _setValue(key, v),
+          ),
+        ),
       );
     }
 
@@ -247,8 +303,17 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
     if (key == 'tolerancia_gps_metros') {
       return const Text('0-50');
     }
+    if (key == 'geolocalizacion_radio_default') {
+      return const Text('50-500');
+    }
     if (key == 'logs_retencion_dias') {
       return const Text('365-3650');
+    }
+    if (key == 'licencias_aprobador') {
+      return const Text('supervisor, admin o ambos');
+    }
+    if (key == 'dispositivos_maximos') {
+      return const Text('1, 2, 3, 5, 10 o Ilimitado');
     }
     return null;
   }

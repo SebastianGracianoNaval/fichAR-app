@@ -12,6 +12,6 @@ alwaysApply: false
 
 ## Guidelines
 
-- Consult `definiciones/SEGURIDAD.txt` exhaustively
+- Consult `definiciones/SEGURIDAD.md` exhaustively
 - Verify: hash chain, RLS, audit logs, 2FA, rate limit
-- Pre-deploy checklist in SEGURIDAD.txt section 13
+- Pre-deploy checklist in SEGURIDAD.md section 13

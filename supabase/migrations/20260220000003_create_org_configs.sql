@@ -1,5 +1,5 @@
 -- fichAR Migration 3: org_configs (CFG-* defaults)
--- Referencia: definiciones/CONFIGURACIONES.txt
+-- Referencia: definiciones/CONFIGURACIONES.md
 
 CREATE TABLE IF NOT EXISTS public.org_configs (
   org_id uuid NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,

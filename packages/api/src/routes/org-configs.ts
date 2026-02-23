@@ -42,8 +42,9 @@ function parseAndValidatePatchBody(body: unknown): { ok: true; configs: Record<s
   return { ok: true, configs: configs as Record<string, unknown> };
 }
 
-function toJsonbValue(schema: { type: string; default: boolean | number }, raw: unknown): unknown {
+function toJsonbValue(schema: { type: string; default: boolean | number | string }, raw: unknown): unknown {
   if (schema.type === 'number') return Math.round(Number(raw));
+  if (schema.type === 'select') return typeof raw === 'string' ? raw.trim().toLowerCase() : schema.default;
   return raw === true || raw === false ? raw : schema.default;
 }
 
@@ -72,8 +73,18 @@ export async function handleGetOrgConfigs(req: Request): Promise<Response> {
   const data = whitelist.map((key) => {
     const row = (rows ?? []).find((r: { key: string }) => r.key === key);
     const schema = schemaByKey.get(key)!;
-    const value = row?.value != null ? (schema.type === 'number' ? Number(row.value) : row.value) : schema.default;
-    return { key, value, type: schema.type };
+    let value: unknown;
+    if (row?.value != null) {
+      value = schema.type === 'number' ? Number(row.value) : schema.type === 'select' ? String(row.value) : row.value;
+    } else {
+      value = schema.default;
+    }
+    return {
+      key,
+      value,
+      type: schema.type,
+      ...(schema.allowedValues && { options: schema.allowedValues }),
+    };
   });
 
   return Response.json({ data, meta: { total: data.length } });

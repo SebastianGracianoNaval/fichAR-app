@@ -4,7 +4,8 @@ import { getSupabaseAdmin } from '../lib/supabase.ts';
 import { checkLoginRateLimit, recordLoginFailure, clearLoginFailure, FAIL_THRESHOLD } from '../lib/rate-limit.ts';
 import { parseBody, validateCuil, validateEmail, validatePassword } from '../lib/validators.ts';
 import { logAudit, logError, getRequestMeta } from '../lib/logger.ts';
-import { getOrgConfigBoolean } from '../lib/org-config.ts';
+import { getOrgConfigBoolean, getOrgConfigNumber } from '../lib/org-config.ts';
+import { decodeJwt } from 'jose';
 import { VALID_ROLES } from '@fichar/shared';
 
 const INVITE_EXP_HOURS = 168; // 7 days
@@ -122,7 +123,7 @@ export async function handleForgotPassword(req: Request): Promise<Response> {
   if (!limit.allowed) {
     await logAudit('rate_limit_forgot_password', { ip: meta.ip, userAgent: meta.userAgent }, {}, 'warning');
     return Response.json(
-      { error: 'Demasiados intentos. Intentá en 15 minutos.' },
+      { error: 'Demasiados intentos. Intentá en 15 minutos.', code: 'rate_limit' },
       { status: 429, headers: limit.retryAfter ? { 'Retry-After': String(limit.retryAfter) } : {} },
     );
   }
@@ -335,7 +336,7 @@ export async function handleLogin(req: Request): Promise<Response> {
   if (!limit.allowed) {
     await logAudit('rate_limit_login', { ip: meta.ip, userAgent: meta.userAgent }, { ip: meta.ip, intentos: FAIL_THRESHOLD }, 'warning');
     return Response.json(
-      { error: 'Demasiados intentos. Intentá en 15 minutos.' },
+      { error: 'Demasiados intentos. Intentá en 15 minutos.', code: 'rate_limit' },
       { status: 429, headers: limit.retryAfter ? { 'Retry-After': String(limit.retryAfter) } : {} },
     );
   }
@@ -395,6 +396,29 @@ export async function handleLogin(req: Request): Promise<Response> {
   });
   if (mfaResponse) return mfaResponse;
 
+  const maxDevices = await getOrgConfigNumber(admin, emp.org_id, 'dispositivos_maximos', 3);
+  if (maxDevices !== -1) {
+    const { count } = await admin
+      .schema('auth')
+      .from('sessions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', authData.user.id);
+    if ((count ?? 0) > maxDevices) {
+      const sessionId = (decodeJwt(authData.session!.access_token) as { session_id?: string }).session_id;
+      if (sessionId) {
+        await admin.schema('auth').from('sessions').delete().eq('id', sessionId).eq('user_id', authData.user.id);
+      }
+      await logAudit('intento_login_dispositivo_extra', { orgId: emp.org_id, employeeId: emp.id, count: count ?? 0, max: maxDevices }, {}, 'info');
+      return Response.json(
+        {
+          error: `Alcanzaste el límite de ${maxDevices} dispositivos. Revocá uno desde [Perfil > Dispositivos] en otro dispositivo, o solicitá que un administrador lo autorice.`,
+          code: 'dispositivos_limite',
+        },
+        { status: 403 },
+      );
+    }
+  }
+
   await logAudit('login', { orgId: emp.org_id, employeeId: emp.id, ip: meta.ip, userAgent: meta.userAgent }, {}, 'info');
 
   return buildLoginSuccessResponse(
@@ -410,16 +434,33 @@ export async function handleGetMe(req: Request): Promise<Response> {
     return Response.json({ error: 'Authorization required' }, { status: 401 });
   }
 
-  const { data: { user }, error } = await getSupabaseAdmin().auth.getUser(token);
+  const admin = getSupabaseAdmin();
+  const { data: { user }, error } = await admin.auth.getUser(token);
   if (error || !user) {
     return Response.json({ error: 'Token inválido' }, { status: 401 });
   }
 
-  const { data: emp, error: empErr } = await getSupabaseAdmin()
+  let emp: { id: string; org_id: string; role: string; status: string; email: string | null; password_changed_at?: string | null } | null = null;
+  let empErr: { message?: string; code?: string } | null = null;
+
+  const result1 = await admin
     .from('employees')
-    .select('id, org_id, role, status, email, password_changed_at')
+    .select('id, org_id, role, status, email, name, cuil, password_changed_at')
     .eq('auth_user_id', user.id)
-    .single();
+    .maybeSingle();
+
+  if (result1.error?.code === '42703') {
+    const result2 = await admin
+      .from('employees')
+      .select('id, org_id, role, status, email, name, cuil')
+      .eq('auth_user_id', user.id)
+      .maybeSingle();
+    emp = result2.data;
+    empErr = result2.error;
+  } else {
+    emp = result1.data;
+    empErr = result1.error;
+  }
 
   if (empErr || !emp) {
     return Response.json({ error: 'Token inválido' }, { status: 401 });
@@ -429,15 +470,29 @@ export async function handleGetMe(req: Request): Promise<Response> {
     return Response.json({ error: 'Cuenta no activa', code: 'empleado_despedido' }, { status: 403 });
   }
 
-  const requiresPasswordChange = (emp as { password_changed_at: string | null }).password_changed_at === null;
+  const requiresPasswordChange =
+    emp.password_changed_at !== undefined ? emp.password_changed_at === null : false;
+
+  const empWithNameCuil = emp as { name?: string; cuil?: string };
+  const cuilFormatted = empWithNameCuil.cuil
+    ? formatCuilDisplay(empWithNameCuil.cuil)
+    : null;
 
   return Response.json({
     id: emp.id,
     org_id: emp.org_id,
     role: emp.role,
     email: (emp as { email: string | null }).email ?? user.email,
+    name: empWithNameCuil.name ?? null,
+    cuil: cuilFormatted,
     ...(requiresPasswordChange && { requires_password_change: true }),
   });
+}
+
+function formatCuilDisplay(cuil: string): string {
+  const digits = cuil.replace(/\D/g, '');
+  if (digits.length !== 11) return cuil;
+  return `${digits.slice(0, 2)}-${digits.slice(2, 10)}-${digits.slice(10)}`;
 }
 
 export async function handleCreateInvite(req: Request): Promise<Response> {

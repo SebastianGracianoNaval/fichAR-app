@@ -15,8 +15,8 @@ description: PostgreSQL, RLS, Auth, Realtime, Storage. Multi-tenant by org_id. U
 
 ## Source of Truth
 
-- `definiciones/ESQUEMA-BD.txt`
-- `definiciones/SEGURIDAD.txt` (RLS)
+- `definiciones/ESQUEMA-BD.md`
+- `definiciones/SEGURIDAD.md` (RLS)
 
 ## Multi-tenant
 

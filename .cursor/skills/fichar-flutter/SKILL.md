@@ -14,9 +14,9 @@ description: Flutter 3.x for mobile, web, and desktop. Widgets, state, navigatio
 
 ## Source of Truth
 
-- `definiciones/FRONTEND.txt`
-- `definiciones/PANTALLAS.txt`
-- `definiciones/COMPONENTES-FLUTTER.txt` (if exists)
+- `definiciones/FRONTEND.md`
+- `definiciones/PANTALLAS.md`
+- `definiciones/COMPONENTES-FLUTTER.md` (if exists)
 
 ## Structure
 

@@ -1,5 +1,5 @@
 -- fichAR Phase 3: employees columns (branch_id, supervisor_id, modalidad, fecha_egreso)
--- Referencia: plans/Plan-Detallado-Fases-3-4-VOIS.md, definiciones/ESQUEMA-BD.txt
+-- Referencia: plans/Plan-Detallado-Fases-3-4-VOIS.md, definiciones/ESQUEMA-BD.md
 
 ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS branch_id uuid REFERENCES public.branches(id);
 ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS supervisor_id uuid REFERENCES public.employees(id);

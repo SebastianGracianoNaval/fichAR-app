@@ -14,6 +14,6 @@ alwaysApply: false
 
 ## Guidelines
 
-- Consult `definiciones/TESTING-DOCUMENTACION.txt`
+- Consult `definiciones/TESTING-DOCUMENTACION.md`
 - Use CASOS-LIMITE IDs in test comments when testing edge cases
 - Backend: `bun test`, Flutter: `flutter test`, E2E: `bun run test:e2e`

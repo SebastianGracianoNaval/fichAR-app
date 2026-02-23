@@ -1,3 +1,4 @@
+import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -18,6 +19,8 @@ class FicharApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'fichAR',
+      locale: DevicePreview.locale(context),
+      builder: DevicePreview.appBuilder,
       theme: ficharTheme,
       home: StreamBuilder<AuthState>(
         stream: Supabase.instance.client.auth.onAuthStateChange,

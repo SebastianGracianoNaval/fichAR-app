@@ -11,7 +11,8 @@ describe('org-config-whitelist', () => {
     const keys = getWhitelistKeys();
     expect(keys).toContain('geolocalizacion_obligatoria');
     expect(keys).toContain('descanso_minimo_horas');
-    expect(keys.length).toBeGreaterThanOrEqual(7);
+    expect(keys).toContain('geolocalizacion_radio_default');
+    expect(keys.length).toBeGreaterThanOrEqual(8);
   });
 
   it('getSchema returns schema for valid key', () => {
@@ -48,6 +49,24 @@ describe('org-config-whitelist', () => {
   it('validateConfigValue rejects tolerancia out of range', () => {
     const r = validateConfigValue('tolerancia_gps_metros', 100);
     expect(r.valid).toBe(false);
+  });
+
+  it('validateConfigValue accepts geolocalizacion_radio_default in range', () => {
+    expect(validateConfigValue('geolocalizacion_radio_default', 100).valid).toBe(true);
+    expect(validateConfigValue('geolocalizacion_radio_default', 50).valid).toBe(true);
+    expect(validateConfigValue('geolocalizacion_radio_default', 500).valid).toBe(true);
+  });
+
+  it('validateConfigValue rejects geolocalizacion_radio_default below min', () => {
+    const r = validateConfigValue('geolocalizacion_radio_default', 49);
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('>=');
+  });
+
+  it('validateConfigValue rejects geolocalizacion_radio_default above max', () => {
+    const r = validateConfigValue('geolocalizacion_radio_default', 501);
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('<=');
   });
 
   it('getMaxKeysPerRequest returns 20', () => {

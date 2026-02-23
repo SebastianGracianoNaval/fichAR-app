@@ -43,7 +43,13 @@ class _LicenciasAprobarScreenState extends State<LicenciasAprobarScreen> {
         for (final e in empResult.data) {
           _nombres[e.id] = e.name;
         }
-      } catch (_) {}
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error al cargar nombres de empleados. Reintentá.')),
+          );
+        }
+      }
     }
     setState(() {
       _loading = false;
@@ -155,13 +161,21 @@ class _LicenciasAprobarScreenState extends State<LicenciasAprobarScreen> {
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.check, color: Colors.green),
-                                    onPressed: () => _aprobar(l['id'] as String),
+                                  Semantics(
+                                    label: 'Aprobar licencia',
+                                    button: true,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.check, color: Colors.green),
+                                      onPressed: () => _aprobar(l['id'] as String),
+                                    ),
                                   ),
-                                  IconButton(
-                                    icon: const Icon(Icons.close, color: Colors.red),
-                                    onPressed: () => _rechazar(l['id'] as String),
+                                  Semantics(
+                                    label: 'Rechazar licencia',
+                                    button: true,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.close, color: Colors.red),
+                                      onPressed: () => _rechazar(l['id'] as String),
+                                    ),
                                   ),
                                 ],
                               ),

@@ -1,5 +1,5 @@
 -- fichAR Migration 5: branches
--- Referencia: definiciones/ESQUEMA-BD.txt, plans/phase-1-2-mobile-web-implementation.md
+-- Referencia: definiciones/ESQUEMA-BD.md, plans/phase-1-2-mobile-web-implementation.md
 
 CREATE TABLE IF NOT EXISTS public.branches (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

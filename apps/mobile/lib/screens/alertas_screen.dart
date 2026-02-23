@@ -43,7 +43,13 @@ class _AlertasScreenState extends State<AlertasScreen> {
         for (final e in empResult.data) {
           _nombres[e.id] = e.name;
         }
-      } catch (_) {}
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error al cargar nombres de empleados. Reintentá.')),
+          );
+        }
+      }
     }
     setState(() {
       _loading = false;

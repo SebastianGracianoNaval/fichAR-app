@@ -7,7 +7,7 @@ export interface LegalAuthContext {
   role: string;
 }
 
-const LEGAL_ROLES = ['admin', 'legal_auditor'] as const;
+const LEGAL_ROLES = ['admin', 'integrity_viewer'] as const;
 
 export async function requireLegalAuditor(
   req: Request,
@@ -38,7 +38,7 @@ export async function requireLegalAuditor(
   }
 
   if (!LEGAL_ROLES.includes(emp.role as (typeof LEGAL_ROLES)[number])) {
-    return { ok: false, res: Response.json({ error: 'Sin permisos para auditoría legal' }, { status: 403 }) };
+    return { ok: false, res: Response.json({ error: 'Sin permisos para acceso de integridad' }, { status: 403 }) };
   }
 
   return {

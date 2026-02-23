@@ -16,8 +16,8 @@ description: Security requirements for fichAR: hashing, RLS, audit logs, 2FA, se
 
 ## Source of Truth
 
-- `definiciones/SEGURIDAD.txt`
-- `clean_definitions/FICHAR-DEFINICION-COMPLETA.txt` (section 10)
+- `definiciones/SEGURIDAD.md`
+- `definiciones/FICHAR-DEFINICION-COMPLETA.md` (section 10)
 
 ## Inalterability (Legal Validity)
 
@@ -36,7 +36,7 @@ description: Security requirements for fichAR: hashing, RLS, audit logs, 2FA, se
 
 ## Authorization
 
-- Check `can(role, action, resource)` per `definiciones/ROLES.txt`
+- Check `can(role, action, resource)` per `definiciones/ROLES.md`
 - RLS: `WHERE org_id = auth.jwt() ->> 'org_id'`
 - 403 if unauthorized, 401 if unauthenticated
 

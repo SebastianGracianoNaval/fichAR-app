@@ -14,8 +14,8 @@ description: Go backend: endpoints, goroutines, validation. Use for Go API code.
 
 ## Source of Truth
 
-- `definiciones/ARQUITECTURA-TECNICA.txt`
-- `definiciones/API-CONTRACTS.txt` (if exists)
+- `definiciones/ARQUITECTURA-TECNICA.md`
+- `definiciones/API-CONTRACTS.md` (if exists)
 
 ## Structure
 

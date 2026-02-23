@@ -1,6 +1,6 @@
 /**
  * Reglas de negocio para fichajes (CL-006, CL-007).
- * Referencia: definiciones/CASOS-LIMITE.txt, CONFIGURACIONES.txt CFG-010
+ * Referencia: definiciones/CASOS-LIMITE.md, CONFIGURACIONES.md CFG-010
  */
 
 const DEFAULT_DESCANSO_HORAS = 12;

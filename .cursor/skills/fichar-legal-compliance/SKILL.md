@@ -18,8 +18,8 @@ Invoke **before** any change affecting:
 ## Source of Truth
 
 - `definiciones/DEFINICION-PROYECTO-FICHAR.md` (section 3: Marco Legal)
-- `clean_definitions/VALIDEZ-PROBATORIA-JUICIOS-ARGENTINA.txt`
-- `clean_definitions/FICHAR-DEFINICION-COMPLETA.txt`
+- `definiciones/VALIDEZ-PROBATORIA-JUICIOS-ARGENTINA.md`
+- `definiciones/FICHAR-DEFINICION-COMPLETA.md`
 
 ## Legal Checklist
 
@@ -48,7 +48,7 @@ Before approving changes, verify:
 - [ ] Audit logs immutable (INSERT only)
 - [ ] Retention ≥ 10 years (CFG-037, LCT Art. 52)
 - [ ] Export for peritaje: hash SHA-256 of file, metadata
-- [ ] legal_auditor role: read-only, export with integrity hash
+- [ ] integrity_viewer role: read-only, export with integrity hash
 
 ### Certificados (Art. 210, Ley 27.553)
 - [ ] Attachments for enfermedad/accidente (CFG-017)

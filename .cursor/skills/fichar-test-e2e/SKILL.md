@@ -13,7 +13,7 @@ description: E2E flows, Playwright, critical user paths. Use when adding or modi
 
 ## Source of Truth
 
-- `definiciones/TESTING-DOCUMENTACION.txt`
+- `definiciones/TESTING-DOCUMENTACION.md`
 
 ## Commands
 

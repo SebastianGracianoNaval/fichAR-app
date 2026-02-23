@@ -16,7 +16,7 @@ description: Bidirectional jornada requests (employee-supervisor). Intercambio, 
 
 - `documentation/tecnica/request-flows-specification.md`
 - `documentation/tecnica/solicitudes-ux-specification.md` (screens, notifications, alerts)
-- `definiciones/LIMITACIONES-ALERTAS.txt`
+- `definiciones/LIMITACIONES-ALERTAS.md`
 
 ## Golden Rules
 

@@ -8,17 +8,21 @@ class OrgConfigItem {
     required this.key,
     required this.value,
     required this.type,
+    this.options,
   });
 
   final String key;
   final dynamic value;
   final String type;
+  final List<dynamic>? options;
 
   factory OrgConfigItem.fromJson(Map<String, dynamic> json) {
+    final optionsRaw = json['options'] as List<dynamic>?;
     return OrgConfigItem(
       key: json['key'] as String? ?? '',
       value: json['value'],
       type: json['type'] as String? ?? 'string',
+      options: optionsRaw,
     );
   }
 }

@@ -18,7 +18,7 @@ class LegalAuditShell extends StatelessWidget {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Auditoría Legal'),
+          title: const Text('Integridad de Datos'),
           bottom: const TabBar(
             tabs: [
               Tab(icon: Icon(Icons.dashboard), text: 'Extracción'),
@@ -40,7 +40,7 @@ class LegalAuditShell extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: Text(
-                'Modo auditoría legal. Solo lectura.',
+                'Modo solo lectura. Veedor de integridad.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),

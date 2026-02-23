@@ -58,8 +58,8 @@ Produce: PASS / REVISE with specific gaps. If REVISE, list missing checklist ite
 
 ## Reference
 
-- `definiciones/SEGURIDAD.txt`
-- `definiciones/INTEGRACIONES.txt`
-- `definiciones/OPTIMIZACION.txt`
+- `definiciones/SEGURIDAD.md`
+- `definiciones/INTEGRACIONES.md`
+- `definiciones/OPTIMIZACION.md`
 - `documentation/tecnica/request-flows-specification.md`
 - `documentation/tecnica/solicitudes-ux-specification.md`

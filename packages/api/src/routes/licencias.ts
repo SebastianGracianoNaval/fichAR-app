@@ -1,5 +1,7 @@
 import { getSupabaseAdmin } from '../lib/supabase.ts';
 import { requireAuth } from '../lib/auth-middleware.ts';
+import { getOrgConfig, getOrgConfigString } from '../lib/org-config.ts';
+import { validatePagination } from '../lib/validators.ts';
 import { dispatchWebhooks } from '../services/webhook-dispatch.ts';
 import { logAudit, logError, getRequestMeta } from '../lib/logger.ts';
 
@@ -13,9 +15,23 @@ function canApprove(role: string): boolean {
   return ADMIN_OR_SUPERVISOR.includes(role);
 }
 
-async function getOrgConfig(admin: ReturnType<typeof getSupabaseAdmin>, orgId: string, key: string): Promise<unknown> {
-  const { data } = await admin.from('org_configs').select('value').eq('org_id', orgId).eq('key', key).maybeSingle();
-  return data?.value;
+async function requireLicenciasAprobador(
+  admin: ReturnType<typeof getSupabaseAdmin>,
+  orgId: string,
+  role: string,
+): Promise<{ ok: false; res: Response } | { ok: true }> {
+  const aprobador = await getOrgConfigString(admin, orgId, 'licencias_aprobador', 'supervisor');
+  const soloAdmin = aprobador === 'admin';
+  if (soloAdmin && role !== 'admin') {
+    return {
+      ok: false,
+      res: Response.json(
+        { error: 'Solo Admin puede aprobar licencias en esta organización.', code: 'licencias_solo_admin' },
+        { status: 403 },
+      ),
+    };
+  }
+  return { ok: true };
 }
 
 function parseDate(s: unknown): Date | null {
@@ -32,8 +48,11 @@ export async function handleGetLicencias(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const employeeId = url.searchParams.get('employee_id');
   const estado = url.searchParams.get('estado');
-  const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '50', 10) || 50, 100);
-  const offset = parseInt(url.searchParams.get('offset') ?? '0', 10) || 0;
+  const { limit, offset } = validatePagination(
+    url.searchParams.get('limit'),
+    url.searchParams.get('offset'),
+    { defaultLimit: 50 },
+  );
 
   const admin = getSupabaseAdmin();
   let query = admin
@@ -65,10 +84,10 @@ export async function handleGetLicencias(req: Request): Promise<Response> {
 
   if (error) {
     await logError('critical', 'licencias_list_failed', { orgId: ctx.orgId }, {}, error);
-    return Response.json({ error: 'Error al listar licencias' }, { status: 500 });
+    return Response.json({ error: 'Error al listar licencias', code: 'internal' }, { status: 500 });
   }
 
-  return Response.json({ data: data ?? [], meta: { total: count ?? 0 } });
+  return Response.json({ data: data ?? [], meta: { total: count ?? 0, limit, offset } });
 }
 
 export async function handleGetLicenciasPendientes(req: Request): Promise<Response> {
@@ -98,7 +117,7 @@ export async function handleGetLicenciasPendientes(req: Request): Promise<Respon
 
   if (error) {
     await logError('critical', 'licencias_pendientes_failed', { orgId: ctx.orgId }, {}, error);
-    return Response.json({ error: 'Error al listar pendientes' }, { status: 500 });
+    return Response.json({ error: 'Error al listar pendientes', code: 'internal' }, { status: 500 });
   }
 
   return Response.json({ data: data ?? [], meta: { total: count ?? 0 } });
@@ -248,6 +267,9 @@ export async function handlePostLicenciaAprobar(req: Request, licenciaId: string
   }
 
   const admin = getSupabaseAdmin();
+  const cfgCheck = await requireLicenciasAprobador(admin, ctx.orgId, ctx.role);
+  if (!cfgCheck.ok) return cfgCheck.res;
+
   const { data: lic, error: licErr } = await admin
     .from('solicitudes_licencia')
     .select('id, employee_id, org_id, estado')
@@ -311,6 +333,10 @@ export async function handlePostLicenciaRechazar(req: Request, licenciaId: strin
     return Response.json({ error: 'No tenés permiso', code: 'sin_permiso' }, { status: 403 });
   }
 
+  const admin = getSupabaseAdmin();
+  const cfgCheck = await requireLicenciasAprobador(admin, ctx.orgId, ctx.role);
+  if (!cfgCheck.ok) return cfgCheck.res;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -328,7 +354,6 @@ export async function handlePostLicenciaRechazar(req: Request, licenciaId: strin
     return Response.json({ error: 'El motivo no puede superar 500 caracteres', code: 'motivo_largo' }, { status: 400 });
   }
 
-  const admin = getSupabaseAdmin();
   const { data: lic, error: licErr } = await admin
     .from('solicitudes_licencia')
     .select('id, employee_id, org_id, estado')

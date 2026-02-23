@@ -1,5 +1,5 @@
 -- fichAR Migration 7: employee_places (N:M empleado-lugares)
--- Referencia: definiciones/ESQUEMA-BD.txt
+-- Referencia: definiciones/ESQUEMA-BD.md
 
 CREATE TABLE IF NOT EXISTS public.employee_places (
   employee_id uuid NOT NULL REFERENCES public.employees(id) ON DELETE CASCADE,

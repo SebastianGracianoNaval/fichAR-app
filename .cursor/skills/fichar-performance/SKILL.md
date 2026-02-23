@@ -14,8 +14,8 @@ description: Low battery usage, threading, efficient geofencing, low-end mode. U
 
 ## Source of Truth
 
-- `definiciones/OPTIMIZACION.txt`
-- `definiciones/OPTIMIZACION-RECURSOS-RED.txt`
+- `definiciones/OPTIMIZACION.md`
+- `definiciones/OPTIMIZACION.md`
 
 ## Principles
 

@@ -1,6 +1,6 @@
 /**
  * Webhook dispatch. Fire-and-forget. Never blocks main flow.
- * Reference: definiciones/INTEGRACIONES.txt 5.2-5.4, CASOS-LIMITE CL-035
+ * Reference: definiciones/INTEGRACIONES.md 5.2-5.4, CASOS-LIMITE CL-035
  */
 
 import { createHmac } from 'node:crypto';
@@ -18,6 +18,7 @@ export const WEBHOOK_EVENTS = [
   'empleado.creado',
   'empleado.importado',
   'alerta.generada',
+  'lugar.creado',
 ] as const;
 
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];

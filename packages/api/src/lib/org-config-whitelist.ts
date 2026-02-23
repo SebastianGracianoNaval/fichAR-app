@@ -1,25 +1,28 @@
 /**
  * Config whitelist schema. Source of truth for org-configs API.
- * Reference: definiciones/CONFIGURACIONES.txt
+ * Reference: definiciones/CONFIGURACIONES.md
  */
 
 export interface ConfigSchema {
   key: string;
-  type: 'boolean' | 'number';
-  default: boolean | number;
+  type: 'boolean' | 'number' | 'select';
+  default: boolean | number | string;
   min?: number;
   max?: number;
-  allowedValues?: number[];
+  allowedValues?: (number | string)[];
 }
 
 export const CONFIG_WHITELIST: ConfigSchema[] = [
   { key: 'geolocalizacion_obligatoria', type: 'boolean', default: true },
   { key: 'tolerancia_gps_metros', type: 'number', default: 10, min: 0, max: 50 },
+  { key: 'geolocalizacion_radio_default', type: 'number', default: 100, min: 50, max: 500 },
   { key: 'descanso_minimo_horas', type: 'number', default: 12, allowedValues: [10, 11, 12] },
   { key: 'mfa_obligatorio_admin', type: 'boolean', default: true },
   { key: 'modo_offline_habilitado', type: 'boolean', default: true },
   { key: 'import_welcome', type: 'boolean', default: true },
   { key: 'logs_retencion_dias', type: 'number', default: 3650, min: 365, max: 3650 },
+  { key: 'licencias_aprobador', type: 'select', default: 'supervisor', allowedValues: ['supervisor', 'admin', 'ambos'] },
+  { key: 'dispositivos_maximos', type: 'number', default: 3, allowedValues: [1, 2, 3, 5, 10, -1] },
 ];
 
 const MAX_KEYS_PER_REQUEST = 20;
@@ -65,6 +68,18 @@ export function validateConfigValue(
     }
     if (schema.max != null && intVal > schema.max) {
       return { valid: false, error: `${key} must be <= ${schema.max}` };
+    }
+    return { valid: true };
+  }
+
+  if (schema.type === 'select') {
+    if (typeof value !== 'string') {
+      return { valid: false, error: `${key} must be a string` };
+    }
+    const normalized = String(value).trim().toLowerCase();
+    if (schema.allowedValues && !schema.allowedValues.includes(normalized)) {
+      const vals = (schema.allowedValues as string[]).join(', ');
+      return { valid: false, error: `${key} must be one of: ${vals}` };
     }
     return { valid: true };
   }

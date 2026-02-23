@@ -1,5 +1,5 @@
 -- fichAR Migration: Seed CFG-010 descanso_minimo_horas (default 12, Art. 198 LCT)
--- Referencia: definiciones/CONFIGURACIONES.txt CFG-010
+-- Referencia: definiciones/CONFIGURACIONES.md CFG-010
 
 INSERT INTO public.org_configs (org_id, key, value)
 SELECT id, 'descanso_minimo_horas', to_jsonb(12)

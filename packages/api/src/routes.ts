@@ -12,6 +12,7 @@ import {
   handleChangePassword,
   handlePasswordSetComplete,
 } from './routes/auth.ts';
+import { handleGetMeDevices, handlePostMeDevicesRevoke } from './routes/me.ts';
 import { handleGetFichajes, handlePostFichajes, handlePostFichajesBatch } from './routes/fichajes.ts';
 import {
   handleGetEmployees,
@@ -40,7 +41,13 @@ import {
   handlePostLicenciaAprobar,
   handlePostLicenciaRechazar,
 } from './routes/licencias.ts';
-import { handleGetPlaces } from './routes/places.ts';
+import {
+  handleGetPlaces,
+  handlePostPlaces,
+  handlePatchPlaces,
+  handleDeletePlaces,
+  handleImportPlaces,
+} from './routes/places.ts';
 import { handleGetOrgConfigs, handlePatchOrgConfigs } from './routes/org-configs.ts';
 import {
   handleGetWebhooks,
@@ -51,6 +58,7 @@ import {
 import { handleGetAlertas } from './routes/alertas.ts';
 import { handleGetBanco, handleGetBancoEquipo } from './routes/banco.ts';
 import { handlePostReportesExport } from './routes/reportes.ts';
+import { handleGetAdminDashboard } from './routes/dashboard.ts';
 
 type Handler = (req: Request) => Promise<Response>;
 type HandlerWithId = (req: Request, id: string) => Promise<Response>;
@@ -95,6 +103,8 @@ const routes: Route[] = [
   exact('POST', '/auth/forgot-password', handleForgotPassword),
   exact('POST', '/auth/invite', handleCreateInvite),
   exact('GET', '/me', handleGetMe),
+  exact('GET', '/me/devices', handleGetMeDevices),
+  dynamic('POST', '/me/devices/', '/revoke', handlePostMeDevicesRevoke, (id) => !id.includes('/')),
   exact('POST', '/auth/mfa/verify', handleMfaVerify),
   exact('POST', '/auth/mfa/enroll', handleMfaEnroll),
   exact('POST', '/auth/mfa/enroll-verify', handleMfaEnrollVerify),
@@ -135,6 +145,10 @@ const routes: Route[] = [
 
   // Places
   exact('GET', '/places', handleGetPlaces),
+  exact('POST', '/places', handlePostPlaces),
+  exact('POST', '/places/import', handleImportPlaces),
+  dynamic('PATCH', '/places/', '', handlePatchPlaces, (id) => !id.includes('/')),
+  dynamic('DELETE', '/places/', '', handleDeletePlaces, (id) => !id.includes('/')),
 
   // Org configs (Admin only)
   exact('GET', '/org-configs', handleGetOrgConfigs),
@@ -146,7 +160,8 @@ const routes: Route[] = [
   dynamic('PATCH', '/webhooks/', '', handlePatchWebhook),
   dynamic('DELETE', '/webhooks/', '', handleDeleteWebhook),
 
-  // Alertas, Banco, Reportes
+  // Admin Dashboard, Alertas, Banco, Reportes
+  exact('GET', '/admin/dashboard', handleGetAdminDashboard),
   exact('GET', '/alertas', handleGetAlertas),
   exact('GET', '/banco', handleGetBanco),
   exact('GET', '/banco/equipo', handleGetBancoEquipo),

@@ -18,7 +18,7 @@ description: Webhooks, ARCA, Excel/CSV import/export, n8n, compatibility with le
 
 ## Source of Truth
 
-- `definiciones/INTEGRACIONES.txt`
+- `definiciones/INTEGRACIONES.md`
 
 ## Import Employees
 

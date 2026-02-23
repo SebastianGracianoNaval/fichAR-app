@@ -14,8 +14,8 @@ description: iOS 12+, Background Fetch, Face ID, Apple restrictions. Use for iOS
 
 ## Source of Truth
 
-- `definiciones/OPTIMIZACION.txt`
-- `definiciones/FRONTEND.txt`
+- `definiciones/OPTIMIZACION.md`
+- `definiciones/FRONTEND.md`
 
 ## Compatibility
 

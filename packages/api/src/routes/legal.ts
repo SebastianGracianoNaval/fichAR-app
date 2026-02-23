@@ -1,6 +1,8 @@
 import { getSupabaseAdmin } from '../lib/supabase.ts';
 import { requireLegalAuditor } from '../lib/legal-auth-middleware.ts';
+import { validatePagination, validateUUID } from '../lib/validators.ts';
 import { logAudit, logError, getRequestMeta } from '../lib/logger.ts';
+import JSZip from 'jszip';
 import {
   buildCsv,
   buildXlsx,
@@ -60,15 +62,37 @@ export async function handleGetLegalAuditLogs(req: Request): Promise<Response> {
   const desde = url.searchParams.get('desde');
   const hasta = url.searchParams.get('hasta');
   const action = url.searchParams.get('action');
-  const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '50', 10) || 50, 200);
+  const userId = url.searchParams.get('user_id');
+  const { limit, offset } = validatePagination(
+    url.searchParams.get('limit'),
+    url.searchParams.get('offset'),
+    { defaultLimit: 50 },
+  );
 
   if (!desde || !hasta) {
     return Response.json(
-      { error: 'desde y hasta (ISO 8601) requeridos' },
+      { error: 'desde y hasta (ISO 8601) requeridos', code: 'params_requeridos' },
       { status: 400 },
     );
   }
 
+  const desdeDate = new Date(desde);
+  const hastaDate = new Date(hasta);
+  if (Number.isNaN(desdeDate.getTime()) || Number.isNaN(hastaDate.getTime()) || desdeDate > hastaDate) {
+    return Response.json(
+      { error: 'desde debe ser anterior a hasta', code: 'rango_invalido' },
+      { status: 400 },
+    );
+  }
+
+  if (userId && !validateUUID(userId)) {
+    return Response.json(
+      { error: 'user_id inválido', code: 'user_id_invalido' },
+      { status: 400 },
+    );
+  }
+
+  const cappedLimit = Math.min(limit, 200);
   const admin = getSupabaseAdmin();
   let query = admin
     .from('audit_logs')
@@ -77,18 +101,22 @@ export async function handleGetLegalAuditLogs(req: Request): Promise<Response> {
     .gte('timestamp', desde)
     .lte('timestamp', hasta)
     .order('timestamp', { ascending: true })
-    .limit(limit);
+    .range(offset, offset + cappedLimit - 1);
 
   if (action) query = query.eq('action', action);
+  if (userId) query = query.eq('user_id', userId);
 
   const { data, error, count } = await query;
 
   if (error) {
     await logError('critical', 'legal_audit_logs_failed', { orgId: ctx.orgId }, {}, error);
-    return Response.json({ error: 'Error al listar logs' }, { status: 500 });
+    return Response.json({ error: 'Error al listar logs', code: 'internal' }, { status: 500 });
   }
 
-  return Response.json({ data: data ?? [], meta: { total: count ?? 0 } });
+  return Response.json({
+    data: data ?? [],
+    meta: { total: count ?? 0, limit: cappedLimit, offset },
+  });
 }
 
 export async function handleGetLegalHashChain(req: Request): Promise<Response> {
@@ -182,7 +210,7 @@ export async function handlePostLegalExport(req: Request): Promise<Response> {
   try {
     body = await req.json();
   } catch {
-    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+    return Response.json({ error: 'Invalid JSON', code: 'parse_error' }, { status: 400 });
   }
 
   const data = body as Record<string, unknown>;
@@ -194,12 +222,12 @@ export async function handlePostLegalExport(req: Request): Promise<Response> {
 
   if (!tipo || !desde || !hasta) {
     return Response.json(
-      { error: 'tipo, desde y hasta requeridos' },
+      { error: 'tipo, desde y hasta requeridos', code: 'params_requeridos' },
       { status: 400 },
     );
   }
   if (!['csv', 'xlsx'].includes(formato)) {
-    return Response.json({ error: 'formato debe ser csv o xlsx' }, { status: 400 });
+    return Response.json({ error: 'formato debe ser csv o xlsx', code: 'formato_invalido' }, { status: 400 });
   }
 
   const admin = getSupabaseAdmin();
@@ -253,7 +281,7 @@ export async function handlePostLegalExport(req: Request): Promise<Response> {
     const { data: fichajes, error: err } = await q;
     if (err) {
       await logError('critical', 'legal_export_fichajes_failed', { orgId: ctx.orgId }, {}, err);
-      return Response.json({ error: 'Error al exportar fichajes' }, { status: 500 });
+      return Response.json({ error: 'Error al exportar fichajes', code: 'internal' }, { status: 500 });
     }
     const { data: truncated } = truncateWithLimit((fichajes ?? []) as Record<string, unknown>[], MAX_EXPORT_ROWS);
     sheetFichajes.rows = truncated.map((r) => ({ ...r }));
@@ -272,7 +300,7 @@ export async function handlePostLegalExport(req: Request): Promise<Response> {
     const { data: logs, error: err } = await q;
     if (err) {
       await logError('critical', 'legal_export_logs_failed', { orgId: ctx.orgId }, {}, err);
-      return Response.json({ error: 'Error al exportar logs' }, { status: 500 });
+      return Response.json({ error: 'Error al exportar logs', code: 'internal' }, { status: 500 });
     }
     const { data: truncated } = truncateWithLimit((logs ?? []) as Record<string, unknown>[], MAX_EXPORT_ROWS);
     sheetLogs.rows = truncated.map((r) => ({ ...r }));
@@ -294,7 +322,7 @@ export async function handlePostLegalExport(req: Request): Promise<Response> {
     const { data: chain, error: err } = await q;
     if (err) {
       await logError('critical', 'legal_export_hash_chain_failed', { orgId: ctx.orgId }, {}, err);
-      return Response.json({ error: 'Error al exportar cadena' }, { status: 500 });
+      return Response.json({ error: 'Error al exportar cadena', code: 'internal' }, { status: 500 });
     }
     const { data: truncated } = truncateWithLimit((chain ?? []) as Record<string, unknown>[], MAX_EXPORT_ROWS);
     sheetHashChain.rows = truncated.map((r) => ({ ...r }));
@@ -315,7 +343,7 @@ export async function handlePostLegalExport(req: Request): Promise<Response> {
     const { data: licencias, error: err } = await q;
     if (err) {
       await logError('critical', 'legal_export_licencias_failed', { orgId: ctx.orgId }, {}, err);
-      return Response.json({ error: 'Error al exportar licencias' }, { status: 500 });
+      return Response.json({ error: 'Error al exportar licencias', code: 'internal' }, { status: 500 });
     }
     const { data: truncated } = truncateWithLimit((licencias ?? []) as Record<string, unknown>[], MAX_EXPORT_ROWS);
     sheetLicencias.rows = truncated.map((r) => ({ ...r }));
@@ -329,8 +357,13 @@ export async function handlePostLegalExport(req: Request): Promise<Response> {
     'info',
   );
 
+  const timestamp = Date.now();
+  let fileBuf: Buffer;
+  let filename: string;
+  let sha256: string;
+
   if (formato === 'csv') {
-    const metaLine = `# Exportado por fichAR. Fecha exportación: ${exportedAt}. Por: ${exportedBy}. Uso exclusivo fines legales.`;
+    const metaLine = `# Exportado por fichAR. Fecha exportación: ${exportedAt}. Por: ${exportedBy}. Integridad verificable. Uso a criterio del usuario.`;
     const rows =
       sheetFichajes.rows.length > 0
         ? sheetFichajes.rows
@@ -349,33 +382,53 @@ export async function handlePostLegalExport(req: Request): Promise<Response> {
             : sheetLicencias.headers;
     const csvForHash = buildCsv(rows, headers, metaLine);
     const bufForHash = Buffer.from(csvForHash, 'utf-8');
-    const sha256 = computeFileSha256(bufForHash);
+    sha256 = computeFileSha256(bufForHash);
     const fullCsv = buildCsv(rows, headers, metaLine, sha256);
-    const finalBuf = Buffer.from(fullCsv, 'utf-8');
-
-    return new Response(finalBuf, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="fichar-legal-${Date.now()}.csv"`,
-      },
-    });
+    fileBuf = Buffer.from(fullCsv, 'utf-8');
+    filename = `fichar-legal-${timestamp}.csv`;
+  } else {
+    const sheets: { name: string; headers: string[]; rows: Record<string, unknown>[] }[] = [];
+    if (sheetFichajes.rows.length > 0) sheets.push({ name: 'Fichajes', ...sheetFichajes });
+    if (sheetLogs.rows.length > 0) sheets.push({ name: 'Logs', ...sheetLogs });
+    if (sheetHashChain.rows.length > 0) sheets.push({ name: 'CadenaHashes', ...sheetHashChain });
+    if (sheetLicencias.rows.length > 0) sheets.push({ name: 'Licencias', ...sheetLicencias });
+    fileBuf = buildXlsx(sheets, { exportedAt, exportedBy, totalRows });
+    sha256 = computeFileSha256(fileBuf);
+    filename = `fichar-legal-${timestamp}.xlsx`;
   }
 
-  const sheets: { name: string; headers: string[]; rows: Record<string, unknown>[] }[] = [];
-  if (sheetFichajes.rows.length > 0) sheets.push({ name: 'Fichajes', ...sheetFichajes });
-  if (sheetLogs.rows.length > 0) sheets.push({ name: 'Logs', ...sheetLogs });
-  if (sheetHashChain.rows.length > 0) sheets.push({ name: 'CadenaHashes', ...sheetHashChain });
-  if (sheetLicencias.rows.length > 0) sheets.push({ name: 'Licencias', ...sheetLicencias });
+  const checksumContent = [
+    '# fichAR - Checksums de exportación - integridad de datos',
+    `# Exportado: ${exportedAt}`,
+    `# Por: ${exportedBy}`,
+    '# Integridad verificable. Uso a criterio del usuario.',
+    `# Hash SHA-256 de este archivo: ${sha256}`,
+    `${filename} SHA-256 ${sha256}`,
+  ].join('\n');
 
-  const xlsxBuf = buildXlsx(sheets, { exportedAt, exportedBy, totalRows });
-  const sha256 = computeFileSha256(xlsxBuf);
+  const zip = new JSZip();
+  zip.file(filename, fileBuf);
+  zip.file('archivo_checksums.txt', checksumContent);
 
-  return new Response(xlsxBuf, {
+  let zipBuf: Buffer;
+  try {
+    zipBuf = await zip.generateAsync({ type: 'nodebuffer' });
+  } catch (e) {
+    await logError(
+      'critical',
+      'export_zip_failed',
+      { orgId: ctx.orgId, employeeId: ctx.employeeId },
+      { error: String(e) },
+      e instanceof Error ? e : new Error(String(e)),
+    );
+    return Response.json({ error: 'Error generando export', code: 'export_zip_failed' }, { status: 500 });
+  }
+
+  return new Response(zipBuf, {
     status: 200,
     headers: {
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="fichar-legal-${Date.now()}.xlsx"`,
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename="fichar-legal-${timestamp}.zip"`,
       'X-Export-Sha256': sha256,
     },
   });

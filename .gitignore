@@ -48,6 +48,8 @@ Thumbs.db
 
 # Supabase local
 .supabase/
+supabase/.temp/
+supabase/.branches/
 
 # Test and coverage
 coverage/
@@ -58,11 +60,11 @@ coverage/
 *.pem
 .cache/
 
-# Cursor: ignore settings but keep skills and rules
+# Cursor / Agent skills
 .cursor/settings.json
+.agents/
 
 # Definitions (internal reference, not official documentation)
-clean_definitions/
 definiciones/
 
 # Planning (not official documentation)
@@ -70,5 +72,8 @@ plans/
 
 # Audits (internal assessments, not for version control)
 audits/
+
+# Local setup guide (personal/dev reference)
+RUN-LOCAL.md
 
 # NOTE: .cursor/skills/ and .cursor/rules/ and AGENTS.md are tracked (vibecoding system)

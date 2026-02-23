@@ -16,6 +16,7 @@ class Employee {
     this.modalidad,
     this.fechaIngreso,
     this.fechaEgreso,
+    this.placeIds,
   });
 
   final String id;
@@ -28,8 +29,14 @@ class Employee {
   final String? modalidad;
   final String? fechaIngreso;
   final String? fechaEgreso;
+  final List<String>? placeIds;
 
   factory Employee.fromJson(Map<String, dynamic> json) {
+    final placeIdsRaw = json['place_ids'];
+    List<String>? placeIds;
+    if (placeIdsRaw is List) {
+      placeIds = placeIdsRaw.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+    }
     return Employee(
       id: json['id'] as String,
       email: json['email'] as String? ?? '',
@@ -41,6 +48,7 @@ class Employee {
       modalidad: json['modalidad'] as String?,
       fechaIngreso: json['fecha_ingreso'] as String?,
       fechaEgreso: json['fecha_egreso'] as String?,
+      placeIds: placeIds,
     );
   }
 }
@@ -113,6 +121,41 @@ class EmployeesApiService {
     }
 
     return Employee.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  static Future<void> patchEmployee(
+    String id, {
+    String? role,
+    String? branchId,
+    String? supervisorId,
+    String? modalidad,
+    List<String>? placeIds,
+  }) async {
+    final token = await ApiClient.getToken();
+    if (token == null) throw Exception('No hay sesión');
+
+    final body = <String, dynamic>{};
+    if (role != null) body['role'] = role;
+    if (branchId != null) body['branch_id'] = branchId;
+    if (supervisorId != null) body['supervisor_id'] = supervisorId;
+    if (modalidad != null) body['modalidad'] = modalidad;
+    if (placeIds != null) body['place_ids'] = placeIds;
+    if (body.isEmpty) throw Exception('Nada que actualizar');
+
+    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/employees/$id');
+    final res = await ApiClient.client.patch(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(body),
+    ).timeout(ApiClient.defaultTimeout);
+
+    if (res.statusCode != 200) {
+      final err = res.body.isNotEmpty ? jsonDecode(res.body) as Map<String, dynamic>? : null;
+      throw Exception(err?['error'] as String? ?? 'Error al actualizar empleado');
+    }
   }
 
   static Future<void> offboardEmployee(String id, String fechaEgreso, {String? motivo}) async {

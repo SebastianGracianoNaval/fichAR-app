@@ -1,5 +1,5 @@
 -- fichAR Migration: Seed priority org configs (CONFIG_WHITELIST)
--- Reference: definiciones/CONFIGURACIONES.txt, plan-org-configs-and-webhooks-phase-1.md
+-- Reference: definiciones/CONFIGURACIONES.md, plan-org-configs-and-webhooks-phase-1.md
 
 INSERT INTO public.org_configs (org_id, key, value)
 SELECT o.id, 'geolocalizacion_obligatoria', to_jsonb(true)

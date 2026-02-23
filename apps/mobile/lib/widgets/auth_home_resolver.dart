@@ -62,7 +62,7 @@ class _AuthHomeResolverState extends State<AuthHomeResolver> {
       return ChangePasswordScreen(refreshToken: refreshToken);
     }
 
-    if (_me!.role == 'legal_auditor') {
+    if (_me!.role == 'integrity_viewer') {
       return const LegalAuditShell();
     }
 

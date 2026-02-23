@@ -82,7 +82,7 @@ supabase db push
 
 ## 3.1. Retención audit_logs (CFG-037)
 
-**Referencia:** definiciones/CONFIGURACIONES.txt CFG-037, LCT Art. 52, ISO 27001 A.8.10.
+**Referencia:** definiciones/CONFIGURACIONES.md CFG-037, LCT Art. 52, ISO 27001 A.8.10.
 
 - **Default:** 3650 días (10 años). Se persiste en `org_configs` con key `logs_retencion_dias`.
 - **Política:** `audit_logs` es inmutable (INSERT only). No existe purga automática en esta versión.

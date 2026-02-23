@@ -68,7 +68,7 @@ class _LegalAuditHashChainScreenState extends State<LegalAuditHashChainScreen> {
 
     if (!kIsWeb) {
       try {
-        await shareExportBytes(result.bytes, 'fichar-legal-hash-chain-${DateTime.now().millisecondsSinceEpoch}.csv');
+        await shareExportBytes(result.bytes, 'fichar-legal-hash-chain-${DateTime.now().millisecondsSinceEpoch}.zip');
       } catch (e) {
         setState(() => _error = 'Error al exportar: $e');
       }

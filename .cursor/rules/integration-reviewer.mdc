@@ -15,4 +15,4 @@ alwaysApply: false
 - Integration is a project pillar: maximize capability with minimal development
 - Old software: CSV, Excel, Latin1 encoding, adapters
 - New software: Webhooks, REST API, n8n
-- Consult definiciones/INTEGRACIONES.txt
+- Consult definiciones/INTEGRACIONES.md

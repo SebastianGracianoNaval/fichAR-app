@@ -1,5 +1,5 @@
 -- fichAR Phase 4: solicitudes_licencia, licencia_adjuntos, alertas
--- Referencia: definiciones/ESQUEMA-BD.txt, plans/Plan-Detallado-Fases-3-4-VOIS.md
+-- Referencia: definiciones/ESQUEMA-BD.md, plans/Plan-Detallado-Fases-3-4-VOIS.md
 
 -- solicitudes_licencia
 CREATE TABLE IF NOT EXISTS public.solicitudes_licencia (

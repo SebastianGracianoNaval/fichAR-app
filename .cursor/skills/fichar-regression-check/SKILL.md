@@ -19,6 +19,6 @@ description: Lists areas that could be affected by a fix. Suggests tests to run.
 
 ## Reference
 
-- `definiciones/CASOS-LIMITE.txt`
-- `definiciones/PANTALLAS.txt`
-- `definiciones/ROLES.txt`
+- `definiciones/CASOS-LIMITE.md`
+- `definiciones/PANTALLAS.md`
+- `definiciones/ROLES.md`

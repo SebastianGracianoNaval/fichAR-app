@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/device_capabilities.dart';
 import '../services/auth_api_service.dart';
+import '../theme.dart';
+import '../widgets/fichar_button.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -110,86 +114,124 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final surface = theme.colorScheme.surface;
+    final contentMaxWidth = 440.0;
+
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'fichAR',
-                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: surface,
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(kSpacingLg),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                      child: Container(
+                      padding: const EdgeInsets.all(kSpacingLg),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(kRadiusXl),
+                        boxShadow: DeviceCapabilities.isLowEnd
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.06),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                      ),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Semantics(
+                              header: true,
+                              child: Text(
+                                'fichAR',
+                                style: theme.textTheme.headlineLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: kSpacingSm),
+                            Text(
+                              'Inicio de sesion',
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: kSpacingXxl),
+                            TextFormField(
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: const InputDecoration(
+                                labelText: 'Email',
+                                hintText: 'tu@email.com',
+                              ),
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return 'Ingresa tu email';
+                                if (!v.contains('@')) return 'Email invalido';
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: kSpacingMd),
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: true,
+                              decoration: const InputDecoration(labelText: 'Contrasena'),
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return 'Ingresa tu contrasena';
+                                return null;
+                              },
+                            ),
+                            if (_errorMessage != null) ...[
+                              const SizedBox(height: kSpacingMd),
+                              Text(
+                                _errorMessage!,
+                                style: TextStyle(color: theme.colorScheme.error),
+                              ),
+                            ],
+                            const SizedBox(height: kSpacingLg),
+                            FicharButton(
+                              onPressed: _loading ? null : _onSubmit,
+                              loading: _loading,
+                              child: const Text('Iniciar sesion'),
+                            ),
+                            const SizedBox(height: kSpacingMd),
+                            TextButton(
+                              onPressed: () {
+                                if (DeviceCapabilities.hasHaptics) {
+                                  HapticFeedback.selectionClick();
+                                }
+                                Navigator.of(context).pushNamed('/forgot-password');
+                              },
+                              child: const Text('Olvide mi contrasena'),
+                            ),
+                          ],
                         ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Inicio de sesion',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 48),
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      hintText: 'tu@email.com',
+                      ),
                     ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Ingresa tu email';
-                      if (!v.contains('@')) return 'Email invalido';
-                      return null;
-                    },
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Contrasena'),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Ingresa tu contrasena';
-                      return null;
-                    },
-                  ),
-                  if (_errorMessage != null) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      _errorMessage!,
-                      style: TextStyle(color: Theme.of(context).colorScheme.error),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: _loading ? null : _onSubmit,
-                    child: _loading
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Iniciar sesion'),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pushNamed('/forgot-password'),
-                    child: const Text('Olvide mi contrasena'),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
+    ),
     );
   }
 }

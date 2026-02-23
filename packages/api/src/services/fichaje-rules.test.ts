@@ -45,6 +45,17 @@ describe('fichaje-rules (CASOS-LIMITE CL-006, CL-007)', () => {
     expect(r.allowed).toBe(true);
   });
 
+  it('CL-008: permite entrada cuando pasaron exactamente 12h', () => {
+    const hace12h = new Date(Date.now() - 12 * 60 * 60 * 1000);
+    const last = {
+      id: 'x',
+      tipo: 'salida' as const,
+      timestamp_servidor: hace12h.toISOString(),
+    };
+    const r = validateEntrada(last);
+    expect(r.allowed).toBe(true);
+  });
+
   it('CL-007: rechaza exactamente en 11.9h (edge case)', () => {
     const hace119min = new Date(Date.now() - 11.9 * 60 * 60 * 1000);
     const last = {

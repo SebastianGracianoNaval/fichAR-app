@@ -13,7 +13,7 @@ description: Backend/API tests, mocks, fixtures. Use when adding or modifying ba
 
 ## Source of Truth
 
-- `definiciones/TESTING-DOCUMENTACION.txt`
+- `definiciones/TESTING-DOCUMENTACION.md`
 
 ## Commands
 

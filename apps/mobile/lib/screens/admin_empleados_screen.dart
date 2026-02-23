@@ -1,7 +1,9 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../services/employees_api_service.dart';
+import '../services/places_api_service.dart';
 import '../utils/error_utils.dart';
 
 class AdminEmpleadosScreen extends StatefulWidget {
@@ -117,6 +119,18 @@ class _AdminEmpleadosScreenState extends State<AdminEmpleadosScreen> {
     }
   }
 
+  Future<void> _editPlaces(Employee emp) async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => _EmployeePlacesDialog(
+        employee: emp,
+        onSaved: () {
+          _load();
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -156,9 +170,14 @@ class _AdminEmpleadosScreenState extends State<AdminEmpleadosScreen> {
                           trailing: e.status == 'activo'
                               ? PopupMenuButton<String>(
                                   onSelected: (v) {
-                                    if (v == 'offboard') _offboard(e);
+                                    if (v == 'places') {
+                                      _editPlaces(e);
+                                    } else if (v == 'offboard') {
+                                      _offboard(e);
+                                    }
                                   },
                                   itemBuilder: (_) => [
+                                    const PopupMenuItem(value: 'places', child: Text('Editar lugares')),
                                     const PopupMenuItem(value: 'offboard', child: Text('Dar de baja')),
                                   ],
                                 )
@@ -166,6 +185,133 @@ class _AdminEmpleadosScreenState extends State<AdminEmpleadosScreen> {
                         );
                       },
                     ),
+    );
+  }
+}
+
+class _EmployeePlacesDialog extends StatefulWidget {
+  const _EmployeePlacesDialog({
+    required this.employee,
+    required this.onSaved,
+  });
+
+  final Employee employee;
+  final VoidCallback onSaved;
+
+  @override
+  State<_EmployeePlacesDialog> createState() => _EmployeePlacesDialogState();
+}
+
+class _EmployeePlacesDialogState extends State<_EmployeePlacesDialog> {
+  List<AdminPlace> _places = [];
+  Set<String> _selectedIds = {};
+  bool _loading = true;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final emp = await EmployeesApiService.getEmployee(widget.employee.id);
+      final placesResult = await PlacesApiService.getPlaces(limit: 200, offset: 0);
+      if (!mounted) return;
+      setState(() {
+        _places = placesResult.data;
+        _selectedIds = Set.from(emp.placeIds ?? []);
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = formatApiError(e);
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await EmployeesApiService.patchEmployee(
+        widget.employee.id,
+        placeIds: _selectedIds.toList(),
+      );
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lugares actualizados')));
+      Navigator.of(context).pop();
+      widget.onSaved();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(formatApiError(e)), backgroundColor: Theme.of(context).colorScheme.error),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Lugares de ${widget.employee.name}'),
+      content: _loading
+          ? const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
+          : _error != null
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                    const SizedBox(height: 16),
+                    FilledButton(onPressed: _load, child: const Text('Reintentar')),
+                  ],
+                )
+              : SizedBox(
+                  width: double.maxFinite,
+                  child: _places.isEmpty
+                      ? const Text('No hay lugares. Creá lugares desde Admin > Lugares.')
+                      : Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _places.map((p) {
+                            final selected = _selectedIds.contains(p.id);
+                            return FilterChip(
+                              label: Text(p.nombre),
+                              selected: selected,
+                              onSelected: (v) {
+                                setState(() {
+                                  if (v) {
+                                    _selectedIds.add(p.id);
+                                  } else {
+                                    _selectedIds.remove(p.id);
+                                  }
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: (_loading || _error != null || _saving) ? null : _save,
+          child: _saving
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Text('Guardar'),
+        ),
+      ],
     );
   }
 }

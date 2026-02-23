@@ -23,8 +23,8 @@ Produce a structured audit:
 
 ## Reference
 
-- `clean_definitions/FICHAR-DEFINICION-COMPLETA.txt` (section 14: Bugs)
-- `definiciones/CASOS-LIMITE.txt` for expected behavior
+- `definiciones/FICHAR-DEFINICION-COMPLETA.md` (section 14: Bugs)
+- `definiciones/CASOS-LIMITE.md` for expected behavior
 
 ## Common Errors (from FICHAR-DEFINICION-COMPLETA)
 

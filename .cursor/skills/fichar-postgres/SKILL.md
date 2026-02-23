@@ -15,8 +15,8 @@ description: Queries, indexes, RLS, migrations, performance. Use for SQL, migrat
 
 ## Source of Truth
 
-- `definiciones/ESQUEMA-BD.txt`
-- `definiciones/SEGURIDAD.txt`
+- `definiciones/ESQUEMA-BD.md`
+- `definiciones/SEGURIDAD.md`
 
 ## Conventions
 

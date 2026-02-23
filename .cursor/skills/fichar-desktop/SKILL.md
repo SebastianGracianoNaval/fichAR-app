@@ -13,8 +13,8 @@ description: Tauri or Electron for Windows 10+, macOS 10.14+, Linux. Use for des
 
 ## Source of Truth
 
-- `definiciones/ARQUITECTURA-TECNICA.txt`
-- `definiciones/OPTIMIZACION-RECURSOS-RED.txt`
+- `definiciones/ARQUITECTURA-TECNICA.md`
+- `definiciones/OPTIMIZACION.md`
 
 ## Recommendation: Tauri
 

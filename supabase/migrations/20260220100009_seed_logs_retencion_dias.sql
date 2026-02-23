@@ -1,5 +1,5 @@
 -- fichAR Migration 9: Seed CFG-037 logs_retencion_dias (default 3650 días = 10 años)
--- Referencia: definiciones/CONFIGURACIONES.txt CFG-037, LCT Art. 52
+-- Referencia: definiciones/CONFIGURACIONES.md CFG-037, LCT Art. 52
 
 -- Seed default para organizaciones existentes que no tengan el valor
 INSERT INTO public.org_configs (org_id, key, value)

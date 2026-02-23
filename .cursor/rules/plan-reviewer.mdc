@@ -15,4 +15,4 @@ alwaysApply: false
 - Review every plan in `plans/` before implementation
 - Checklist: Security, Optimization, Speed
 - Output: PASS or REVISE with specific gaps
-- Align with definiciones/ and clean_definitions/
+- Align with definiciones/

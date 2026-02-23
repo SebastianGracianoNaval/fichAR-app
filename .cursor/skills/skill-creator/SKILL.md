@@ -26,7 +26,7 @@ description: Brief description. Use when [trigger scenarios].
 ...
 
 ## Source of Truth
-Reference definiciones/ or clean_definitions/
+Reference definiciones/
 
 ## Critical Patterns
 ...
@@ -36,7 +36,7 @@ Reference definiciones/ or clean_definitions/
 
 - **name**: lowercase, hyphens, max 64 chars
 - **description**: Include WHAT and WHEN; third person
-- **Reference** definiciones/ or clean_definitions/ where relevant
+- **Reference** definiciones/ where relevant
 - **Concise**: &lt; 500 lines preferred
 
 ## After Creating

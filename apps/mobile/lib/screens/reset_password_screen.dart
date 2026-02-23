@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/device_capabilities.dart';
 import '../services/auth_api_service.dart';
+import '../theme.dart';
+import '../widgets/fichar_button.dart';
 
 // P-AUTH-03: Nueva contraseña tras click en link de bienvenida o recuperación.
 // Triggered when onAuthStateChange emits PASSWORD_RECOVERY.
@@ -76,72 +79,99 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final contentMaxWidth = 440.0;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Nueva contraseña')),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Elegí una contraseña segura para tu cuenta.',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-                  TextFormField(
-                    controller: _newPasswordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Nueva contraseña'),
-                    validator: _validatePassword,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _confirmController,
-                    obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Confirmar contraseña'),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Confirmá tu contraseña';
-                      if (v != _newPasswordController.text) return 'Las contraseñas no coinciden';
-                      return null;
-                    },
-                  ),
-                  if (_errorMessage != null) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      _errorMessage!,
-                      style: TextStyle(color: Theme.of(context).colorScheme.error),
-                    ),
-                    if (_errorMessage!.contains('expiró')) ...[
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pushReplacementNamed('/forgot-password'),
-                        child: const Text('Solicitar nuevo enlace'),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Container(
+            width: constraints.maxWidth,
+            height: constraints.maxHeight,
+            color: theme.colorScheme.surface,
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(kSpacingLg),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                    child: Container(
+                      padding: const EdgeInsets.all(kSpacingLg),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(kRadiusXl),
+                        boxShadow: DeviceCapabilities.isLowEnd
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.06),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                       ),
-                    ],
-                  ],
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: _loading ? null : _onSubmit,
-                    child: _loading
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Guardar contraseña'),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'Elegí una contraseña segura para tu cuenta.',
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: kSpacingXl),
+                            TextFormField(
+                              controller: _newPasswordController,
+                              obscureText: true,
+                              decoration: const InputDecoration(labelText: 'Nueva contraseña'),
+                              validator: _validatePassword,
+                            ),
+                            const SizedBox(height: kSpacingMd),
+                            TextFormField(
+                              controller: _confirmController,
+                              obscureText: true,
+                              decoration: const InputDecoration(labelText: 'Confirmar contraseña'),
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return 'Confirmá tu contraseña';
+                                if (v != _newPasswordController.text) return 'Las contraseñas no coinciden';
+                                return null;
+                              },
+                            ),
+                            if (_errorMessage != null) ...[
+                              const SizedBox(height: kSpacingMd),
+                              Text(
+                                _errorMessage!,
+                                style: TextStyle(color: theme.colorScheme.error),
+                              ),
+                              if (_errorMessage!.contains('expiró')) ...[
+                                const SizedBox(height: kSpacingSm),
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pushReplacementNamed('/forgot-password'),
+                                  child: const Text('Solicitar nuevo enlace'),
+                                ),
+                              ],
+                            ],
+                            const SizedBox(height: kSpacingLg),
+                            FicharButton(
+                              onPressed: _loading ? null : _onSubmit,
+                              loading: _loading,
+                              child: const Text('Guardar contraseña'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

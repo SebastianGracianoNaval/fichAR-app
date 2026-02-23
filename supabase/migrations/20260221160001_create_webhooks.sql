@@ -1,5 +1,5 @@
 -- fichAR Migration: webhooks table for event dispatch
--- Reference: definiciones/INTEGRACIONES.txt 5.1-5.4
+-- Reference: definiciones/INTEGRACIONES.md 5.1-5.4
 
 CREATE TABLE IF NOT EXISTS public.webhooks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

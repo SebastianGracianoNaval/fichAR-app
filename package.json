@@ -2,7 +2,9 @@
   "name": "fichar-app",
   "devDependencies": {
     "@biomejs/biome": "2.4.4",
-    "@types/bun": "latest"
+    "@supabase/supabase-js": "^2.97.0",
+    "@types/bun": "latest",
+    "supabase": "^2.76.12"
   },
   "private": true,
   "scripts": {
@@ -15,7 +17,8 @@
     "format": "bunx biome format --write .",
     "format:check": "bunx biome format .",
     "mobile": "bun run scripts/ensure_mobile_env.ts && cd apps/mobile && flutter run",
-    "mobile:web": "bun run scripts/ensure_mobile_env.ts && cd apps/mobile && flutter run -d chrome"
+    "mobile:web": "bun run scripts/ensure_mobile_env.ts && cd apps/mobile && flutter run -d chrome",
+    "seed:test-admin": "bun run scripts/seed-test-admin.ts"
   },
   "workspaces": [
     "packages/*"
