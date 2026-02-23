@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/device_capabilities.dart';
 import '../services/auth_api_service.dart';
 import '../theme.dart';
+import '../utils/error_utils.dart';
 import '../widgets/fichar_button.dart';
 
 // P-AUTH-04: Cambio obligatorio de contraseña en primer login.
@@ -35,8 +37,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   Future<void> _setSession() async {
     try {
       await Supabase.instance.client.auth.setSession(widget.refreshToken);
-    } catch (_) {
-      // Session already set or will be handled on submit
+    } catch (e) {
+      if (kDebugMode) debugPrint('change_password setSession: $e');
     }
   }
 
@@ -87,13 +89,25 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         return;
       }
 
-      setState(() => _loading = false);
-      if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('/dashboard');
-    } catch (_) {
+      if (result.refreshToken != null) {
+        await Supabase.instance.client.auth.setSession(result.refreshToken!);
+        setState(() => _loading = false);
+        if (!mounted) return;
+        Navigator.of(context).pushReplacementNamed('/dashboard');
+      } else {
+        await Supabase.instance.client.auth.signOut();
+        setState(() => _loading = false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Contraseña actualizada. Iniciá sesión con tu nueva contraseña.')),
+        );
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('change_password submit: $e');
       setState(() {
         _loading = false;
-        _errorMessage = 'Error al cambiar contraseña. Intentá de nuevo.';
+        _errorMessage = friendlyError(e);
       });
     }
   }

@@ -75,7 +75,7 @@ export async function handlePostMeDevicesRevoke(req: Request, sessionId: string)
     .eq('user_id', ctx.userId);
 
   if (error) {
-    await logError('warning', 'me_devices_revoke_failed', { orgId: ctx.orgId, sessionId }, {}, error);
+    await logError('warning', 'me_devices_revoke_failed', { orgId: ctx.orgId, employeeId: ctx.employeeId }, { session_id: sessionId }, error);
     return Response.json({ error: 'Error al revocar. Intentá de nuevo.', code: 'internal' }, { status: 500 });
   }
 

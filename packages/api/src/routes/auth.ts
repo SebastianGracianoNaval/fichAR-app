@@ -840,7 +840,28 @@ export async function handleChangePassword(req: Request): Promise<Response> {
   const isFirstTime = (emp as { password_changed_at: string | null }).password_changed_at === null;
   await logAudit('password_changed', { orgId: emp.org_id, employeeId: emp.id, ip: meta.ip, userAgent: meta.userAgent }, { first_time: isFirstTime }, 'info');
 
-  return Response.json({ message: 'Contraseña actualizada.' });
+  const { data: newSession, error: signInErr } = await supabaseAuth.auth.signInWithPassword({
+    email: userEmail,
+    password: data.new_password,
+  });
+
+  if (signInErr || !newSession.session) {
+    await logError(
+      'warning',
+      'password_change_session_refresh_failed',
+      { orgId: emp.org_id, employeeId: emp.id },
+      { reason: signInErr?.message ?? 'no_session' },
+      signInErr ?? new Error('No session returned'),
+    );
+    return Response.json({ message: 'Contraseña actualizada.' });
+  }
+
+  return Response.json({
+    message: 'Contraseña actualizada.',
+    token: newSession.session.access_token,
+    refresh_token: newSession.session.refresh_token,
+    expires_in: newSession.session.expires_in,
+  });
 }
 
 export async function handlePasswordSetComplete(req: Request): Promise<Response> {

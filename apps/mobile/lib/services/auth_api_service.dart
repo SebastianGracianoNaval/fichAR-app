@@ -301,7 +301,11 @@ class AuthApiService {
     );
   }
 
-  static Future<({String? error, int statusCode})> changePassword({
+  static Future<({
+    String? error,
+    int statusCode,
+    String? refreshToken,
+  })> changePassword({
     required String token,
     required String currentPassword,
     required String newPassword,
@@ -322,11 +326,13 @@ class AuthApiService {
         ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
         : <String, dynamic>{};
     if (res.statusCode == 200) {
-      return (error: null, statusCode: res.statusCode);
+      final rt = body['refresh_token'] as String?;
+      return (error: null, statusCode: res.statusCode, refreshToken: rt);
     }
     return (
       error: body['error'] as String? ?? 'Error al cambiar contraseña.',
       statusCode: res.statusCode,
+      refreshToken: null,
     );
   }
 

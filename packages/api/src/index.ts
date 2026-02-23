@@ -26,6 +26,14 @@ function resolveCorsOrigin(req: Request): string | null {
   }
   if (allowed.includes('*')) return '*';
   if (allowed.includes(origin)) return origin;
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      const u = new URL(origin);
+      if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return origin;
+    } catch {
+      /* ignore */
+    }
+  }
   return null;
 }
 

@@ -59,7 +59,23 @@ async function sendViaSmtp(payload: EmailPayload): Promise<WelcomeEmailResult> {
   }
 }
 
+function getSendGridCategories(): string[] {
+  const raw = process.env.EMAIL_SENDGRID_CATEGORIES?.trim();
+  if (!raw) return [];
+  return raw.split(',').map((c) => c.trim()).filter(Boolean);
+}
+
+function isSendGridDisabled(): boolean {
+  const v = process.env.EMAIL_SENDGRID_DISABLED?.trim().toLowerCase();
+  return v === 'true' || v === '1' || v === 'yes';
+}
+
 async function sendViaSendGrid(payload: EmailPayload): Promise<WelcomeEmailResult> {
+  if (isSendGridDisabled()) {
+    await logError('info', 'sendgrid_disabled_skip', undefined, { email: payload.to });
+    return { ok: false, error: 'Email sending disabled (EMAIL_SENDGRID_DISABLED)' };
+  }
+
   const apiKey = process.env.SENDGRID_API_KEY?.trim();
   if (!apiKey) {
     await logError('warning', 'sendgrid_api_key_missing', undefined, { email: payload.to });
@@ -68,7 +84,8 @@ async function sendViaSendGrid(payload: EmailPayload): Promise<WelcomeEmailResul
 
   const [fromEmail, fromName] = parseFrom(payload.from);
 
-  const body = {
+  const categories = getSendGridCategories();
+  const body: Record<string, unknown> = {
     personalizations: [{ to: [{ email: payload.to }] }],
     from: { email: fromEmail, name: fromName },
     subject: payload.subject,
@@ -77,6 +94,9 @@ async function sendViaSendGrid(payload: EmailPayload): Promise<WelcomeEmailResul
       { type: 'text/html', value: payload.html },
     ],
   };
+  if (categories.length > 0) {
+    body.categories = categories.slice(0, 10);
+  }
 
   try {
     const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
