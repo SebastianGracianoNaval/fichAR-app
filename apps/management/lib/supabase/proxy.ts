@@ -35,8 +35,14 @@ function createTimeoutPromise<T>(ms: number): Promise<T> {
   );
 }
 
+const PROXY_BYPASS = process.env.PROXY_AUTH_BYPASS === "true";
+
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
   let supabaseResponse = NextResponse.next({ request });
+
+  if (PROXY_BYPASS) {
+    return supabaseResponse;
+  }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -83,7 +89,10 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
         ]).then((r) => r?.data);
 
         if (mgmt) {
-          if (mgmt.password_changed_at === null && pathname !== "/set-password") {
+          if (mgmt.password_changed_at === null) {
+            if (pathname === "/set-password" || pathname.startsWith("/set-password/")) {
+              return supabaseResponse;
+            }
             return redirectTo("/set-password", request, supabaseResponse);
           }
           return redirectTo("/", request, supabaseResponse);
