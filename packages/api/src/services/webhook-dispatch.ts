@@ -43,7 +43,7 @@ export async function dispatchWebhooks(
     .eq('active', true);
 
   const toDispatch = (hooks ?? []).filter(
-    (h: WebhookRow) => h.events && h.events.includes(event),
+    (h: WebhookRow) => h.events?.includes(event),
   ) as WebhookRow[];
 
   if (toDispatch.length === 0) return;

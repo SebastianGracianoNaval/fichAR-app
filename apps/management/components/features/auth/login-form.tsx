@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { managementLogin, ManagementApiException } from "@/lib/api/management";
 import { loginSchema, type LoginFormValues } from "@/lib/validations/auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,30 +59,36 @@ export function LoginForm() {
   async function onSubmit(values: LoginFormValues) {
     setLoading(true);
     try {
-      const supabase = createClient();
-
-      const { error } = await withTimeout(
-        supabase.auth.signInWithPassword({
-          email: values.email.trim().toLowerCase(),
-          password: values.password,
-        }),
+      const session = await withTimeout(
+        managementLogin(values.email.trim().toLowerCase(), values.password),
         LOGIN_TIMEOUT_MS,
         "timeout"
       );
+
+      const supabase = createClient();
+      const { error } = await supabase.auth.setSession({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+      });
 
       if (error) {
         toast.error(mapAuthError(error));
         return;
       }
 
-      // Usar full page navigation para asegurar que las cookies de sesion
-      // se envien en la siguiente peticion.
       window.location.href = "/";
     } catch (err) {
+      if (err instanceof ManagementApiException) {
+        const isRateLimit = err.status === 429;
+        toast.error(isRateLimit ? RATE_LIMIT_MESSAGE : (err.message || AUTH_ERROR_MESSAGE));
+        return;
+      }
       const msg =
         err instanceof Error ? err.message : "Error inesperado al iniciar sesion";
       const isNetwork =
-        msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("timeout");
+        msg.toLowerCase().includes("fetch") ||
+        msg.toLowerCase().includes("timeout") ||
+        msg.toLowerCase().includes("abort");
       toast.error(isNetwork ? NETWORK_ERROR_MESSAGE : msg);
     } finally {
       setLoading(false);

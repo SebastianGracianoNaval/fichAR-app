@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import * as XLSX from 'xlsx';
 
-const MAX_ROWS = 100_000;
+const _MAX_ROWS = 100_000;
 const CSV_SEP = ';';
 
 export function computeFileSha256(buffer: Buffer): string {

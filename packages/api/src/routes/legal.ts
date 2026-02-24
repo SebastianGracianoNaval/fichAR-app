@@ -21,7 +21,7 @@ export async function handleGetLegalFichajes(req: Request): Promise<Response> {
   const desde = url.searchParams.get('desde');
   const hasta = url.searchParams.get('hasta');
   const empleadoId = url.searchParams.get('empleado_id');
-  const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '50', 10) || 50, 200);
+  const { limit } = validatePagination(url.searchParams.get('limit'), null, { defaultLimit: 50, maxLimit: 200 });
 
   if (!desde || !hasta) {
     return Response.json(
@@ -66,7 +66,7 @@ export async function handleGetLegalAuditLogs(req: Request): Promise<Response> {
   const { limit, offset } = validatePagination(
     url.searchParams.get('limit'),
     url.searchParams.get('offset'),
-    { defaultLimit: 50 },
+    { defaultLimit: 50, maxLimit: 200 },
   );
 
   if (!desde || !hasta) {
@@ -92,7 +92,6 @@ export async function handleGetLegalAuditLogs(req: Request): Promise<Response> {
     );
   }
 
-  const cappedLimit = Math.min(limit, 200);
   const admin = getSupabaseAdmin();
   let query = admin
     .from('audit_logs')
@@ -101,7 +100,7 @@ export async function handleGetLegalAuditLogs(req: Request): Promise<Response> {
     .gte('timestamp', desde)
     .lte('timestamp', hasta)
     .order('timestamp', { ascending: true })
-    .range(offset, offset + cappedLimit - 1);
+    .range(offset, offset + limit - 1);
 
   if (action) query = query.eq('action', action);
   if (userId) query = query.eq('user_id', userId);
@@ -115,7 +114,7 @@ export async function handleGetLegalAuditLogs(req: Request): Promise<Response> {
 
   return Response.json({
     data: data ?? [],
-    meta: { total: count ?? 0, limit: cappedLimit, offset },
+    meta: { total: count ?? 0, limit, offset },
   });
 }
 
@@ -128,7 +127,7 @@ export async function handleGetLegalHashChain(req: Request): Promise<Response> {
   const desde = url.searchParams.get('desde');
   const hasta = url.searchParams.get('hasta');
   const empleadoId = url.searchParams.get('empleado_id');
-  const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '50', 10) || 50, 200);
+  const { limit } = validatePagination(url.searchParams.get('limit'), null, { defaultLimit: 50, maxLimit: 200 });
 
   if (!desde || !hasta) {
     return Response.json(
@@ -169,7 +168,7 @@ export async function handleGetLegalLicencias(req: Request): Promise<Response> {
   const desde = url.searchParams.get('desde');
   const hasta = url.searchParams.get('hasta');
   const empleadoId = url.searchParams.get('empleado_id');
-  const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '50', 10) || 50, 200);
+  const { limit } = validatePagination(url.searchParams.get('limit'), null, { defaultLimit: 50, maxLimit: 200 });
 
   if (!desde || !hasta) {
     return Response.json(

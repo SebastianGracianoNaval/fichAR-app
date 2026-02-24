@@ -48,17 +48,29 @@ class FicharApp extends StatelessWidget {
         '/reset-password': (_) => const ResetPasswordScreen(),
         '/dashboard': (_) => const AuthHomeResolver(),
         '/mfa-enroll': (ctx) {
-          final args = ModalRoute.of(ctx)?.settings.arguments as MfaEnrollmentRequiredResult?;
+          final args =
+              ModalRoute.of(ctx)?.settings.arguments
+                  as MfaEnrollmentRequiredResult?;
           if (args == null) return const LoginScreen();
-          return MfaEnrollScreen(refreshToken: args.refreshToken, message: args.message);
+          return MfaEnrollScreen(
+            refreshToken: args.refreshToken,
+            message: args.message,
+          );
         },
         '/mfa-verify': (ctx) {
-          final args = ModalRoute.of(ctx)?.settings.arguments as MfaVerificationRequiredResult?;
+          final args =
+              ModalRoute.of(ctx)?.settings.arguments
+                  as MfaVerificationRequiredResult?;
           if (args == null) return const LoginScreen();
-          return MfaVerifyScreen(refreshToken: args.refreshToken, message: args.message);
+          return MfaVerifyScreen(
+            refreshToken: args.refreshToken,
+            message: args.message,
+          );
         },
         '/change-password': (ctx) {
-          final args = ModalRoute.of(ctx)?.settings.arguments as PasswordChangeRequiredResult?;
+          final args =
+              ModalRoute.of(ctx)?.settings.arguments
+                  as PasswordChangeRequiredResult?;
           return ChangePasswordScreen(refreshToken: args?.refreshToken ?? '');
         },
         '/legal-audit': (_) => const AuthHomeResolver(),

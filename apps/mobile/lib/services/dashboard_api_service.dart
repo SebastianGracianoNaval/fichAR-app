@@ -27,7 +27,8 @@ class DashboardKpis {
 }
 
 class DashboardApiService {
-  static Future<({DashboardKpis? data, String? error})> getAdminDashboard() async {
+  static Future<({DashboardKpis? data, String? error})>
+  getAdminDashboard() async {
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/admin/dashboard');
     final res = await ApiClient.client
         .get(url, headers: await ApiClient.authHeaders())

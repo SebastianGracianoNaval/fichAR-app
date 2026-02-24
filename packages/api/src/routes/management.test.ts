@@ -182,3 +182,81 @@ describe('Management organizations', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('Management auth login', () => {
+  it('POST /management/auth/login with invalid JSON returns 400', async () => {
+    const req = new Request(`http://localhost${base}/management/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: 'not json',
+    });
+    const res = await handleRequest(req);
+    expect(res.status).toBe(400);
+    const data = (await res.json()) as { error?: string };
+    expect(data.error).toBe('Invalid JSON');
+  });
+
+  it('POST /management/auth/login with missing email returns 401', async () => {
+    const req = new Request(`http://localhost${base}/management/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'SomePass1' }),
+    });
+    const res = await handleRequest(req);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /management/auth/login with invalid email returns 401', async () => {
+    const req = new Request(`http://localhost${base}/management/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'not-an-email', password: 'SomePass1' }),
+    });
+    const res = await handleRequest(req);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /management/auth/login with weak password returns 401', async () => {
+    const req = new Request(`http://localhost${base}/management/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'admin@test.com', password: 'short' }),
+    });
+    const res = await handleRequest(req);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /management/auth/login with valid shape returns 401 when credentials wrong', async () => {
+    const req = new Request(`http://localhost${base}/management/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'nonexistent@example.com', password: 'ValidPass1' }),
+    });
+    const res = await handleRequest(req);
+    expect(res.status).toBe(401);
+    const data = (await res.json()) as { error?: string };
+    expect(data.error).toBe('Credenciales inválidas');
+  });
+
+  it('POST /management/auth/login returns 429 after 6 failed attempts from same IP', async () => {
+    const ip = '192.168.1.rate-limit-test';
+    const makeReq = () =>
+      new Request(`http://localhost${base}/management/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Forwarded-For': ip,
+        },
+        body: JSON.stringify({ email: 'wrong@example.com', password: 'WrongPass1' }),
+      });
+    for (let i = 0; i < 5; i++) {
+      const res = await handleRequest(makeReq());
+      expect(res.status).toBe(401);
+    }
+    const sixth = await handleRequest(makeReq());
+    expect(sixth.status).toBe(429);
+    const data = (await sixth.json()) as { error?: string; retryAfter?: number };
+    expect(data.error).toBeDefined();
+    expect(typeof data.retryAfter).toBe('number');
+  });
+});

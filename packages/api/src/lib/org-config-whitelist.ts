@@ -23,6 +23,10 @@ export const CONFIG_WHITELIST: ConfigSchema[] = [
   { key: 'logs_retencion_dias', type: 'number', default: 3650, min: 365, max: 3650 },
   { key: 'licencias_aprobador', type: 'select', default: 'supervisor', allowedValues: ['supervisor', 'admin', 'ambos'] },
   { key: 'dispositivos_maximos', type: 'number', default: 3, allowedValues: [1, 2, 3, 5, 10, -1] },
+  { key: 'app_mobile_habilitada', type: 'boolean', default: true },
+  { key: 'app_desktop_habilitada', type: 'boolean', default: true },
+  { key: 'app_web_habilitada', type: 'boolean', default: true },
+  { key: 'fichaje_fuera_zona_notificar', type: 'boolean', default: true },
 ];
 
 const MAX_KEYS_PER_REQUEST = 20;

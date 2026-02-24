@@ -76,7 +76,10 @@ class _LegalAuditLogsScreenState extends State<LegalAuditLogsScreen> {
 
     if (!kIsWeb) {
       try {
-        await shareExportBytes(result.bytes, 'fichar-legal-logs-${DateTime.now().millisecondsSinceEpoch}.zip');
+        await shareExportBytes(
+          result.bytes,
+          'fichar-legal-logs-${DateTime.now().millisecondsSinceEpoch}.zip',
+        );
       } catch (e) {
         setState(() => _error = 'Error al exportar: $e');
       }
@@ -106,126 +109,150 @@ class _LegalAuditLogsScreenState extends State<LegalAuditLogsScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final d = await showDatePicker(
-                      context: context,
-                      initialDate: _desde ?? DateTime.now(),
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (d != null) setState(() => _desde = d);
-                  },
-                  icon: const Icon(Icons.calendar_today, size: 18),
-                  label: Text(_desde != null ? _desde!.toString().split(' ')[0] : 'Desde'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final d = await showDatePicker(
-                      context: context,
-                      initialDate: _hasta ?? DateTime.now(),
-                      firstDate: _desde ?? DateTime(2020),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (d != null) setState(() => _hasta = d);
-                  },
-                  icon: const Icon(Icons.calendar_today, size: 18),
-                  label: Text(_hasta != null ? _hasta!.toString().split(' ')[0] : 'Hasta'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: _loading ? null : () => _load(offset: 0),
-            child: _loading
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Cargar logs'),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: 8),
-            Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-          ],
-          if (_hasLoaded && _data.isEmpty) ...[
-            const SizedBox(height: 16),
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  'No hay registros para el período seleccionado',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-              ),
-            ),
-          ],
-          if (_data.isNotEmpty) ...[
-            const SizedBox(height: 16),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('$_total registros', style: Theme.of(context).textTheme.titleSmall),
-                FilledButton.icon(
-                  onPressed: _loading ? null : _export,
-                  icon: const Icon(Icons.download),
-                  label: const Text('Exportar CSV'),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final d = await showDatePicker(
+                        context: context,
+                        initialDate: _desde ?? DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (d != null) setState(() => _desde = d);
+                    },
+                    icon: const Icon(Icons.calendar_today, size: 18),
+                    label: Text(
+                      _desde != null
+                          ? _desde!.toString().split(' ')[0]
+                          : 'Desde',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final d = await showDatePicker(
+                        context: context,
+                        initialDate: _hasta ?? DateTime.now(),
+                        firstDate: _desde ?? DateTime(2020),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (d != null) setState(() => _hasta = d);
+                    },
+                    icon: const Icon(Icons.calendar_today, size: 18),
+                    label: Text(
+                      _hasta != null
+                          ? _hasta!.toString().split(' ')[0]
+                          : 'Hasta',
+                    ),
+                  ),
                 ),
               ],
             ),
-            if (_total > _limit) ...[
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: _loading ? null : () => _load(offset: 0),
+              child: _loading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Cargar logs'),
+            ),
+            if (_error != null) ...[
               const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TextButton.icon(
-                    onPressed: _loading || _offset <= 0
-                        ? null
-                        : () => _load(offset: _offset - _limit),
-                    icon: const Icon(Icons.chevron_left, size: 20),
-                    label: const Text('Anterior'),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      '${_offset + 1}-${_offset + _data.length} de $_total',
-                      style: Theme.of(context).textTheme.bodySmall,
+              Text(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+            if (_hasLoaded && _data.isEmpty) ...[
+              const SizedBox(height: 16),
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    'No hay registros para el período seleccionado',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  TextButton.icon(
-                    onPressed: _loading || _offset + _data.length >= _total
-                        ? null
-                        : () => _load(offset: _offset + _limit),
-                    icon: const Icon(Icons.chevron_right, size: 20),
-                    label: const Text('Siguiente'),
+                ),
+              ),
+            ],
+            if (_data.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '$_total registros',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  FilledButton.icon(
+                    onPressed: _loading ? null : _export,
+                    icon: const Icon(Icons.download),
+                    label: const Text('Exportar CSV'),
                   ),
                 ],
               ),
-            ],
-            const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columns: headers.map((h) => DataColumn(label: Text(h))).toList(),
-                rows: _data
-                    .map((row) => DataRow(
-                          cells: headers.map((h) => DataCell(Text('${row[h] ?? ''}'))).toList(),
-                        ))
-                    .toList(),
+              if (_total > _limit) ...[
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton.icon(
+                      onPressed: _loading || _offset <= 0
+                          ? null
+                          : () => _load(offset: _offset - _limit),
+                      icon: const Icon(Icons.chevron_left, size: 20),
+                      label: const Text('Anterior'),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        '${_offset + 1}-${_offset + _data.length} de $_total',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: _loading || _offset + _data.length >= _total
+                          ? null
+                          : () => _load(offset: _offset + _limit),
+                      icon: const Icon(Icons.chevron_right, size: 20),
+                      label: const Text('Siguiente'),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columns: headers
+                      .map((h) => DataColumn(label: Text(h)))
+                      .toList(),
+                  rows: _data
+                      .map(
+                        (row) => DataRow(
+                          cells: headers
+                              .map((h) => DataCell(Text('${row[h] ?? ''}')))
+                              .toList(),
+                        ),
+                      )
+                      .toList(),
+                ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
-    ),
     );
   }
 }

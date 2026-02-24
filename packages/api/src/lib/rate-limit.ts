@@ -129,7 +129,8 @@ export async function checkLoginRateLimit(req: Request): Promise<{ allowed: bool
 
   if (!hasWarnedMemory) {
     hasWarnedMemory = true;
-    void logError('warning', 'redis_fallback', undefined, { reason: 'in-memory store, single instance only' }, undefined);
+    const severity = process.env.NODE_ENV === 'production' ? 'warning' : 'info';
+    void logError(severity, 'redis_fallback', undefined, { reason: 'in-memory store, single instance only' }, undefined);
   }
   return checkMemory(ip);
 }

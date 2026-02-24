@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from '../lib/supabase.ts';
 import { requireAuth } from '../lib/auth-middleware.ts';
+import { validatePagination } from '../lib/validators.ts';
 
 const ADMIN_OR_SUPERVISOR = ['admin', 'supervisor'];
 
@@ -17,8 +18,11 @@ export async function handleGetAlertas(req: Request): Promise<Response> {
   const employeeId = url.searchParams.get('employee_id');
   const desde = url.searchParams.get('desde');
   const hasta = url.searchParams.get('hasta');
-  const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '50', 10) || 50, 100);
-  const offset = parseInt(url.searchParams.get('offset') ?? '0', 10) || 0;
+  const { limit, offset } = validatePagination(
+    url.searchParams.get('limit'),
+    url.searchParams.get('offset'),
+    { defaultLimit: 50 },
+  );
 
   const admin = getSupabaseAdmin();
   let query = admin

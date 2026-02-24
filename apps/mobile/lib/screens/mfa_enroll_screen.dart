@@ -5,11 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_api_service.dart';
 
 class MfaEnrollScreen extends StatefulWidget {
-  const MfaEnrollScreen({
-    super.key,
-    required this.refreshToken,
-    this.message,
-  });
+  const MfaEnrollScreen({super.key, required this.refreshToken, this.message});
 
   final String refreshToken;
   final String? message;
@@ -38,7 +34,8 @@ class _MfaEnrollScreenState extends State<MfaEnrollScreen> {
       final response = await AuthApiService.mfaEnroll(
         refreshToken: widget.refreshToken,
       );
-      if (response.factorId != null && (response.qrCode != null || response.secret != null)) {
+      if (response.factorId != null &&
+          (response.qrCode != null || response.secret != null)) {
         setState(() {
           _factorId = response.factorId;
           _qrCode = response.qrCode;
@@ -91,10 +88,9 @@ class _MfaEnrollScreenState extends State<MfaEnrollScreen> {
           response.result!.refreshToken,
         );
         if (!mounted) return;
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/dashboard',
-          (route) => false,
-        );
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/dashboard', (route) => false);
         return;
       }
 
@@ -142,9 +138,9 @@ class _MfaEnrollScreenState extends State<MfaEnrollScreen> {
                 Text(
                   'Configurar 2FA',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
@@ -152,8 +148,8 @@ class _MfaEnrollScreenState extends State<MfaEnrollScreen> {
                   widget.message ??
                       'Escaneá el código QR con tu app autenticadora (Google Authenticator, Authy, etc.) y luego ingresá el código de 6 dígitos.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 if (_qrCode != null || _secret != null) ...[
@@ -174,7 +170,11 @@ class _MfaEnrollScreenState extends State<MfaEnrollScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Center(
-                              child: Icon(Icons.qr_code_2, size: 120, color: Colors.black87),
+                              child: Icon(
+                                Icons.qr_code_2,
+                                size: 120,
+                                color: Colors.black87,
+                              ),
                             ),
                           ),
                   ),
@@ -203,7 +203,9 @@ class _MfaEnrollScreenState extends State<MfaEnrollScreen> {
                   const SizedBox(height: 16),
                   Text(
                     _errorMessage!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 24),

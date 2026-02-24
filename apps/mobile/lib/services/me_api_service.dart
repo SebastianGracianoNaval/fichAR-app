@@ -29,7 +29,8 @@ class MeResult {
       email: json['email'] as String? ?? '',
       name: json['name'] as String?,
       cuil: json['cuil'] as String?,
-      requiresPasswordChange: json['requires_password_change'] as bool? ?? false,
+      requiresPasswordChange:
+          json['requires_password_change'] as bool? ?? false,
     );
   }
 }
@@ -65,10 +66,9 @@ class MeApiService {
     }
 
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/me');
-    final res = await ApiClient.client.get(
-      url,
-      headers: {'Authorization': 'Bearer $token'},
-    ).timeout(ApiClient.defaultTimeout);
+    final res = await ApiClient.client
+        .get(url, headers: {'Authorization': 'Bearer $token'})
+        .timeout(ApiClient.defaultTimeout);
 
     if (res.statusCode != 200) {
       final body = res.body.isNotEmpty
@@ -97,17 +97,17 @@ class MeApiService {
     }
   }
 
-  static Future<({List<DeviceSession>? devices, String? error})> getDevices() async {
+  static Future<({List<DeviceSession>? devices, String? error})>
+  getDevices() async {
     final token = await ApiClient.getToken();
     if (token == null) {
       return (devices: null, error: 'No hay sesión activa');
     }
 
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/me/devices');
-    final res = await ApiClient.client.get(
-      url,
-      headers: {'Authorization': 'Bearer $token'},
-    ).timeout(ApiClient.defaultTimeout);
+    final res = await ApiClient.client
+        .get(url, headers: {'Authorization': 'Bearer $token'})
+        .timeout(ApiClient.defaultTimeout);
 
     if (res.statusCode != 200) {
       final body = res.body.isNotEmpty
@@ -141,29 +141,32 @@ class MeApiService {
     }
   }
 
-  static Future<({bool ok, String? error})> revokeDevice(String sessionId) async {
+  static Future<({bool ok, String? error})> revokeDevice(
+    String sessionId,
+  ) async {
     final token = await ApiClient.getToken();
     if (token == null) {
       return (ok: false, error: 'No hay sesión activa');
     }
 
-    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/me/devices/$sessionId/revoke');
-    final res = await ApiClient.client.post(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    ).timeout(ApiClient.defaultTimeout);
+    final url = Uri.parse(
+      '${ApiClient.baseUrl}/api/v1/me/devices/$sessionId/revoke',
+    );
+    final res = await ApiClient.client
+        .post(
+          url,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        )
+        .timeout(ApiClient.defaultTimeout);
 
     if (res.statusCode != 200) {
       final body = res.body.isNotEmpty
           ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
           : <String, dynamic>{};
-      return (
-        ok: false,
-        error: body['error'] as String? ?? 'Error al revocar',
-      );
+      return (ok: false, error: body['error'] as String? ?? 'Error al revocar');
     }
 
     return (ok: true, error: null);

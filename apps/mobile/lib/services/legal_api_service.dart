@@ -5,8 +5,8 @@ import 'package:http/http.dart' as http;
 import '../core/api_client.dart';
 
 class LegalApiService {
-
-  static Future<({List<Map<String, dynamic>> data, int total, String? error})> getFichajes({
+  static Future<({List<Map<String, dynamic>> data, int total, String? error})>
+  getFichajes({
     required String desde,
     required String hasta,
     String? empleadoId,
@@ -18,18 +18,25 @@ class LegalApiService {
       'limit': limit.toString(),
     };
     if (empleadoId != null) params['empleado_id'] = empleadoId;
-    final uri = Uri.parse('${ApiClient.baseUrl}/api/v1/legal/fichajes').replace(queryParameters: params);
-    final res = await ApiClient.client.get(uri, headers: await ApiClient.authHeaders()).timeout(ApiClient.defaultTimeout);
+    final uri = Uri.parse(
+      '${ApiClient.baseUrl}/api/v1/legal/fichajes',
+    ).replace(queryParameters: params);
+    final res = await ApiClient.client
+        .get(uri, headers: await ApiClient.authHeaders())
+        .timeout(ApiClient.defaultTimeout);
     return _parseListResponse(res);
   }
 
-  static Future<({
-    List<Map<String, dynamic>> data,
-    int total,
-    int limit,
-    int offset,
-    String? error,
-  })> getAuditLogs({
+  static Future<
+    ({
+      List<Map<String, dynamic>> data,
+      int total,
+      int limit,
+      int offset,
+      String? error,
+    })
+  >
+  getAuditLogs({
     required String desde,
     required String hasta,
     String? action,
@@ -45,12 +52,17 @@ class LegalApiService {
     };
     if (action != null && action.isNotEmpty) params['action'] = action;
     if (userId != null && userId.isNotEmpty) params['user_id'] = userId;
-    final uri = Uri.parse('${ApiClient.baseUrl}/api/v1/legal/audit-logs').replace(queryParameters: params);
-    final res = await ApiClient.client.get(uri, headers: await ApiClient.authHeaders()).timeout(ApiClient.defaultTimeout);
+    final uri = Uri.parse(
+      '${ApiClient.baseUrl}/api/v1/legal/audit-logs',
+    ).replace(queryParameters: params);
+    final res = await ApiClient.client
+        .get(uri, headers: await ApiClient.authHeaders())
+        .timeout(ApiClient.defaultTimeout);
     return _parseAuditLogsResponse(res);
   }
 
-  static Future<({List<Map<String, dynamic>> data, int total, String? error})> getLicencias({
+  static Future<({List<Map<String, dynamic>> data, int total, String? error})>
+  getLicencias({
     required String desde,
     required String hasta,
     String? empleadoId,
@@ -62,12 +74,17 @@ class LegalApiService {
       'limit': limit.toString(),
     };
     if (empleadoId != null) params['empleado_id'] = empleadoId;
-    final uri = Uri.parse('${ApiClient.baseUrl}/api/v1/legal/licencias').replace(queryParameters: params);
-    final res = await ApiClient.client.get(uri, headers: await ApiClient.authHeaders()).timeout(ApiClient.defaultTimeout);
+    final uri = Uri.parse(
+      '${ApiClient.baseUrl}/api/v1/legal/licencias',
+    ).replace(queryParameters: params);
+    final res = await ApiClient.client
+        .get(uri, headers: await ApiClient.authHeaders())
+        .timeout(ApiClient.defaultTimeout);
     return _parseListResponse(res);
   }
 
-  static Future<({List<Map<String, dynamic>> data, int total, String? error})> getHashChain({
+  static Future<({List<Map<String, dynamic>> data, int total, String? error})>
+  getHashChain({
     required String desde,
     required String hasta,
     String? empleadoId,
@@ -79,8 +96,12 @@ class LegalApiService {
       'limit': limit.toString(),
     };
     if (empleadoId != null) params['empleado_id'] = empleadoId;
-    final uri = Uri.parse('${ApiClient.baseUrl}/api/v1/legal/hash-chain').replace(queryParameters: params);
-    final res = await ApiClient.client.get(uri, headers: await ApiClient.authHeaders()).timeout(ApiClient.defaultTimeout);
+    final uri = Uri.parse(
+      '${ApiClient.baseUrl}/api/v1/legal/hash-chain',
+    ).replace(queryParameters: params);
+    final res = await ApiClient.client
+        .get(uri, headers: await ApiClient.authHeaders())
+        .timeout(ApiClient.defaultTimeout);
     return _parseListResponse(res);
   }
 
@@ -90,7 +111,8 @@ class LegalApiService {
     int limit,
     int offset,
     String? error,
-  }) _parseAuditLogsResponse(http.Response res) {
+  })
+  _parseAuditLogsResponse(http.Response res) {
     if (res.statusCode != 200) {
       final body = res.body.isNotEmpty
           ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
@@ -104,7 +126,8 @@ class LegalApiService {
       );
     }
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    final data = (body['data'] as List<dynamic>?)
+    final data =
+        (body['data'] as List<dynamic>?)
             ?.map((e) => Map<String, dynamic>.from(e as Map))
             .toList() ??
         [];
@@ -118,9 +141,8 @@ class LegalApiService {
     );
   }
 
-  static ({List<Map<String, dynamic>> data, int total, String? error}) _parseListResponse(
-    http.Response res,
-  ) {
+  static ({List<Map<String, dynamic>> data, int total, String? error})
+  _parseListResponse(http.Response res) {
     if (res.statusCode != 200) {
       final body = res.body.isNotEmpty
           ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
@@ -132,7 +154,8 @@ class LegalApiService {
       );
     }
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    final data = (body['data'] as List<dynamic>?)
+    final data =
+        (body['data'] as List<dynamic>?)
             ?.map((e) => Map<String, dynamic>.from(e as Map))
             .toList() ??
         [];
@@ -154,13 +177,16 @@ class LegalApiService {
       'desde': desde,
       'hasta': hasta,
       'formato': formato,
-      if (empleadoIds != null && empleadoIds.isNotEmpty) 'empleado_ids': empleadoIds,
+      if (empleadoIds != null && empleadoIds.isNotEmpty)
+        'empleado_ids': empleadoIds,
     };
-    final res = await ApiClient.client.post(
-      url,
-      headers: await ApiClient.authHeaders(),
-      body: jsonEncode(body),
-    ).timeout(ApiClient.exportTimeout);
+    final res = await ApiClient.client
+        .post(
+          url,
+          headers: await ApiClient.authHeaders(),
+          body: jsonEncode(body),
+        )
+        .timeout(ApiClient.exportTimeout);
 
     if (res.statusCode != 200) {
       final resBody = res.body.isNotEmpty

@@ -2,9 +2,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../theme.dart';
 import '../services/employees_api_service.dart';
 import '../services/places_api_service.dart';
 import '../utils/error_utils.dart';
+import '../widgets/inline_error.dart';
+import '../widgets/responsive_content_wrapper.dart';
 
 class AdminEmpleadosScreen extends StatefulWidget {
   const AdminEmpleadosScreen({super.key});
@@ -55,7 +58,11 @@ class _AdminEmpleadosScreenState extends State<AdminEmpleadosScreen> {
     final file = result.files.single;
     final bytes = file.bytes;
     if (bytes == null) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se pudo leer el archivo')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo leer el archivo')),
+        );
+      }
       return;
     }
 
@@ -93,7 +100,8 @@ class _AdminEmpleadosScreenState extends State<AdminEmpleadosScreen> {
     );
     if (picked == null) return;
     if (!mounted) return;
-    final fecha = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+    final fecha =
+        '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -101,8 +109,14 @@ class _AdminEmpleadosScreenState extends State<AdminEmpleadosScreen> {
         title: const Text('Dar de baja'),
         content: Text('Dar de baja a ${emp.name}? Fecha egreso: $fecha'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirmar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Confirmar'),
+          ),
         ],
       ),
     );
@@ -111,11 +125,15 @@ class _AdminEmpleadosScreenState extends State<AdminEmpleadosScreen> {
     try {
       await EmployeesApiService.offboardEmployee(emp.id, fecha);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Empleado dado de baja')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Empleado dado de baja')));
       _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(formatApiError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(formatApiError(e))));
     }
   }
 
@@ -142,58 +160,89 @@ class _AdminEmpleadosScreenState extends State<AdminEmpleadosScreen> {
             onPressed: _loading ? null : _import,
             tooltip: 'Importar Excel/CSV',
           ),
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loading ? null : _load),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loading ? null : _load,
+          ),
         ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                      const SizedBox(height: 16),
-                      FilledButton(onPressed: _load, child: const Text('Reintentar')),
-                    ],
-                  ),
-                )
-              : _employees.isEmpty
-                  ? const Center(child: Text('No hay empleados'))
-                  : ListView.builder(
-                      itemCount: _employees.length,
-                      itemBuilder: (_, i) {
-                        final e = _employees[i];
-                        return ListTile(
-                          title: Text(e.name),
-                          subtitle: Text('${e.email} - ${e.role}'),
-                          trailing: e.status == 'activo'
-                              ? PopupMenuButton<String>(
-                                  onSelected: (v) {
-                                    if (v == 'places') {
-                                      _editPlaces(e);
-                                    } else if (v == 'offboard') {
-                                      _offboard(e);
-                                    }
-                                  },
-                                  itemBuilder: (_) => [
-                                    const PopupMenuItem(value: 'places', child: Text('Editar lugares')),
-                                    const PopupMenuItem(value: 'offboard', child: Text('Dar de baja')),
-                                  ],
-                                )
-                              : Chip(label: Text(e.status)),
-                        );
-                      },
+          ? ResponsiveContentWrapper(
+              width: ContentWidth.list,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: kSpacingLg),
+                child: InlineError(
+                  message: _error!,
+                  onRetry: _load,
+                  isLoading: false,
+                ),
+              ),
+            )
+          : _employees.isEmpty
+          ? ResponsiveContentWrapper(
+              width: ContentWidth.list,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: kSpacingLg),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.people_outline,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
+                    const SizedBox(height: kSpacingMd),
+                    Text(
+                      'No hay empleados',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : ResponsiveContentWrapper(
+              width: ContentWidth.list,
+              child: ListView.builder(
+                itemCount: _employees.length,
+                itemBuilder: (_, i) {
+                  final e = _employees[i];
+                  return ListTile(
+                    title: Text(e.name),
+                    subtitle: Text('${e.email} - ${e.role}'),
+                    trailing: e.status == 'activo'
+                        ? PopupMenuButton<String>(
+                            onSelected: (v) {
+                              if (v == 'places') {
+                                _editPlaces(e);
+                              } else if (v == 'offboard') {
+                                _offboard(e);
+                              }
+                            },
+                            itemBuilder: (_) => [
+                              const PopupMenuItem(
+                                value: 'places',
+                                child: Text('Editar lugares'),
+                              ),
+                              const PopupMenuItem(
+                                value: 'offboard',
+                                child: Text('Dar de baja'),
+                              ),
+                            ],
+                          )
+                        : Chip(label: Text(e.status)),
+                  );
+                },
+              ),
+            ),
     );
   }
 }
 
 class _EmployeePlacesDialog extends StatefulWidget {
-  const _EmployeePlacesDialog({
-    required this.employee,
-    required this.onSaved,
-  });
+  const _EmployeePlacesDialog({required this.employee, required this.onSaved});
 
   final Employee employee;
   final VoidCallback onSaved;
@@ -222,7 +271,10 @@ class _EmployeePlacesDialogState extends State<_EmployeePlacesDialog> {
     });
     try {
       final emp = await EmployeesApiService.getEmployee(widget.employee.id);
-      final placesResult = await PlacesApiService.getPlaces(limit: 200, offset: 0);
+      final placesResult = await PlacesApiService.getPlaces(
+        limit: 200,
+        offset: 0,
+      );
       if (!mounted) return;
       setState(() {
         _places = placesResult.data;
@@ -248,14 +300,19 @@ class _EmployeePlacesDialogState extends State<_EmployeePlacesDialog> {
       );
       if (!mounted) return;
       HapticFeedback.mediumImpact();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lugares actualizados')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Lugares actualizados')));
       Navigator.of(context).pop();
       widget.onSaved();
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(formatApiError(e)), backgroundColor: Theme.of(context).colorScheme.error),
+        SnackBar(
+          content: Text(formatApiError(e)),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
     }
   }
@@ -265,41 +322,51 @@ class _EmployeePlacesDialogState extends State<_EmployeePlacesDialog> {
     return AlertDialog(
       title: Text('Lugares de ${widget.employee.name}'),
       content: _loading
-          ? const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(),
+              ),
+            )
           : _error != null
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                    const SizedBox(height: 16),
-                    FilledButton(onPressed: _load, child: const Text('Reintentar')),
-                  ],
-                )
-              : SizedBox(
-                  width: double.maxFinite,
-                  child: _places.isEmpty
-                      ? const Text('No hay lugares. Creá lugares desde Admin > Lugares.')
-                      : Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _places.map((p) {
-                            final selected = _selectedIds.contains(p.id);
-                            return FilterChip(
-                              label: Text(p.nombre),
-                              selected: selected,
-                              onSelected: (v) {
-                                setState(() {
-                                  if (v) {
-                                    _selectedIds.add(p.id);
-                                  } else {
-                                    _selectedIds.remove(p.id);
-                                  }
-                                });
-                              },
-                            );
-                          }).toList(),
-                        ),
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
+                const SizedBox(height: 16),
+                FilledButton(onPressed: _load, child: const Text('Reintentar')),
+              ],
+            )
+          : SizedBox(
+              width: double.maxFinite,
+              child: _places.isEmpty
+                  ? const Text(
+                      'No hay lugares. Creá lugares desde Admin > Lugares.',
+                    )
+                  : Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _places.map((p) {
+                        final selected = _selectedIds.contains(p.id);
+                        return FilterChip(
+                          label: Text(p.nombre),
+                          selected: selected,
+                          onSelected: (v) {
+                            setState(() {
+                              if (v) {
+                                _selectedIds.add(p.id);
+                              } else {
+                                _selectedIds.remove(p.id);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+            ),
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.of(context).pop(),
@@ -308,7 +375,11 @@ class _EmployeePlacesDialogState extends State<_EmployeePlacesDialog> {
         FilledButton(
           onPressed: (_loading || _error != null || _saving) ? null : _save,
           child: _saving
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Guardar'),
         ),
       ],

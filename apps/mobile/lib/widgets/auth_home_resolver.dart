@@ -40,9 +40,15 @@ class _AuthHomeResolverState extends State<AuthHomeResolver> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              Text(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
               const SizedBox(height: 16),
-              FilledButton(onPressed: _fetchMe, child: const Text('Reintentar')),
+              FilledButton(
+                onPressed: _fetchMe,
+                child: const Text('Reintentar'),
+              ),
             ],
           ),
         ),
@@ -50,9 +56,7 @@ class _AuthHomeResolverState extends State<AuthHomeResolver> {
     }
 
     if (_me == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     // CL-038: bypass via stored session — force change before dashboard

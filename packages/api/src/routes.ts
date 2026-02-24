@@ -55,11 +55,23 @@ import {
   handlePatchWebhook,
   handleDeleteWebhook,
 } from './routes/webhooks.ts';
+import {
+  handlePostIntegrationKeys,
+  handleGetIntegrationKeys,
+  handlePatchIntegrationKey,
+  handleDeleteIntegrationKey,
+} from './routes/integration-keys.ts';
+import {
+  integrationGateway,
+  handleGetIntegrationsFichajes,
+  handleGetIntegrationsEmpleados,
+} from './routes/integrations.ts';
 import { handleGetAlertas } from './routes/alertas.ts';
 import { handleGetBanco, handleGetBancoEquipo } from './routes/banco.ts';
 import { handlePostReportesExport } from './routes/reportes.ts';
 import { handleGetAdminDashboard } from './routes/dashboard.ts';
 import {
+  handleManagementAuthLogin,
   handleManagementCreateOrg,
   handleManagementGetStats,
   handleManagementListOrgs,
@@ -166,7 +178,18 @@ const routes: Route[] = [
   dynamic('PATCH', '/webhooks/', '', handlePatchWebhook),
   dynamic('DELETE', '/webhooks/', '', handleDeleteWebhook),
 
-  // Management (fichar-management)
+  // Integration API keys (Admin only)
+  exact('POST', '/integration-keys', handlePostIntegrationKeys),
+  exact('GET', '/integration-keys', handleGetIntegrationKeys),
+  dynamic('PATCH', '/integration-keys/', '', handlePatchIntegrationKey, (id) => id.length > 0 && !id.includes('/')),
+  dynamic('DELETE', '/integration-keys/', '', handleDeleteIntegrationKey, (id) => id.length > 0 && !id.includes('/')),
+
+  // Integration API (API key auth; gateway in handler)
+  exact('GET', '/integrations/fichajes', integrationGateway('read_fichajes', handleGetIntegrationsFichajes)),
+  exact('GET', '/integrations/empleados', integrationGateway('read_empleados', handleGetIntegrationsEmpleados)),
+
+  // Management (fichar-management). POST /management/auth/login is public (rate-limited by IP).
+  exact('POST', '/management/auth/login', handleManagementAuthLogin),
   exact('GET', '/management/stats', handleManagementGetStats),
   exact('GET', '/management/organizations', handleManagementListOrgs),
   dynamic('GET', '/management/organizations/', '', handleManagementGetOrgById, (id) => id.length > 0 && !id.includes('/')),

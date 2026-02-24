@@ -84,11 +84,13 @@ class FichajesApiService {
     };
 
     final res = await ApiClient.withRetry(() async {
-      return await ApiClient.client.post(
-        url,
-        headers: await ApiClient.authHeaders(),
-        body: jsonEncode(body),
-      ).timeout(ApiClient.defaultTimeout);
+      return await ApiClient.client
+          .post(
+            url,
+            headers: await ApiClient.authHeaders(),
+            body: jsonEncode(body),
+          )
+          .timeout(ApiClient.defaultTimeout);
     });
 
     if (res.statusCode == 200 || res.statusCode == 201) {
@@ -118,8 +120,9 @@ class FichajesApiService {
     if (desde != null) params['desde'] = desde;
     if (hasta != null) params['hasta'] = hasta;
 
-    final uri = Uri.parse('${ApiClient.baseUrl}/api/v1/fichajes')
-        .replace(queryParameters: params);
+    final uri = Uri.parse(
+      '${ApiClient.baseUrl}/api/v1/fichajes',
+    ).replace(queryParameters: params);
     final res = await ApiClient.client
         .get(uri, headers: await ApiClient.authHeaders())
         .timeout(ApiClient.defaultTimeout);
@@ -137,8 +140,12 @@ class FichajesApiService {
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     final raw = body['data'] as List<dynamic>? ?? [];
-    final data = raw.map((e) => Fichaje.fromJson(e as Map<String, dynamic>)).toList();
-    final total = (body['meta'] as Map<String, dynamic>?)?['total'] as int? ?? data.length;
+    final data = raw
+        .map((e) => Fichaje.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final total =
+        (body['meta'] as Map<String, dynamic>?)?['total'] as int? ??
+        data.length;
     return (data: data, total: total, error: null);
   }
 
@@ -160,7 +167,9 @@ class FichajesApiService {
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     final raw = body['data'] as List<dynamic>? ?? [];
-    final data = raw.map((e) => Place.fromJson(e as Map<String, dynamic>)).toList();
+    final data = raw
+        .map((e) => Place.fromJson(e as Map<String, dynamic>))
+        .toList();
     return (data: data, error: null);
   }
 }

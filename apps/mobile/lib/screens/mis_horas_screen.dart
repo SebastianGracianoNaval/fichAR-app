@@ -35,18 +35,31 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
     });
 
     final desde = _mesActual.toIso8601String();
-    final hastaDate = DateTime(_mesActual.year, _mesActual.month + 1, 0, 23, 59, 59);
+    final hastaDate = DateTime(
+      _mesActual.year,
+      _mesActual.month + 1,
+      0,
+      23,
+      59,
+      59,
+    );
     final hasta = hastaDate.toIso8601String();
 
     final results = await Future.wait([
       LicenciasApiService.getBanco(),
-      FichajesApiService.getFichajes(desde: desde, hasta: hasta, limit: _pageSize, offset: 0),
+      FichajesApiService.getFichajes(
+        desde: desde,
+        hasta: hasta,
+        limit: _pageSize,
+        offset: 0,
+      ),
     ]);
 
     if (!mounted) return;
 
     final bancoResult = results[0] as ({double saldoHoras, String? error});
-    final fichajesResult = results[1] as ({List<Fichaje> data, int total, String? error});
+    final fichajesResult =
+        results[1] as ({List<Fichaje> data, int total, String? error});
 
     setState(() {
       _loading = false;
@@ -63,7 +76,14 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
     setState(() => _loadingMore = true);
 
     final desde = _mesActual.toIso8601String();
-    final hastaDate = DateTime(_mesActual.year, _mesActual.month + 1, 0, 23, 59, 59);
+    final hastaDate = DateTime(
+      _mesActual.year,
+      _mesActual.month + 1,
+      0,
+      23,
+      59,
+      59,
+    );
     final hasta = hastaDate.toIso8601String();
 
     final result = await FichajesApiService.getFichajes(
@@ -97,40 +117,46 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
-                      const SizedBox(height: 16),
-                      FilledButton(onPressed: _loadData, child: const Text('Reintentar')),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _error!,
+                    style: TextStyle(color: theme.colorScheme.error),
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadData,
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      _buildBancoCard(theme),
-                      const SizedBox(height: 24),
-                      _buildMonthSelector(theme),
-                      const SizedBox(height: 16),
-                      _buildFichajesTable(theme),
-                      if (_offset < _total) ...[
-                        const SizedBox(height: 16),
-                        Center(
-                          child: _loadingMore
-                              ? const CircularProgressIndicator()
-                              : TextButton(
-                                  onPressed: _loadMore,
-                                  child: const Text('Cargar mas'),
-                                ),
-                        ),
-                      ],
-                    ],
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: _loadData,
+                    child: const Text('Reintentar'),
                   ),
-                ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _buildBancoCard(theme),
+                  const SizedBox(height: 24),
+                  _buildMonthSelector(theme),
+                  const SizedBox(height: 16),
+                  _buildFichajesTable(theme),
+                  if (_offset < _total) ...[
+                    const SizedBox(height: 16),
+                    Center(
+                      child: _loadingMore
+                          ? const CircularProgressIndicator()
+                          : TextButton(
+                              onPressed: _loadMore,
+                              child: const Text('Cargar mas'),
+                            ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
     );
   }
 
@@ -152,7 +178,9 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              (_saldoHoras ?? 0) >= 0 ? 'Horas a favor (acumuladas)' : 'Horas en contra',
+              (_saldoHoras ?? 0) >= 0
+                  ? 'Horas a favor (acumuladas)'
+                  : 'Horas en contra',
               style: theme.textTheme.bodySmall,
             ),
           ],
@@ -163,8 +191,18 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
 
   Widget _buildMonthSelector(ThemeData theme) {
     final meses = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
     ];
     final label = '${meses[_mesActual.month - 1]} ${_mesActual.year}';
 
@@ -178,7 +216,8 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
         Text(label, style: theme.textTheme.titleMedium),
         IconButton(
           icon: const Icon(Icons.chevron_right),
-          onPressed: _mesActual.month == DateTime.now().month &&
+          onPressed:
+              _mesActual.month == DateTime.now().month &&
                   _mesActual.year == DateTime.now().year
               ? null
               : () => _cambiarMes(1),
@@ -217,19 +256,23 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
         final hora = dt != null
             ? '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}'
             : '-';
-        return DataRow(cells: [
-          DataCell(Text(fecha)),
-          DataCell(Text(
-            f.tipo == 'entrada' ? 'Entrada' : 'Salida',
-            style: TextStyle(
-              color: f.tipo == 'entrada'
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.tertiary,
-              fontWeight: FontWeight.w500,
+        return DataRow(
+          cells: [
+            DataCell(Text(fecha)),
+            DataCell(
+              Text(
+                f.tipo == 'entrada' ? 'Entrada' : 'Salida',
+                style: TextStyle(
+                  color: f.tipo == 'entrada'
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.tertiary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
-          )),
-          DataCell(Text(hora)),
-        ]);
+            DataCell(Text(hora)),
+          ],
+        );
       }).toList(),
     );
   }

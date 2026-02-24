@@ -6,6 +6,8 @@ import '../core/device_capabilities.dart';
 import '../services/places_api_service.dart';
 import '../theme.dart';
 import '../utils/error_utils.dart';
+import '../widgets/inline_error.dart';
+import '../widgets/responsive_content_wrapper.dart';
 
 const _diasOptions = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
@@ -58,7 +60,10 @@ class _AdminLugaresScreenState extends State<AdminLugaresScreen> {
     if (_loading || _places.length >= _total) return;
     setState(() => _loading = true);
     try {
-      final result = await PlacesApiService.getPlaces(limit: _limit, offset: _offset);
+      final result = await PlacesApiService.getPlaces(
+        limit: _limit,
+        offset: _offset,
+      );
       if (!mounted) return;
       setState(() {
         _places = [..._places, ...result.data];
@@ -128,7 +133,11 @@ class _AdminLugaresScreenState extends State<AdminLugaresScreen> {
         onSaved: () {
           Navigator.pop(ctx);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(place == null ? 'Lugar creado' : 'Lugar actualizado')),
+            SnackBar(
+              content: Text(
+                place == null ? 'Lugar creado' : 'Lugar actualizado',
+              ),
+            ),
           );
           _load();
         },
@@ -143,10 +152,15 @@ class _AdminLugaresScreenState extends State<AdminLugaresScreen> {
         title: const Text('Eliminar lugar'),
         content: Text('Eliminar "${place.nombre}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
             child: const Text('Eliminar'),
           ),
         ],
@@ -157,14 +171,18 @@ class _AdminLugaresScreenState extends State<AdminLugaresScreen> {
     try {
       await PlacesApiService.deletePlace(place.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lugar eliminado')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Lugar eliminado')));
       _load();
     } catch (e) {
       if (!mounted) return;
       if (DeviceCapabilities.hasHaptics) {
         HapticFeedback.heavyImpact();
       }
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(formatApiError(e))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(formatApiError(e))));
     }
   }
 
@@ -182,19 +200,12 @@ class _AdminLugaresScreenState extends State<AdminLugaresScreen> {
           ),
         ],
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final maxWidth = constraints.maxWidth > 600 ? 440.0 : constraints.maxWidth;
-          return Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),
-              child: RefreshIndicator(
-                onRefresh: _load,
-                child: _buildBody(theme),
-              ),
-            ),
-          );
-        },
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: ResponsiveContentWrapper(
+          width: ContentWidth.list,
+          child: _buildBody(theme),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openForm(),
@@ -209,7 +220,10 @@ class _AdminLugaresScreenState extends State<AdminLugaresScreen> {
       return ListView(
         padding: const EdgeInsets.all(kSpacingMd),
         children: [
-          SizedBox(height: MediaQuery.of(context).size.height * 0.3, child: const Center(child: CircularProgressIndicator())),
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.3,
+            child: const Center(child: CircularProgressIndicator()),
+          ),
         ],
       );
     }
@@ -217,9 +231,7 @@ class _AdminLugaresScreenState extends State<AdminLugaresScreen> {
       return ListView(
         padding: const EdgeInsets.all(kSpacingMd),
         children: [
-          Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
-          const SizedBox(height: kSpacingMd),
-          FilledButton(onPressed: _load, child: const Text('Reintentar')),
+          InlineError(message: _error!, onRetry: _load, isLoading: false),
         ],
       );
     }
@@ -228,7 +240,11 @@ class _AdminLugaresScreenState extends State<AdminLugaresScreen> {
         padding: const EdgeInsets.all(kSpacingMd),
         children: [
           const SizedBox(height: kSpacingXl),
-          Icon(Icons.location_off, size: 64, color: theme.colorScheme.onSurfaceVariant),
+          Icon(
+            Icons.location_off,
+            size: 64,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(height: kSpacingMd),
           Text(
             'No hay lugares. Creá uno para que los empleados puedan fichar con geolocalización.',
@@ -240,7 +256,12 @@ class _AdminLugaresScreenState extends State<AdminLugaresScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(kSpacingMd, kSpacingMd, kSpacingMd, 100),
+      padding: const EdgeInsets.fromLTRB(
+        kSpacingMd,
+        kSpacingMd,
+        kSpacingMd,
+        100,
+      ),
       itemCount: _places.length + (_places.length < _total ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == _places.length) {
@@ -278,7 +299,9 @@ class _PlaceCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: kSpacingMd),
       elevation: DeviceCapabilities.isLowEnd ? 0 : 1,
-      shadowColor: DeviceCapabilities.isLowEnd ? null : Colors.black.withValues(alpha: 0.06),
+      shadowColor: DeviceCapabilities.isLowEnd
+          ? null
+          : Colors.black.withValues(alpha: 0.06),
       child: ListTile(
         title: Text(place.nombre),
         subtitle: Text(place.direccion),
@@ -332,7 +355,9 @@ class _PlaceFormDialogState extends State<PlaceFormDialog> {
     _direccionController = TextEditingController(text: p?.direccion ?? '');
     _latController = TextEditingController(text: p?.lat.toString() ?? '');
     _longController = TextEditingController(text: p?.long.toString() ?? '');
-    _radioController = TextEditingController(text: p?.radioM.toString() ?? '100');
+    _radioController = TextEditingController(
+      text: p?.radioM.toString() ?? '100',
+    );
     _dias = Set.from(p?.dias ?? ['L', 'M', 'X', 'J', 'V']);
   }
 
@@ -361,14 +386,18 @@ class _PlaceFormDialogState extends State<PlaceFormDialog> {
     if (v == null || v.trim().isEmpty) return '$label requerido';
     final n = double.tryParse(v.trim());
     if (n == null) return '$label inválido';
-    if (n < min || n > max) return 'Coordenadas inválidas. Lat[-90,90], Long[-180,180].';
+    if (n < min || n > max) {
+      return 'Coordenadas inválidas. Lat[-90,90], Long[-180,180].';
+    }
     return null;
   }
 
   String? _validateRadio(String? v) {
     if (v == null || v.trim().isEmpty) return 'Radio requerido (50-500)';
     final n = int.tryParse(v.trim());
-    if (n == null || n < 50 || n > 500) return 'Radio debe estar entre 50 y 500 metros.';
+    if (n == null || n < 50 || n > 500) {
+      return 'Radio debe estar entre 50 y 500 metros.';
+    }
     return null;
   }
 
@@ -454,7 +483,9 @@ class _PlaceFormDialogState extends State<PlaceFormDialog> {
                     child: TextFormField(
                       controller: _latController,
                       decoration: const InputDecoration(labelText: 'Lat'),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       validator: (v) => _validateCoord(v, 'Lat', -90, 90),
                     ),
                   ),
@@ -463,7 +494,9 @@ class _PlaceFormDialogState extends State<PlaceFormDialog> {
                     child: TextFormField(
                       controller: _longController,
                       decoration: const InputDecoration(labelText: 'Long'),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       validator: (v) => _validateCoord(v, 'Long', -180, 180),
                     ),
                   ),
@@ -501,19 +534,30 @@ class _PlaceFormDialogState extends State<PlaceFormDialog> {
               ),
               if (_fieldError != null) ...[
                 const SizedBox(height: kSpacingMd),
-                Text(_fieldError!, style: TextStyle(color: theme.colorScheme.error, fontSize: 13)),
+                Text(
+                  _fieldError!,
+                  style: TextStyle(
+                    color: theme.colorScheme.error,
+                    fontSize: 13,
+                  ),
+                ),
               ],
             ],
           ),
         ),
       ),
       actions: [
-        TextButton(onPressed: _saving ? null : () => Navigator.pop(context), child: const Text('Cancelar')),
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
         FilledButton(
           onPressed: _saving
               ? null
               : () {
-                  if (DeviceCapabilities.hasHaptics) HapticFeedback.lightImpact();
+                  if (DeviceCapabilities.hasHaptics) {
+                    HapticFeedback.lightImpact();
+                  }
                   _save();
                 },
           child: _saving

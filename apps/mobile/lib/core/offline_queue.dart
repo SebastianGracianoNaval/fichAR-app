@@ -82,22 +82,30 @@ class OfflineQueue {
       return (synced: 0, failed: 1);
     }
 
-    final batchBody = pending.map((item) => {
-      'tipo': item['tipo'],
-      if (item['lat'] != null) 'lat': item['lat'],
-      if (item['long'] != null) 'long': item['long'],
-      if (item['lugar_id'] != null) 'lugar_id': item['lugar_id'],
-      if (item['idempotency_key'] != null) 'idempotency_key': item['idempotency_key'],
-      if (item['timestamp_dispositivo'] != null) 'timestamp_dispositivo': item['timestamp_dispositivo'],
-    }).toList();
+    final batchBody = pending
+        .map(
+          (item) => {
+            'tipo': item['tipo'],
+            if (item['lat'] != null) 'lat': item['lat'],
+            if (item['long'] != null) 'long': item['long'],
+            if (item['lugar_id'] != null) 'lugar_id': item['lugar_id'],
+            if (item['idempotency_key'] != null)
+              'idempotency_key': item['idempotency_key'],
+            if (item['timestamp_dispositivo'] != null)
+              'timestamp_dispositivo': item['timestamp_dispositivo'],
+          },
+        )
+        .toList();
 
     try {
       final url = Uri.parse('${ApiClient.baseUrl}/api/v1/fichajes/batch');
-      final res = await ApiClient.client.post(
-        url,
-        headers: await ApiClient.authHeaders(),
-        body: jsonEncode({'fichajes': batchBody}),
-      ).timeout(ApiClient.exportTimeout);
+      final res = await ApiClient.client
+          .post(
+            url,
+            headers: await ApiClient.authHeaders(),
+            body: jsonEncode({'fichajes': batchBody}),
+          )
+          .timeout(ApiClient.exportTimeout);
 
       if (res.statusCode == 201) {
         final body = jsonDecode(res.body) as Map<String, dynamic>;
@@ -105,7 +113,9 @@ class OfflineQueue {
         final errors = body['errors'] as List<dynamic>? ?? [];
 
         final successKeys = inserted
-            .map((e) => (e as Map<String, dynamic>)['idempotency_key'] as String?)
+            .map(
+              (e) => (e as Map<String, dynamic>)['idempotency_key'] as String?,
+            )
             .whereType<String>()
             .toSet();
 

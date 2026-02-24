@@ -9,7 +9,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/device_capabilities.dart';
 import '../core/offline_queue.dart';
 import '../theme.dart';
+import '../theme/layout_tokens.dart';
 import '../widgets/fichar_button.dart';
+import '../widgets/inline_error.dart';
+import '../widgets/responsive_content_wrapper.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/fichajes_api_service.dart';
 import '../services/licencias_api_service.dart';
@@ -25,11 +28,6 @@ import 'licencias_screen.dart';
 import 'mis_horas_screen.dart';
 import 'perfil_screen.dart';
 import 'reportes_screen.dart';
-
-// Breakpoints (flutter-adaptive-ui, definiciones/FRONTEND.md)
-const double _kBreakpointTablet = 600;
-const double _kBreakpointDesktop = 840;
-const double _kContentMaxWidth = 1100;
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key, required this.role});
@@ -81,7 +79,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final now = DateTime.now();
     final desde = DateTime(now.year, now.month, now.day).toIso8601String();
-    final hasta = DateTime(now.year, now.month, now.day, 23, 59, 59).toIso8601String();
+    final hasta = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      23,
+      59,
+      59,
+    ).toIso8601String();
 
     final results = await Future.wait([
       FichajesApiService.getFichajes(desde: desde, hasta: hasta, limit: 10),
@@ -90,7 +95,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (!mounted) return;
 
-    final fichajesResult = results[0] as ({List<Fichaje> data, int total, String? error});
+    final fichajesResult =
+        results[0] as ({List<Fichaje> data, int total, String? error});
     final bancoResult = results[1] as ({double saldoHoras, String? error});
 
     String nextTipo = 'entrada';
@@ -159,7 +165,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (!mounted) return;
     HapticFeedback.lightImpact();
     setState(() {
-      _fichajeError = 'Sin conexion. Fichaje guardado para enviar cuando vuelvas a tener red.';
+      _fichajeError =
+          'Sin conexion. Fichaje guardado para enviar cuando vuelvas a tener red.';
       _fichajeLoading = false;
     });
   }
@@ -186,50 +193,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
           if (_isEmployee) await _loadDayData();
           if (widget.role == 'admin') await _loadKpis();
         },
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.maxWidth;
-            final isWide = width >= _kBreakpointDesktop;
-
-            return Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: isWide ? _kContentMaxWidth : double.infinity),
-                child: ListView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: kSpacingMd,
-                    vertical: kSpacingMd,
-                  ),
-                  children: [
-                    if (widget.role == 'admin') ...[
-                      _buildAdminKpiSection(theme, width),
-                      const SizedBox(height: kSpacingLg),
-                    ],
-                    if (_isEmployee) ...[
-                      if (width >= _kBreakpointTablet)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: _buildFicharSection(theme)),
-                            const SizedBox(width: kSpacingMd),
-                            SizedBox(
-                              width: width >= _kBreakpointDesktop ? 280 : 220,
-                              child: _buildDaySummary(theme),
-                            ),
-                          ],
-                        )
-                      else ...[
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ResponsiveContentWrapper(
+            width: ContentWidth.dashboard,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: kSpacingMd),
+              child: LayoutBuilder(
+                builder: (context, _) {
+                  final width = MediaQuery.sizeOf(context).width;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_isEmployee) ...[
                         _buildFicharSection(theme),
                         const SizedBox(height: kSpacingMd),
                         _buildDaySummary(theme),
+                        const SizedBox(height: kSpacingLg),
                       ],
-                      const SizedBox(height: kSpacingLg),
+                      if (widget.role == 'admin') ...[
+                        _buildAdminKpiSection(theme, width),
+                        const SizedBox(height: kSpacingLg),
+                      ],
+                      _buildNavGrid(context, width),
                     ],
-                    _buildNavGrid(context, width),
-                  ],
-                ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );
@@ -237,43 +229,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildFicharSection(ThemeData theme) {
     final isEntrada = _nextTipo == 'entrada';
-    final buttonColor = isEntrada
-        ? theme.colorScheme.primary
-        : theme.colorScheme.tertiary;
     final buttonLabel = _fichajeLoading
         ? 'Registrando...'
         : isEntrada
-            ? 'FICHAR ENTRADA'
-            : 'FICHAR SALIDA';
+        ? 'FICHAR ENTRADA'
+        : 'FICHAR SALIDA';
+    final lastLabel = _lastFichaje != null
+        ? '${_lastFichaje!.tipo == 'entrada' ? 'Entrada' : 'Salida'} ${_formatTime(_lastFichaje!.timestampServidor)}'
+        : 'Sin fichajes';
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: kSpacingXl, horizontal: kSpacingLg),
+      padding: const EdgeInsets.symmetric(
+        vertical: kSpacingXl,
+        horizontal: kSpacingLg,
+      ),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
+        color: theme.colorScheme.primary,
         borderRadius: BorderRadius.circular(kRadiusXl),
         boxShadow: DeviceCapabilities.isLowEnd
             ? null
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.25),
+                  blurRadius: 6,
+                  offset: const Offset(0, 4),
                 ),
               ],
       ),
       child: Column(
         children: [
+          Text(
+            'Ultimo fichaje: $lastLabel',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 16),
           FicharButton(
             onPressed: _fichajeLoading || _dayLoading ? null : _fichar,
             loading: _fichajeLoading,
-            backgroundColor: buttonColor,
+            backgroundColor: Colors.white,
+            foregroundColor: theme.colorScheme.primary,
             semanticLabel: buttonLabel,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (!_fichajeLoading)
-                  Icon(isEntrada ? Icons.login : Icons.logout, color: theme.colorScheme.onPrimary),
+                  Icon(
+                    isEntrada ? Icons.login : Icons.logout,
+                    color: theme.colorScheme.primary,
+                  ),
                 if (!_fichajeLoading) const SizedBox(width: kSpacingSm),
                 Text(buttonLabel),
               ],
@@ -281,11 +288,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           if (_fichajeError != null) ...[
             const SizedBox(height: kSpacingMd),
-            Text(
-              _fichajeError!,
-              style: TextStyle(color: theme.colorScheme.error, fontSize: 13),
-              textAlign: TextAlign.center,
-            ),
+            InlineError(message: _fichajeError!),
           ],
         ],
       ),
@@ -316,8 +319,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final entradaHoy = _lastFichaje?.tipo == 'entrada'
         ? _formatTime(_lastFichaje!.timestampServidor)
         : _lastFichaje != null
-            ? _formatTime(_lastFichaje!.timestampServidor)
-            : '--:--';
+        ? _formatTime(_lastFichaje!.timestampServidor)
+        : '--:--';
 
     return Container(
       padding: const EdgeInsets.all(kSpacingMd),
@@ -382,19 +385,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
         ),
-        child: Column(
-          children: [
-            Text(
-              _kpisError!,
-              style: TextStyle(color: theme.colorScheme.error),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: kSpacingMd),
-            FilledButton(
-              onPressed: _loadKpis,
-              child: const Text('Reintentar'),
-            ),
-          ],
+        child: InlineError(
+          message: _kpisError!,
+          onRetry: _loadKpis,
+          isLoading: _kpisLoading,
         ),
       );
     }
@@ -403,8 +397,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildKpiSkeleton(ThemeData theme, double screenWidth) {
-    final crossAxisCount =
-        screenWidth >= _kBreakpointDesktop ? 4 : 2;
+    final crossAxisCount = screenWidth >= kBreakpointDesktop ? 4 : 2;
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -424,10 +417,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildKpiCards(ThemeData theme, DashboardKpis kpis, double screenWidth) {
-    final crossAxisCount =
-        screenWidth >= _kBreakpointDesktop ? 4 : 2;
-    final cardPadding = screenWidth >= _kBreakpointDesktop ? kSpacingLg : 16.0;
+  Widget _buildKpiCards(
+    ThemeData theme,
+    DashboardKpis kpis,
+    double screenWidth,
+  ) {
+    final crossAxisCount = screenWidth >= kBreakpointDesktop ? 4 : 2;
+    final cardPadding = screenWidth >= kBreakpointDesktop ? kSpacingLg : 16.0;
 
     final cards = [
       _KpiCard(
@@ -440,19 +436,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         icon: Icons.login,
         label: 'Fichados hoy',
         value: kpis.fichadosHoy.toString(),
-        color: const Color(0xFF00C853),
+        color: theme.colorScheme.primary,
       ),
       _KpiCard(
         icon: Icons.warning,
         label: 'Alertas pendientes',
         value: kpis.alertasPendientes.toString(),
-        color: const Color(0xFFF57C00),
+        color: theme.colorScheme.error,
       ),
       _KpiCard(
         icon: Icons.medical_services,
         label: 'Licencias pendientes',
         value: kpis.licenciasPendientes.toString(),
-        color: const Color(0xFF7B1FA2),
+        color: theme.colorScheme.tertiary,
       ),
     ];
     return GridView.count(
@@ -461,7 +457,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       crossAxisCount: crossAxisCount,
       mainAxisSpacing: kSpacingMd,
       crossAxisSpacing: kSpacingMd,
-      childAspectRatio: screenWidth >= _kBreakpointDesktop ? 1.2 : 1.1,
+      childAspectRatio: screenWidth >= kBreakpointDesktop ? 1.2 : 1.1,
       children: cards
           .map(
             (c) => Container(
@@ -496,12 +492,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildNavGrid(BuildContext context, double screenWidth) {
-    final crossAxisCount = screenWidth >= _kBreakpointDesktop
+    final crossAxisCount = screenWidth >= kBreakpointDesktop
         ? 6
-        : screenWidth >= _kBreakpointTablet
-            ? 4
-            : 2;
-    final childAspectRatio = screenWidth >= _kBreakpointDesktop ? 1.15 : 0.95;
+        : screenWidth >= kBreakpointTablet
+        ? 4
+        : 2;
+    final childAspectRatio = screenWidth >= kBreakpointDesktop ? 1.15 : 0.95;
 
     return GridView.count(
       shrinkWrap: true,
@@ -671,13 +667,14 @@ class _SummaryChip extends StatelessWidget {
     final theme = Theme.of(context);
     return Column(
       children: [
-        Icon(icon, size: 28, color: color ?? theme.colorScheme.onSurfaceVariant),
+        Icon(
+          icon,
+          size: 28,
+          color: color ?? theme.colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(height: 4),
         Text(label, style: theme.textTheme.bodySmall),
-        Text(
-          value,
-          style: theme.textTheme.titleMedium?.copyWith(color: color),
-        ),
+        Text(value, style: theme.textTheme.titleMedium?.copyWith(color: color)),
       ],
     );
   }
@@ -697,7 +694,7 @@ class _NavCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isWide = MediaQuery.sizeOf(context).width >= _kBreakpointDesktop;
+    final isWide = MediaQuery.sizeOf(context).width >= kBreakpointDesktop;
     final iconSize = isWide ? 40.0 : 48.0;
 
     return Container(

@@ -8,7 +8,8 @@ class LegalAuditHashChainScreen extends StatefulWidget {
   const LegalAuditHashChainScreen({super.key});
 
   @override
-  State<LegalAuditHashChainScreen> createState() => _LegalAuditHashChainScreenState();
+  State<LegalAuditHashChainScreen> createState() =>
+      _LegalAuditHashChainScreenState();
 }
 
 class _LegalAuditHashChainScreenState extends State<LegalAuditHashChainScreen> {
@@ -68,7 +69,10 @@ class _LegalAuditHashChainScreenState extends State<LegalAuditHashChainScreen> {
 
     if (!kIsWeb) {
       try {
-        await shareExportBytes(result.bytes, 'fichar-legal-hash-chain-${DateTime.now().millisecondsSinceEpoch}.zip');
+        await shareExportBytes(
+          result.bytes,
+          'fichar-legal-hash-chain-${DateTime.now().millisecondsSinceEpoch}.zip',
+        );
       } catch (e) {
         setState(() => _error = 'Error al exportar: $e');
       }
@@ -77,7 +81,14 @@ class _LegalAuditHashChainScreenState extends State<LegalAuditHashChainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const headers = ['id', 'user_id', 'tipo', 'timestamp_servidor', 'hash_registro', 'hash_anterior_id'];
+    const headers = [
+      'id',
+      'user_id',
+      'tipo',
+      'timestamp_servidor',
+      'hash_registro',
+      'hash_anterior_id',
+    ];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -98,7 +109,9 @@ class _LegalAuditHashChainScreenState extends State<LegalAuditHashChainScreen> {
                     if (d != null) setState(() => _desde = d);
                   },
                   icon: const Icon(Icons.calendar_today, size: 18),
-                  label: Text(_desde != null ? _desde!.toString().split(' ')[0] : 'Desde'),
+                  label: Text(
+                    _desde != null ? _desde!.toString().split(' ')[0] : 'Desde',
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -114,7 +127,9 @@ class _LegalAuditHashChainScreenState extends State<LegalAuditHashChainScreen> {
                     if (d != null) setState(() => _hasta = d);
                   },
                   icon: const Icon(Icons.calendar_today, size: 18),
-                  label: Text(_hasta != null ? _hasta!.toString().split(' ')[0] : 'Hasta'),
+                  label: Text(
+                    _hasta != null ? _hasta!.toString().split(' ')[0] : 'Hasta',
+                  ),
                 ),
               ),
             ],
@@ -122,18 +137,30 @@ class _LegalAuditHashChainScreenState extends State<LegalAuditHashChainScreen> {
           const SizedBox(height: 16),
           FilledButton(
             onPressed: _loading ? null : _load,
-            child: _loading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Cargar cadena'),
+            child: _loading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Cargar cadena'),
           ),
           if (_error != null) ...[
             const SizedBox(height: 8),
-            Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            Text(
+              _error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
           ],
           if (_data.isNotEmpty) ...[
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('$_total registros', style: Theme.of(context).textTheme.titleSmall),
+                Text(
+                  '$_total registros',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
                 FilledButton.icon(
                   onPressed: _loading ? null : _export,
                   icon: const Icon(Icons.download),
@@ -145,10 +172,18 @@ class _LegalAuditHashChainScreenState extends State<LegalAuditHashChainScreen> {
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: DataTable(
-                columns: headers.map((h) => DataColumn(label: Text(h))).toList(),
-                rows: _data.map((row) => DataRow(
-                  cells: headers.map((h) => DataCell(Text('${row[h] ?? ''}'))).toList(),
-                )).toList(),
+                columns: headers
+                    .map((h) => DataColumn(label: Text(h)))
+                    .toList(),
+                rows: _data
+                    .map(
+                      (row) => DataRow(
+                        cells: headers
+                            .map((h) => DataCell(Text('${row[h] ?? ''}')))
+                            .toList(),
+                      ),
+                    )
+                    .toList(),
               ),
             ),
           ],

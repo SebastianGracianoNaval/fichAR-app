@@ -4,16 +4,31 @@ import { errJson } from './lib/errors.ts';
 import { runWithOrgConfigCache } from './lib/org-config-cache.ts';
 import { matchRoute } from './routes.ts';
 
-export function handleHealth(): Response {
-  return Response.json({ status: 'ok', timestamp: new Date().toISOString() }, { status: 200 });
-}
-
 function getAllowedOrigins(): string[] {
   const raw = process.env.CORS_ORIGINS ?? '';
   return raw
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+function warnCorsIfProduction(): void {
+  if (process.env.NODE_ENV !== 'production') return;
+  const origins = getAllowedOrigins();
+  if (origins.length === 0) {
+    console.warn(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        severity: 'warning',
+        action: 'cors_empty_production',
+        details: { reason: 'CORS_ORIGINS empty in production; no origin allowed.' },
+      })
+    );
+  }
+}
+
+export function handleHealth(): Response {
+  return Response.json({ status: 'ok', timestamp: new Date().toISOString() }, { status: 200 });
 }
 
 function resolveCorsOrigin(req: Request): string | null {
@@ -50,7 +65,7 @@ function applySecurityHeaders(res: Response, req: Request): Response {
     headers.set('Access-Control-Allow-Origin', corsOrigin);
     headers.set('Vary', 'Origin');
     headers.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Api-Key');
     headers.set('Access-Control-Max-Age', '600');
   }
 
@@ -109,6 +124,7 @@ export async function handleRequest(req: Request): Promise<Response> {
 }
 
 if (import.meta.main) {
+  warnCorsIfProduction();
   printBanner();
   const PORT = process.env.PORT ?? 3000;
   const server = Bun.serve({ port: PORT, fetch: fetchHandler });

@@ -15,10 +15,7 @@ class LoginApiResult {
 }
 
 class MfaEnrollmentRequiredResult {
-  const MfaEnrollmentRequiredResult({
-    required this.refreshToken,
-    this.message,
-  });
+  const MfaEnrollmentRequiredResult({required this.refreshToken, this.message});
   final String refreshToken;
   final String? message;
 }
@@ -40,27 +37,25 @@ class PasswordChangeRequiredResult {
 }
 
 class AuthApiService {
-
-  static Future<({
-    LoginApiResult? result,
-    MfaEnrollmentRequiredResult? mfaEnrollmentRequired,
-    MfaVerificationRequiredResult? mfaVerificationRequired,
-    PasswordChangeRequiredResult? passwordChangeRequired,
-    String? error,
-    int statusCode,
-  })> login({
-    required String email,
-    required String password,
-  }) async {
+  static Future<
+    ({
+      LoginApiResult? result,
+      MfaEnrollmentRequiredResult? mfaEnrollmentRequired,
+      MfaVerificationRequiredResult? mfaVerificationRequired,
+      PasswordChangeRequiredResult? passwordChangeRequired,
+      String? error,
+      int statusCode,
+    })
+  >
+  login({required String email, required String password}) async {
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/login');
-    final res = await ApiClient.client.post(
-      url,
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-      }),
-    ).timeout(ApiClient.defaultTimeout);
+    final res = await ApiClient.client
+        .post(
+          url,
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({'email': email, 'password': password}),
+        )
+        .timeout(ApiClient.defaultTimeout);
 
     Map<String, dynamic> body = const {};
     if (res.body.isNotEmpty) {
@@ -138,7 +133,9 @@ class AuthApiService {
           result: null,
           mfaEnrollmentRequired: null,
           mfaVerificationRequired: null,
-          passwordChangeRequired: PasswordChangeRequiredResult(refreshToken: refreshToken),
+          passwordChangeRequired: PasswordChangeRequiredResult(
+            refreshToken: refreshToken,
+          ),
           error: null,
           statusCode: res.statusCode,
         );
@@ -168,16 +165,15 @@ class AuthApiService {
   }
 
   static Future<({LoginApiResult? result, String? error, int statusCode})>
-      mfaVerify({
-    required String refreshToken,
-    required String code,
-  }) async {
+  mfaVerify({required String refreshToken, required String code}) async {
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/mfa/verify');
-    final res = await ApiClient.client.post(
-      url,
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({'refresh_token': refreshToken, 'code': code}),
-    ).timeout(ApiClient.defaultTimeout);
+    final res = await ApiClient.client
+        .post(
+          url,
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({'refresh_token': refreshToken, 'code': code}),
+        )
+        .timeout(ApiClient.defaultTimeout);
     final body = res.body.isNotEmpty
         ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
         : <String, dynamic>{};
@@ -204,19 +200,24 @@ class AuthApiService {
     );
   }
 
-  static Future<({
-    String? factorId,
-    String? qrCode,
-    String? secret,
-    String? error,
-    int statusCode,
-  })> mfaEnroll({required String refreshToken}) async {
+  static Future<
+    ({
+      String? factorId,
+      String? qrCode,
+      String? secret,
+      String? error,
+      int statusCode,
+    })
+  >
+  mfaEnroll({required String refreshToken}) async {
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/mfa/enroll');
-    final res = await ApiClient.client.post(
-      url,
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({'refresh_token': refreshToken}),
-    ).timeout(ApiClient.defaultTimeout);
+    final res = await ApiClient.client
+        .post(
+          url,
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({'refresh_token': refreshToken}),
+        )
+        .timeout(ApiClient.defaultTimeout);
     final body = res.body.isNotEmpty
         ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
         : <String, dynamic>{};
@@ -239,21 +240,23 @@ class AuthApiService {
   }
 
   static Future<({LoginApiResult? result, String? error, int statusCode})>
-      mfaEnrollVerify({
+  mfaEnrollVerify({
     required String refreshToken,
     required String factorId,
     required String code,
   }) async {
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/mfa/enroll-verify');
-    final res = await ApiClient.client.post(
-      url,
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'refresh_token': refreshToken,
-        'factor_id': factorId,
-        'code': code,
-      }),
-    ).timeout(ApiClient.defaultTimeout);
+    final res = await ApiClient.client
+        .post(
+          url,
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'refresh_token': refreshToken,
+            'factor_id': factorId,
+            'code': code,
+          }),
+        )
+        .timeout(ApiClient.defaultTimeout);
     final body = res.body.isNotEmpty
         ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
         : <String, dynamic>{};
@@ -284,11 +287,13 @@ class AuthApiService {
     required String email,
   }) async {
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/forgot-password');
-    final res = await ApiClient.client.post(
-      url,
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email}),
-    ).timeout(ApiClient.defaultTimeout);
+    final res = await ApiClient.client
+        .post(
+          url,
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({'email': email}),
+        )
+        .timeout(ApiClient.defaultTimeout);
     final body = res.body.isNotEmpty
         ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
         : <String, dynamic>{};
@@ -301,27 +306,26 @@ class AuthApiService {
     );
   }
 
-  static Future<({
-    String? error,
-    int statusCode,
-    String? refreshToken,
-  })> changePassword({
+  static Future<({String? error, int statusCode, String? refreshToken})>
+  changePassword({
     required String token,
     required String currentPassword,
     required String newPassword,
   }) async {
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/change-password');
-    final res = await ApiClient.client.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'current_password': currentPassword,
-        'new_password': newPassword,
-      }),
-    ).timeout(ApiClient.defaultTimeout);
+    final res = await ApiClient.client
+        .post(
+          url,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({
+            'current_password': currentPassword,
+            'new_password': newPassword,
+          }),
+        )
+        .timeout(ApiClient.defaultTimeout);
     final body = res.body.isNotEmpty
         ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
         : <String, dynamic>{};
@@ -338,14 +342,18 @@ class AuthApiService {
 
   static Future<void> passwordSetComplete({required String token}) async {
     try {
-      final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/password-set-complete');
-      await ApiClient.client.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      ).timeout(ApiClient.defaultTimeout);
+      final url = Uri.parse(
+        '${ApiClient.baseUrl}/api/v1/auth/password-set-complete',
+      );
+      await ApiClient.client
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(ApiClient.defaultTimeout);
     } catch (_) {
       // Non-critical: best effort
     }

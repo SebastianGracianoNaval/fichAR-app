@@ -4,11 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_api_service.dart';
 
 class MfaVerifyScreen extends StatefulWidget {
-  const MfaVerifyScreen({
-    super.key,
-    required this.refreshToken,
-    this.message,
-  });
+  const MfaVerifyScreen({super.key, required this.refreshToken, this.message});
 
   final String refreshToken;
   final String? message;
@@ -52,10 +48,9 @@ class _MfaVerifyScreenState extends State<MfaVerifyScreen> {
           response.result!.refreshToken,
         );
         if (!mounted) return;
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/dashboard',
-          (route) => false,
-        );
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/dashboard', (route) => false);
         return;
       }
 
@@ -85,9 +80,9 @@ class _MfaVerifyScreenState extends State<MfaVerifyScreen> {
                 Text(
                   'Verificación 2FA',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
@@ -95,8 +90,8 @@ class _MfaVerifyScreenState extends State<MfaVerifyScreen> {
                   widget.message ??
                       'Ingresá el código de 6 dígitos de tu app autenticadora.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
@@ -115,7 +110,9 @@ class _MfaVerifyScreenState extends State<MfaVerifyScreen> {
                   const SizedBox(height: 16),
                   Text(
                     _errorMessage!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 24),

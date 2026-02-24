@@ -35,7 +35,10 @@ class Employee {
     final placeIdsRaw = json['place_ids'];
     List<String>? placeIds;
     if (placeIdsRaw is List) {
-      placeIds = placeIdsRaw.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+      placeIds = placeIdsRaw
+          .map((e) => e.toString())
+          .where((e) => e.isNotEmpty)
+          .toList();
     }
     return Employee(
       id: json['id'] as String,
@@ -54,11 +57,7 @@ class Employee {
 }
 
 class Branch {
-  const Branch({
-    required this.id,
-    required this.name,
-    this.address,
-  });
+  const Branch({required this.id, required this.name, this.address});
 
   final String id;
   final String name;
@@ -74,7 +73,6 @@ class Branch {
 }
 
 class EmployeesApiService {
-
   static Future<({List<Employee> data, int total})> getEmployees({
     String? branchId,
     String status = 'activo',
@@ -91,16 +89,23 @@ class EmployeesApiService {
     };
     if (branchId != null) query['branch_id'] = branchId;
 
-    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/employees').replace(queryParameters: query);
-    final res = await ApiClient.client.get(url, headers: {'Authorization': 'Bearer $token'}).timeout(ApiClient.defaultTimeout);
+    final url = Uri.parse(
+      '${ApiClient.baseUrl}/api/v1/employees',
+    ).replace(queryParameters: query);
+    final res = await ApiClient.client
+        .get(url, headers: {'Authorization': 'Bearer $token'})
+        .timeout(ApiClient.defaultTimeout);
 
     if (res.statusCode != 200) {
-      final body = res.body.isNotEmpty ? jsonDecode(res.body) as Map<String, dynamic>? : null;
+      final body = res.body.isNotEmpty
+          ? jsonDecode(res.body) as Map<String, dynamic>?
+          : null;
       throw Exception(body?['error'] as String? ?? 'Error al listar empleados');
     }
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    final data = (body['data'] as List<dynamic>?)
+    final data =
+        (body['data'] as List<dynamic>?)
             ?.map((e) => Employee.fromJson(e as Map<String, dynamic>))
             .toList() ??
         [];
@@ -113,10 +118,14 @@ class EmployeesApiService {
     if (token == null) throw Exception('No hay sesión');
 
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/employees/$id');
-    final res = await ApiClient.client.get(url, headers: {'Authorization': 'Bearer $token'}).timeout(ApiClient.defaultTimeout);
+    final res = await ApiClient.client
+        .get(url, headers: {'Authorization': 'Bearer $token'})
+        .timeout(ApiClient.defaultTimeout);
 
     if (res.statusCode != 200) {
-      final body = res.body.isNotEmpty ? jsonDecode(res.body) as Map<String, dynamic>? : null;
+      final body = res.body.isNotEmpty
+          ? jsonDecode(res.body) as Map<String, dynamic>?
+          : null;
       throw Exception(body?['error'] as String? ?? 'Error al obtener empleado');
     }
 
@@ -143,58 +152,84 @@ class EmployeesApiService {
     if (body.isEmpty) throw Exception('Nada que actualizar');
 
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/employees/$id');
-    final res = await ApiClient.client.patch(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(body),
-    ).timeout(ApiClient.defaultTimeout);
+    final res = await ApiClient.client
+        .patch(
+          url,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(body),
+        )
+        .timeout(ApiClient.defaultTimeout);
 
     if (res.statusCode != 200) {
-      final err = res.body.isNotEmpty ? jsonDecode(res.body) as Map<String, dynamic>? : null;
-      throw Exception(err?['error'] as String? ?? 'Error al actualizar empleado');
+      final err = res.body.isNotEmpty
+          ? jsonDecode(res.body) as Map<String, dynamic>?
+          : null;
+      throw Exception(
+        err?['error'] as String? ?? 'Error al actualizar empleado',
+      );
     }
   }
 
-  static Future<void> offboardEmployee(String id, String fechaEgreso, {String? motivo}) async {
+  static Future<void> offboardEmployee(
+    String id,
+    String fechaEgreso, {
+    String? motivo,
+  }) async {
     final token = await ApiClient.getToken();
     if (token == null) throw Exception('No hay sesión');
 
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/employees/$id/offboard');
-    final res = await ApiClient.client.post(
-      url,
-      headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-      body: jsonEncode({'fecha_egreso': fechaEgreso, ...?motivo != null ? {'motivo': motivo} : null}),
-    ).timeout(ApiClient.defaultTimeout);
+    final res = await ApiClient.client
+        .post(
+          url,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'fecha_egreso': fechaEgreso,
+            ...?motivo != null ? {'motivo': motivo} : null,
+          }),
+        )
+        .timeout(ApiClient.defaultTimeout);
 
     if (res.statusCode != 200) {
-      final body = res.body.isNotEmpty ? jsonDecode(res.body) as Map<String, dynamic>? : null;
+      final body = res.body.isNotEmpty
+          ? jsonDecode(res.body) as Map<String, dynamic>?
+          : null;
       throw Exception(body?['error'] as String? ?? 'Error al dar de baja');
     }
   }
 
-  static Future<({int imported, List<Map<String, dynamic>> errors})> importEmployees(List<int> fileBytes, String filename) async {
+  static Future<({int imported, List<Map<String, dynamic>> errors})>
+  importEmployees(List<int> fileBytes, String filename) async {
     final token = await ApiClient.getToken();
     if (token == null) throw Exception('No hay sesión');
 
     final uri = Uri.parse('${ApiClient.baseUrl}/api/v1/employees/import');
     final request = http.MultipartRequest('POST', uri);
     request.headers['Authorization'] = 'Bearer $token';
-    request.files.add(http.MultipartFile.fromBytes('file', fileBytes, filename: filename));
+    request.files.add(
+      http.MultipartFile.fromBytes('file', fileBytes, filename: filename),
+    );
 
     final streamed = await request.send().timeout(ApiClient.exportTimeout);
     final res = await http.Response.fromStream(streamed);
 
     if (res.statusCode != 200) {
-      final body = res.body.isNotEmpty ? jsonDecode(res.body) as Map<String, dynamic>? : null;
+      final body = res.body.isNotEmpty
+          ? jsonDecode(res.body) as Map<String, dynamic>?
+          : null;
       throw Exception(body?['error'] as String? ?? 'Error al importar');
     }
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     final imported = body['imported'] as int? ?? 0;
-    final errors = (body['errors'] as List<dynamic>?)
+    final errors =
+        (body['errors'] as List<dynamic>?)
             ?.map((e) => e as Map<String, dynamic>)
             .toList() ??
         [];
@@ -206,11 +241,17 @@ class EmployeesApiService {
     if (token == null) throw Exception('No hay sesión');
 
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/branches');
-    final res = await ApiClient.client.get(url, headers: {'Authorization': 'Bearer $token'}).timeout(ApiClient.defaultTimeout);
+    final res = await ApiClient.client
+        .get(url, headers: {'Authorization': 'Bearer $token'})
+        .timeout(ApiClient.defaultTimeout);
 
     if (res.statusCode != 200) {
-      final body = res.body.isNotEmpty ? jsonDecode(res.body) as Map<String, dynamic>? : null;
-      throw Exception(body?['error'] as String? ?? 'Error al listar sucursales');
+      final body = res.body.isNotEmpty
+          ? jsonDecode(res.body) as Map<String, dynamic>?
+          : null;
+      throw Exception(
+        body?['error'] as String? ?? 'Error al listar sucursales',
+      );
     }
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;

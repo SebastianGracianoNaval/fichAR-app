@@ -5,7 +5,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/device_capabilities.dart';
 import '../services/auth_api_service.dart';
 import '../theme.dart';
+import '../theme/layout_tokens.dart';
 import '../widgets/fichar_button.dart';
+import '../widgets/inline_error.dart';
+import '../widgets/responsive_content_wrapper.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -79,7 +82,8 @@ class _LoginScreenState extends State<LoginScreen> {
           } else if (response.statusCode == 401) {
             _errorMessage = 'Email o contrasena incorrectos.';
           } else {
-            _errorMessage = response.error ?? 'Error al iniciar sesion. Intentá de nuevo.';
+            _errorMessage =
+                response.error ?? 'Error al iniciar sesion. Intentá de nuevo.';
           }
         });
         return;
@@ -116,7 +120,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final surface = theme.colorScheme.surface;
-    final contentMaxWidth = 440.0;
+    final padding = MediaQuery.sizeOf(context).width >= kBreakpointTablet
+        ? kSpacingLg
+        : kSpacingMd;
 
     return Scaffold(
       body: Container(
@@ -127,111 +133,122 @@ class _LoginScreenState extends State<LoginScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
-                padding: const EdgeInsets.all(kSpacingLg),
+                padding: EdgeInsets.symmetric(
+                  horizontal: padding,
+                  vertical: kSpacingMd,
+                ),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                  child: ResponsiveContentWrapper(
+                    width: ContentWidth.form,
+                    child: Center(
                       child: Container(
-                      padding: const EdgeInsets.all(kSpacingLg),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(kRadiusXl),
-                        boxShadow: DeviceCapabilities.isLowEnd
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.06),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
+                        padding: const EdgeInsets.all(kSpacingLg),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerLowest,
+                          borderRadius: BorderRadius.circular(kRadiusXl),
+                          boxShadow: DeviceCapabilities.isLowEnd
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.06),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                        ),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Semantics(
+                                header: true,
+                                child: Text(
+                                  'fichAR',
+                                  style: theme.textTheme.headlineLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                  textAlign: TextAlign.center,
                                 ),
-                              ],
-                      ),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Semantics(
-                              header: true,
-                              child: Text(
-                                'fichAR',
-                                style: theme.textTheme.headlineLarge?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: theme.colorScheme.primary,
-                                    ),
+                              ),
+                              const SizedBox(height: kSpacingSm),
+                              Text(
+                                'Inicio de sesion',
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
                                 textAlign: TextAlign.center,
                               ),
-                            ),
-                            const SizedBox(height: kSpacingSm),
-                            Text(
-                              'Inicio de sesion',
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: kSpacingXxl),
-                            TextFormField(
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: const InputDecoration(
-                                labelText: 'Email',
-                                hintText: 'tu@email.com',
+                              const SizedBox(height: kSpacingXxl),
+                              TextFormField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                decoration: const InputDecoration(
+                                  labelText: 'Email',
+                                  hintText: 'tu@email.com',
+                                ),
+                                validator: (v) {
+                                  if (v == null || v.isEmpty) {
+                                    return 'Ingresa tu email';
+                                  }
+                                  if (!v.contains('@')) {
+                                    return 'Email invalido';
+                                  }
+                                  return null;
+                                },
                               ),
-                              validator: (v) {
-                                if (v == null || v.isEmpty) return 'Ingresa tu email';
-                                if (!v.contains('@')) return 'Email invalido';
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: kSpacingMd),
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: true,
-                              decoration: const InputDecoration(labelText: 'Contrasena'),
-                              validator: (v) {
-                                if (v == null || v.isEmpty) return 'Ingresa tu contrasena';
-                                return null;
-                              },
-                            ),
-                            if (_errorMessage != null) ...[
                               const SizedBox(height: kSpacingMd),
-                              Text(
-                                _errorMessage!,
-                                style: TextStyle(color: theme.colorScheme.error),
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: true,
+                                decoration: const InputDecoration(
+                                  labelText: 'Contrasena',
+                                ),
+                                validator: (v) {
+                                  if (v == null || v.isEmpty) {
+                                    return 'Ingresa tu contrasena';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              if (_errorMessage != null) ...[
+                                const SizedBox(height: kSpacingMd),
+                                InlineError(message: _errorMessage!),
+                              ],
+                              const SizedBox(height: kSpacingLg),
+                              FicharButton(
+                                onPressed: _loading ? null : _onSubmit,
+                                loading: _loading,
+                                child: const Text('Iniciar sesion'),
+                              ),
+                              const SizedBox(height: kSpacingMd),
+                              TextButton(
+                                onPressed: () {
+                                  if (DeviceCapabilities.hasHaptics) {
+                                    HapticFeedback.selectionClick();
+                                  }
+                                  Navigator.of(
+                                    context,
+                                  ).pushNamed('/forgot-password');
+                                },
+                                child: const Text('Olvide mi contrasena'),
                               ),
                             ],
-                            const SizedBox(height: kSpacingLg),
-                            FicharButton(
-                              onPressed: _loading ? null : _onSubmit,
-                              loading: _loading,
-                              child: const Text('Iniciar sesion'),
-                            ),
-                            const SizedBox(height: kSpacingMd),
-                            TextButton(
-                              onPressed: () {
-                                if (DeviceCapabilities.hasHaptics) {
-                                  HapticFeedback.selectionClick();
-                                }
-                                Navigator.of(context).pushNamed('/forgot-password');
-                              },
-                              child: const Text('Olvide mi contrasena'),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
-    ),
     );
   }
 }

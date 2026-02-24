@@ -36,6 +36,11 @@ La API (packages/api) requiere en `.env` (raiz del repo):
 - `HASH_PEPPER` — **Requerido** para POST /fichajes. Secreto para cadena de hashes (32+ bytes). Generar: `openssl rand -hex 32`.
 - `MANAGEMENT_API_KEY` — **Requerido** para POST /management/organizations (fichar-management). Ver `documentation/tecnica/management-api.md`.
 - `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN` — **Opcional**. Para rate limiting distribuido (multi-instancia). Sin estas variables se usa almacenamiento in-memory (solo una instancia). Crear base Redis gratuita en https://console.upstash.com, copiar credenciales REST.
+- `CORS_ORIGINS` — **Requerido en producción**. Orígenes permitidos separados por coma. Si está vacío en producción, no se permite ningún origen. Ver sección CORS más abajo.
+
+**Variables de entorno con valores complejos (D1):** Si usás valores que incluyen comas, comillas o JSON en `.env`, puede ser necesario entrecomillar. La API usa `dotenv`; ver documentación del paquete para casos edge.
+
+**Redis en producción (D2):** Para despliegue multi-pod (varias instancias de la API), configurar `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`. Con una sola instancia puede usarse el fallback in-memory (se registra como info en desarrollo y warning en producción).
 
 ---
 

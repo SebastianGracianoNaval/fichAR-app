@@ -18,6 +18,7 @@ class FicharButton extends StatefulWidget {
     this.loading = false,
     this.variant = FicharButtonVariant.primary,
     this.backgroundColor,
+    this.foregroundColor,
     this.semanticLabel,
   });
 
@@ -25,8 +26,13 @@ class FicharButton extends StatefulWidget {
   final Widget child;
   final bool loading;
   final FicharButtonVariant variant;
+
   /// Override color (e.g. tertiary for "Fichar salida").
   final Color? backgroundColor;
+
+  /// Override text/icon color (e.g. for hero inverted: white bg, primary text).
+  final Color? foregroundColor;
+
   /// Accessibility label for screen readers.
   final String? semanticLabel;
 
@@ -42,13 +48,11 @@ class _FicharButtonState extends State<FicharButton>
   @override
   void initState() {
     super.initState();
-    _scaleController = AnimationController(
-      duration: kAnimFast,
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 1, end: 0.98).animate(
-      CurvedAnimation(parent: _scaleController, curve: Curves.easeOut),
-    );
+    _scaleController = AnimationController(duration: kAnimFast, vsync: this);
+    _scaleAnimation = Tween<double>(
+      begin: 1,
+      end: 0.98,
+    ).animate(CurvedAnimation(parent: _scaleController, curve: Curves.easeOut));
   }
 
   @override
@@ -85,7 +89,13 @@ class _FicharButtonState extends State<FicharButton>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isEnabled = widget.onPressed != null && !widget.loading;
-    final bgColor = widget.backgroundColor ??
+    final fgColor =
+        widget.foregroundColor ??
+        (isEnabled
+            ? theme.colorScheme.onPrimary
+            : theme.colorScheme.onSurfaceVariant);
+    final bgColor =
+        widget.backgroundColor ??
         (widget.variant == FicharButtonVariant.primary
             ? theme.colorScheme.primary
             : theme.colorScheme.tertiary);
@@ -98,16 +108,15 @@ class _FicharButtonState extends State<FicharButton>
             MediaQuery.of(context).disableAnimations) {
           return child!;
         }
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: child,
-        );
+        return Transform.scale(scale: _scaleAnimation.value, child: child);
       },
       child: Container(
         width: double.infinity,
         height: kTouchTargetMin,
         decoration: BoxDecoration(
-          color: isEnabled ? bgColor : theme.colorScheme.surfaceContainerHighest,
+          color: isEnabled
+              ? bgColor
+              : theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(kRadiusLg),
           border: Border(
             bottom: BorderSide(
@@ -131,14 +140,12 @@ class _FicharButtonState extends State<FicharButton>
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: theme.colorScheme.onPrimary,
+                        color: fgColor,
                       ),
                     )
                   : DefaultTextStyle(
                       style: TextStyle(
-                        color: isEnabled
-                            ? theme.colorScheme.onPrimary
-                            : theme.colorScheme.onSurfaceVariant,
+                        color: fgColor,
                         fontWeight: FontWeight.bold,
                       ),
                       child: widget.child,

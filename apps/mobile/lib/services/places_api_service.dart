@@ -32,7 +32,11 @@ class AdminPlace {
     if (diasRaw is List) {
       dias = diasRaw.map((e) => e.toString()).toList();
     } else if (diasRaw is String && diasRaw.isNotEmpty) {
-      dias = diasRaw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      dias = diasRaw
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
     }
     return AdminPlace(
       id: json['id'] as String,
@@ -47,32 +51,36 @@ class AdminPlace {
   }
 
   Map<String, dynamic> toJson() => {
-        'nombre': nombre,
-        'direccion': direccion,
-        'lat': lat,
-        'long': long,
-        'radio_m': radioM,
-        'dias': dias?.join(',') ?? 'L,M,X,J,V',
-      };
+    'nombre': nombre,
+    'direccion': direccion,
+    'lat': lat,
+    'long': long,
+    'radio_m': radioM,
+    'dias': dias?.join(',') ?? 'L,M,X,J,V',
+  };
 }
 
 class PlacesApiService {
-  static Future<({List<AdminPlace> data, int total, int limit, int offset})> getPlaces({
-    int limit = 20,
-    int offset = 0,
-  }) async {
+  static Future<({List<AdminPlace> data, int total, int limit, int offset})>
+  getPlaces({int limit = 20, int offset = 0}) async {
     final headers = await ApiClient.authHeaders();
-    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/places')
-        .replace(queryParameters: {'limit': limit.toString(), 'offset': offset.toString()});
-    final res = await ApiClient.client.get(url, headers: headers).timeout(ApiClient.defaultTimeout);
+    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/places').replace(
+      queryParameters: {'limit': limit.toString(), 'offset': offset.toString()},
+    );
+    final res = await ApiClient.client
+        .get(url, headers: headers)
+        .timeout(ApiClient.defaultTimeout);
 
     if (res.statusCode != 200) {
-      final body = res.body.isNotEmpty ? jsonDecode(res.body) as Map<String, dynamic>? : null;
+      final body = res.body.isNotEmpty
+          ? jsonDecode(res.body) as Map<String, dynamic>?
+          : null;
       throw Exception(body?['error'] as String? ?? 'Error al listar lugares');
     }
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    final data = (body['data'] as List<dynamic>?)
+    final data =
+        (body['data'] as List<dynamic>?)
             ?.map((e) => AdminPlace.fromJson(e as Map<String, dynamic>))
             .toList() ??
         [];
@@ -97,14 +105,18 @@ class PlacesApiService {
       'direccion': direccion,
       'lat': lat,
       'long': long,
-      ...? (radioM != null ? {'radio_m': radioM} : null),
+      ...?(radioM != null ? {'radio_m': radioM} : null),
       'dias': dias.join(','),
     });
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/places');
-    final res = await ApiClient.client.post(url, headers: headers, body: body).timeout(ApiClient.defaultTimeout);
+    final res = await ApiClient.client
+        .post(url, headers: headers, body: body)
+        .timeout(ApiClient.defaultTimeout);
 
     if (res.statusCode != 201) {
-      final err = res.body.isNotEmpty ? jsonDecode(res.body) as Map<String, dynamic>? : null;
+      final err = res.body.isNotEmpty
+          ? jsonDecode(res.body) as Map<String, dynamic>?
+          : null;
       throw Exception(err?['error'] as String? ?? 'Error al crear lugar');
     }
 
@@ -137,7 +149,9 @@ class PlacesApiService {
         .timeout(ApiClient.defaultTimeout);
 
     if (res.statusCode != 200) {
-      final err = res.body.isNotEmpty ? jsonDecode(res.body) as Map<String, dynamic>? : null;
+      final err = res.body.isNotEmpty
+          ? jsonDecode(res.body) as Map<String, dynamic>?
+          : null;
       throw Exception(err?['error'] as String? ?? 'Error al actualizar lugar');
     }
 
@@ -145,24 +159,22 @@ class PlacesApiService {
     return AdminPlace.fromJson(data);
   }
 
-  static Future<({int imported, List<({int row, String reason})> errors})> importPlaces(
-    List<int> bytes,
-    String filename,
-  ) async {
+  static Future<({int imported, List<({int row, String reason})> errors})>
+  importPlaces(List<int> bytes, String filename) async {
     final headers = await ApiClient.authHeaders();
     final uri = Uri.parse('${ApiClient.baseUrl}/api/v1/places/import');
     final request = http.MultipartRequest('POST', uri)
       ..headers.addAll({'Authorization': headers['Authorization']!})
-      ..files.add(http.MultipartFile.fromBytes(
-        'file',
-        bytes,
-        filename: filename,
-      ));
+      ..files.add(
+        http.MultipartFile.fromBytes('file', bytes, filename: filename),
+      );
     final streamed = await request.send().timeout(ApiClient.defaultTimeout);
     final res = await http.Response.fromStream(streamed);
 
     if (res.statusCode != 200) {
-      final err = res.body.isNotEmpty ? jsonDecode(res.body) as Map<String, dynamic>? : null;
+      final err = res.body.isNotEmpty
+          ? jsonDecode(res.body) as Map<String, dynamic>?
+          : null;
       throw Exception(err?['error'] as String? ?? 'Error al importar lugares');
     }
 
@@ -170,10 +182,12 @@ class PlacesApiService {
     final imported = body['imported'] as int? ?? 0;
     final errorsRaw = body['errors'] as List<dynamic>? ?? [];
     final errors = errorsRaw
-        .map((e) => (
-              row: (e as Map<String, dynamic>)['row'] as int,
-              reason: (e['reason'] as String?) ?? '',
-            ))
+        .map(
+          (e) => (
+            row: (e as Map<String, dynamic>)['row'] as int,
+            reason: (e['reason'] as String?) ?? '',
+          ),
+        )
         .toList();
     return (imported: imported, errors: errors);
   }
@@ -181,10 +195,14 @@ class PlacesApiService {
   static Future<void> deletePlace(String id) async {
     final headers = await ApiClient.authHeaders();
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/places/$id');
-    final res = await ApiClient.client.delete(url, headers: headers).timeout(ApiClient.defaultTimeout);
+    final res = await ApiClient.client
+        .delete(url, headers: headers)
+        .timeout(ApiClient.defaultTimeout);
 
     if (res.statusCode != 200) {
-      final err = res.body.isNotEmpty ? jsonDecode(res.body) as Map<String, dynamic>? : null;
+      final err = res.body.isNotEmpty
+          ? jsonDecode(res.body) as Map<String, dynamic>?
+          : null;
       throw Exception(err?['error'] as String? ?? 'Error al eliminar lugar');
     }
   }

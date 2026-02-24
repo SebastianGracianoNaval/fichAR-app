@@ -36,7 +36,10 @@ class _LicenciasAprobarScreenState extends State<LicenciasAprobarScreen> {
       });
       return;
     }
-    final ids = result.data.map((e) => e['employee_id'] as String).toSet().toList();
+    final ids = result.data
+        .map((e) => e['employee_id'] as String)
+        .toSet()
+        .toList();
     if (ids.isNotEmpty) {
       try {
         final empResult = await EmployeesApiService.getEmployees();
@@ -46,7 +49,9 @@ class _LicenciasAprobarScreenState extends State<LicenciasAprobarScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error al cargar nombres de empleados. Reintentá.')),
+            const SnackBar(
+              content: Text('Error al cargar nombres de empleados. Reintentá.'),
+            ),
           );
         }
       }
@@ -61,11 +66,15 @@ class _LicenciasAprobarScreenState extends State<LicenciasAprobarScreen> {
     final result = await LicenciasApiService.aprobarLicencia(id);
     if (!mounted) return;
     if (result.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.error!)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.error!)));
       return;
     }
     setState(() => _pendientes.removeWhere((e) => e['id'] == id));
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Licencia aprobada')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Licencia aprobada')));
   }
 
   Future<void> _rechazar(String id) async {
@@ -85,7 +94,10 @@ class _LicenciasAprobarScreenState extends State<LicenciasAprobarScreen> {
             autofocus: true,
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
             FilledButton(
               onPressed: () {
                 if (ctrl.text.trim().length >= 10) {
@@ -102,11 +114,15 @@ class _LicenciasAprobarScreenState extends State<LicenciasAprobarScreen> {
     final result = await LicenciasApiService.rechazarLicencia(id, motivo);
     if (!mounted) return;
     if (result.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.error!)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.error!)));
       return;
     }
     setState(() => _pendientes.removeWhere((e) => e['id'] == id));
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Licencia rechazada')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Licencia rechazada')));
   }
 
   @override
@@ -121,69 +137,87 @@ class _LicenciasAprobarScreenState extends State<LicenciasAprobarScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                      const SizedBox(height: 16),
-                      FilledButton(onPressed: _load, child: const Text('Reintentar')),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
-                )
-              : _pendientes.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: _load,
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            )
+          : _pendientes.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No hay solicitudes pendientes',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _pendientes.length,
+                itemBuilder: (context, i) {
+                  final l = _pendientes[i];
+                  final empId = l['employee_id'] as String?;
+                  final nombre = _nombres[empId] ?? empId ?? '-';
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      title: Text(nombre),
+                      subtitle: Text(
+                        '${l['tipo']} - ${l['fecha_inicio']} al ${l['fecha_fin']}',
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.check_circle_outline, size: 64, color: Theme.of(context).colorScheme.primary),
-                          const SizedBox(height: 16),
-                          Text('No hay solicitudes pendientes', style: Theme.of(context).textTheme.titleMedium),
+                          Semantics(
+                            label: 'Aprobar licencia',
+                            button: true,
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.check,
+                                color: Colors.green,
+                              ),
+                              onPressed: () => _aprobar(l['id'] as String),
+                            ),
+                          ),
+                          Semantics(
+                            label: 'Rechazar licencia',
+                            button: true,
+                            child: IconButton(
+                              icon: const Icon(Icons.close, color: Colors.red),
+                              onPressed: () => _rechazar(l['id'] as String),
+                            ),
+                          ),
                         ],
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _pendientes.length,
-                        itemBuilder: (context, i) {
-                          final l = _pendientes[i];
-                          final empId = l['employee_id'] as String?;
-                          final nombre = _nombres[empId] ?? empId ?? '-';
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              title: Text(nombre),
-                              subtitle: Text(
-                                '${l['tipo']} - ${l['fecha_inicio']} al ${l['fecha_fin']}',
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Semantics(
-                                    label: 'Aprobar licencia',
-                                    button: true,
-                                    child: IconButton(
-                                      icon: const Icon(Icons.check, color: Colors.green),
-                                      onPressed: () => _aprobar(l['id'] as String),
-                                    ),
-                                  ),
-                                  Semantics(
-                                    label: 'Rechazar licencia',
-                                    button: true,
-                                    child: IconButton(
-                                      icon: const Icon(Icons.close, color: Colors.red),
-                                      onPressed: () => _rechazar(l['id'] as String),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
                     ),
+                  );
+                },
+              ),
+            ),
     );
   }
 }

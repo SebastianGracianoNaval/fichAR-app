@@ -8,7 +8,8 @@ class LegalAuditDashboardScreen extends StatefulWidget {
   const LegalAuditDashboardScreen({super.key});
 
   @override
-  State<LegalAuditDashboardScreen> createState() => _LegalAuditDashboardScreenState();
+  State<LegalAuditDashboardScreen> createState() =>
+      _LegalAuditDashboardScreenState();
 }
 
 class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
@@ -72,8 +73,10 @@ class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
         break;
       case 'licencias':
         final r = await LegalApiService.getLicencias(
-          desde: '${_desde!.year}-${_desde!.month.toString().padLeft(2, '0')}-${_desde!.day.toString().padLeft(2, '0')}',
-          hasta: '${_hasta!.year}-${_hasta!.month.toString().padLeft(2, '0')}-${_hasta!.day.toString().padLeft(2, '0')}',
+          desde:
+              '${_desde!.year}-${_desde!.month.toString().padLeft(2, '0')}-${_desde!.day.toString().padLeft(2, '0')}',
+          hasta:
+              '${_hasta!.year}-${_hasta!.month.toString().padLeft(2, '0')}-${_hasta!.day.toString().padLeft(2, '0')}',
           limit: 50,
         );
         data = r.data;
@@ -128,11 +131,13 @@ class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
     }
 
     final now = DateTime.now().toUtc().toIso8601String();
-    final filename = 'fichar-legal-$tipo-${DateTime.now().millisecondsSinceEpoch}.zip';
+    final filename =
+        'fichar-legal-$tipo-${DateTime.now().millisecondsSinceEpoch}.zip';
 
     if (kIsWeb) {
       setState(() {
-        _exportMessage = 'Exportado el $now. Exportación con integridad verificable.';
+        _exportMessage =
+            'Exportado el $now. Exportación con integridad verificable.';
         _exportSha256 = result.sha256;
       });
       return;
@@ -141,7 +146,8 @@ class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
     try {
       await shareExportBytes(result.bytes, filename);
       setState(() {
-        _exportMessage = 'Exportado el $now. Exportación con integridad verificable.';
+        _exportMessage =
+            'Exportado el $now. Exportación con integridad verificable.';
         _exportSha256 = result.sha256;
       });
     } catch (e) {
@@ -154,10 +160,10 @@ class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
     final headers = _tipo == 'fichajes' || _tipo == 'todo'
         ? ['id', 'user_id', 'tipo', 'timestamp_servidor', 'hash_registro']
         : _tipo == 'logs'
-            ? ['timestamp', 'action', 'user_id', 'resource_type', 'ip']
-            : _tipo == 'licencias'
-                ? ['id', 'employee_id', 'tipo', 'fecha_inicio', 'fecha_fin', 'estado']
-                : ['id', 'user_id', 'tipo', 'timestamp_servidor', 'hash_registro'];
+        ? ['timestamp', 'action', 'user_id', 'resource_type', 'ip']
+        : _tipo == 'licencias'
+        ? ['id', 'employee_id', 'tipo', 'fecha_inicio', 'fecha_fin', 'estado']
+        : ['id', 'user_id', 'tipo', 'timestamp_servidor', 'hash_registro'];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -178,7 +184,9 @@ class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
                     if (d != null) setState(() => _desde = d);
                   },
                   icon: const Icon(Icons.calendar_today, size: 18),
-                  label: Text(_desde != null ? _desde!.toString().split(' ')[0] : 'Desde'),
+                  label: Text(
+                    _desde != null ? _desde!.toString().split(' ')[0] : 'Desde',
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -194,7 +202,9 @@ class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
                     if (d != null) setState(() => _hasta = d);
                   },
                   icon: const Icon(Icons.calendar_today, size: 18),
-                  label: Text(_hasta != null ? _hasta!.toString().split(' ')[0] : 'Hasta'),
+                  label: Text(
+                    _hasta != null ? _hasta!.toString().split(' ')[0] : 'Hasta',
+                  ),
                 ),
               ),
             ],
@@ -212,8 +222,14 @@ class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
                 items: const [
                   DropdownMenuItem(value: 'fichajes', child: Text('Fichajes')),
                   DropdownMenuItem(value: 'logs', child: Text('Logs')),
-                  DropdownMenuItem(value: 'hash_chain', child: Text('Cadena Hashes')),
-                  DropdownMenuItem(value: 'licencias', child: Text('Licencias')),
+                  DropdownMenuItem(
+                    value: 'hash_chain',
+                    child: Text('Cadena Hashes'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'licencias',
+                    child: Text('Licencias'),
+                  ),
                   DropdownMenuItem(value: 'todo', child: Text('Todo')),
                 ],
                 onChanged: (v) => setState(() => _tipo = v ?? 'fichajes'),
@@ -223,23 +239,39 @@ class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
           const SizedBox(height: 16),
           FilledButton(
             onPressed: _loading ? null : _loadPreview,
-            child: _loading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Vista previa'),
+            child: _loading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Vista previa'),
           ),
           if (_error != null) ...[
             const SizedBox(height: 8),
-            Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            Text(
+              _error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
           ],
           if (_previewData.isNotEmpty) ...[
             const SizedBox(height: 16),
-            Text('Preview (${_previewData.length} de $_total)', style: Theme.of(context).textTheme.titleSmall),
+            Text(
+              'Preview (${_previewData.length} de $_total)',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
             const SizedBox(height: 8),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: DataTable(
-                columns: headers.map((h) => DataColumn(label: Text(h))).toList(),
+                columns: headers
+                    .map((h) => DataColumn(label: Text(h)))
+                    .toList(),
                 rows: _previewData.take(20).map((row) {
                   return DataRow(
-                    cells: headers.map((h) => DataCell(Text('${row[h] ?? ''}'))).toList(),
+                    cells: headers
+                        .map((h) => DataCell(Text('${row[h] ?? ''}')))
+                        .toList(),
                   );
                 }).toList(),
               ),
@@ -272,8 +304,15 @@ class _LegalAuditDashboardScreenState extends State<LegalAuditDashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(_exportMessage!, style: Theme.of(context).textTheme.bodySmall),
-                  if (_exportSha256 != null) Text('SHA-256: $_exportSha256', style: Theme.of(context).textTheme.bodySmall),
+                  Text(
+                    _exportMessage!,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  if (_exportSha256 != null)
+                    Text(
+                      'SHA-256: $_exportSha256',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                 ],
               ),
             ),

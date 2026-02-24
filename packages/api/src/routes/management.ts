@@ -1,9 +1,11 @@
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '../lib/supabase.ts';
-import { parseBody, validateEmail, validateUUID } from '../lib/validators.ts';
+import { parseBody, validateEmail, validateUUID, validatePassword } from '../lib/validators.ts';
 import { logAudit, logError, getRequestMeta } from '../lib/logger.ts';
 import { requireManagementAuth } from '../lib/management-auth.ts';
 import { generateTempPassword } from '../lib/password-generator.ts';
 import { sendWelcomeWithTempPassword } from '../lib/email-service.ts';
+import { checkLoginRateLimit, recordLoginFailure, clearLoginFailure } from '../lib/rate-limit.ts';
 
 const PLACEHOLDER_DNI = '00000000';
 const PLACEHOLDER_CUIL = '20111111112';
@@ -294,5 +296,104 @@ export async function handleManagementGetOrgById(req: Request, id: string): Prom
     created_at: org.created_at,
     employee_count: count ?? 0,
     admin_email,
+  });
+}
+
+function createSupabaseAnonClient() {
+  const url = process.env.SUPABASE_URL;
+  const anonKey = process.env.SUPABASE_ANON_KEY;
+  if (!url || !anonKey) {
+    throw new Error('SUPABASE_URL/SUPABASE_ANON_KEY required for management login');
+  }
+  return createClient(url, anonKey);
+}
+
+const RATE_LIMIT_MESSAGE = 'Demasiados intentos. Intentá más tarde.';
+
+export async function handleManagementAuthLogin(req: Request): Promise<Response> {
+  const meta = getRequestMeta(req);
+  const limit = await checkLoginRateLimit(req);
+  if (!limit.allowed) {
+    await logAudit('rate_limit_management_login', { ip: meta.ip, userAgent: meta.userAgent }, {}, 'warning');
+    const headers: Record<string, string> = {};
+    if (limit.retryAfter != null) {
+      headers['Retry-After'] = String(limit.retryAfter);
+    }
+    return Response.json(
+      { error: RATE_LIMIT_MESSAGE, retryAfter: limit.retryAfter },
+      { status: 429, headers },
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  const data = parseBody<{ email?: string; password?: string }>(body);
+  const email = data?.email?.trim?.()?.toLowerCase();
+  const password = data?.password;
+
+  if (!email || !validateEmail(email)) {
+    return Response.json({ error: 'Credenciales inválidas' }, { status: 401 });
+  }
+  if (!password || typeof password !== 'string') {
+    return Response.json({ error: 'Credenciales inválidas' }, { status: 401 });
+  }
+  const pwErr = validatePassword(password);
+  if (pwErr) {
+    return Response.json({ error: 'Credenciales inválidas' }, { status: 401 });
+  }
+
+  let supabaseAuth: SupabaseClient;
+  try {
+    supabaseAuth = createSupabaseAnonClient();
+  } catch (e) {
+    await logError('critical', 'management_login_config_missing', undefined, {}, e instanceof Error ? e : new Error(String(e)));
+    return Response.json({ error: 'Error de configuración' }, { status: 500 });
+  }
+
+  const { data: authData, error: authErr } = await supabaseAuth.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (authErr) {
+    await recordLoginFailure(req);
+    await logAudit('management_login_failed', { ip: meta.ip, userAgent: meta.userAgent }, { reason: 'auth' }, 'info');
+    return Response.json({ error: 'Credenciales inválidas' }, { status: 401 });
+  }
+
+  const session = authData.session;
+  const userId = authData.user?.id;
+  if (!session || !userId) {
+    await recordLoginFailure(req);
+    await logAudit('management_login_failed', { ip: meta.ip, userAgent: meta.userAgent }, { reason: 'no_session' }, 'info');
+    return Response.json({ error: 'Credenciales inválidas' }, { status: 401 });
+  }
+
+  const admin = getSupabaseAdmin();
+  const { data: mgmtRow, error: mgmtErr } = await admin
+    .from('management_users')
+    .select('id')
+    .eq('auth_user_id', userId)
+    .maybeSingle();
+
+  if (mgmtErr || !mgmtRow) {
+    await supabaseAuth.auth.signOut();
+    await recordLoginFailure(req);
+    await logAudit('management_login_failed', { ip: meta.ip, userAgent: meta.userAgent }, { reason: 'not_management_user' }, 'info');
+    return Response.json({ error: 'Credenciales inválidas' }, { status: 401 });
+  }
+
+  await clearLoginFailure(req);
+  await logAudit('management_login', { userId: userId, ip: meta.ip, userAgent: meta.userAgent }, {}, 'info');
+
+  return Response.json({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token ?? '',
+    expires_in: session.expires_in ?? 3600,
   });
 }

@@ -48,40 +48,51 @@ class _EquipoScreenState extends State<EquipoScreen> {
       appBar: AppBar(
         title: const Text('Mi Equipo'),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loading ? null : _load),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loading ? null : _load,
+          ),
         ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                      const SizedBox(height: 16),
-                      FilledButton(onPressed: _load, child: const Text('Reintentar')),
-                    ],
-                  ),
-                )
-              : _employees.isEmpty
-                  ? const Center(child: Text('No hay empleados en tu equipo'))
-                  : ListView.builder(
-                      itemCount: _employees.length,
-                      itemBuilder: (_, i) {
-                        final e = _employees[i];
-                        return ListTile(
-                          title: Text(e.name),
-                          subtitle: Text('${e.email} - ${e.role}'),
-                          trailing: Chip(
-                            label: Text(e.status),
-                            backgroundColor: e.status == 'activo'
-                                ? Theme.of(context).colorScheme.primaryContainer
-                                : Theme.of(context).colorScheme.surfaceContainerHighest,
-                          ),
-                        );
-                      },
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: _load,
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            )
+          : _employees.isEmpty
+          ? const Center(child: Text('No hay empleados en tu equipo'))
+          : ListView.builder(
+              itemCount: _employees.length,
+              itemBuilder: (_, i) {
+                final e = _employees[i];
+                return ListTile(
+                  title: Text(e.name),
+                  subtitle: Text('${e.email} - ${e.role}'),
+                  trailing: Chip(
+                    label: Text(e.status),
+                    backgroundColor: e.status == 'activo'
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : Theme.of(context).colorScheme.surfaceContainerHighest,
+                  ),
+                );
+              },
+            ),
     );
   }
 }

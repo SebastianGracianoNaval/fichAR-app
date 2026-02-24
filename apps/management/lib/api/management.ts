@@ -8,6 +8,93 @@ function getApiUrl(): string {
   return url.replace(/\/$/, "");
 }
 
+export type ManagementLoginResult = {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+};
+
+export type ManagementLoginError = {
+  error: string;
+  retryAfter?: number;
+};
+
+export async function managementLogin(
+  email: string,
+  password: string
+): Promise<ManagementLoginResult> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(`${getApiUrl()}/api/v1/management/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+        password,
+      }),
+      signal: controller.signal,
+    });
+
+    const data = (await res.json().catch(() => ({}))) as
+      | ManagementLoginResult
+      | ManagementLoginError;
+
+    clearTimeout(timeoutId);
+
+    if (res.status === 429) {
+      const msg =
+        typeof (data as ManagementLoginError).error === "string"
+          ? (data as ManagementLoginError).error
+          : "Demasiados intentos. Espere unos minutos.";
+      throw new ManagementApiException(msg, "service_unavailable", 429);
+    }
+    if (res.status === 401) {
+      throw new ManagementApiException(
+        typeof (data as ManagementLoginError).error === "string"
+          ? (data as ManagementLoginError).error
+          : "Credenciales incorrectas",
+        "validation_error",
+        401
+      );
+    }
+    if (!res.ok) {
+      const message =
+        typeof (data as ManagementLoginError).error === "string"
+          ? (data as ManagementLoginError).error
+          : `HTTP ${res.status}`;
+      throw new ManagementApiException(message, mapStatusToCode(res.status), res.status);
+    }
+
+    const result = data as ManagementLoginResult;
+    if (
+      !result.access_token ||
+      !result.refresh_token ||
+      typeof result.expires_in !== "number"
+    ) {
+      throw new ManagementApiException(
+        "Respuesta invalida del servidor",
+        "service_unavailable"
+      );
+    }
+    return result;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof ManagementApiException) throw err;
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new ManagementApiException(
+        "Servicio no disponible. Reintente mas tarde.",
+        "service_unavailable"
+      );
+    }
+    throw new ManagementApiException(
+      err instanceof Error ? err.message : "Error desconocido",
+      "network_error"
+    );
+  }
+}
+
 export type CreateOrganizationResult = {
   orgId: string;
   userId: string;

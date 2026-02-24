@@ -85,6 +85,24 @@ describe('validatePagination', () => {
     expect(r.limit).toBe(25);
     expect(r.offset).toBe(10);
   });
+
+  it('with maxLimit 200 returns capped limit', () => {
+    const r = validatePagination('300', '0', { defaultLimit: 50, maxLimit: 200 });
+    expect(r.limit).toBe(200);
+    expect(r.offset).toBe(0);
+  });
+
+  it('with negative limit returns defaultLimit', () => {
+    const r = validatePagination('-1', '0', { defaultLimit: 50 });
+    expect(r.limit).toBe(50);
+    expect(r.offset).toBe(0);
+  });
+
+  it('with negative offset returns 0', () => {
+    const r = validatePagination('10', '-5');
+    expect(r.limit).toBe(10);
+    expect(r.offset).toBe(0);
+  });
 });
 
 describe('validateUUID', () => {

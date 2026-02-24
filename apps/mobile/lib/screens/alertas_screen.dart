@@ -36,7 +36,10 @@ class _AlertasScreenState extends State<AlertasScreen> {
       });
       return;
     }
-    final ids = result.data.map((e) => e['employee_id'] as String).toSet().toList();
+    final ids = result.data
+        .map((e) => e['employee_id'] as String)
+        .toSet()
+        .toList();
     if (ids.isNotEmpty) {
       try {
         final empResult = await EmployeesApiService.getEmployees();
@@ -46,7 +49,9 @@ class _AlertasScreenState extends State<AlertasScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error al cargar nombres de empleados. Reintentá.')),
+            const SnackBar(
+              content: Text('Error al cargar nombres de empleados. Reintentá.'),
+            ),
           );
         }
       }
@@ -69,61 +74,83 @@ class _AlertasScreenState extends State<AlertasScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                      const SizedBox(height: 16),
-                      FilledButton(onPressed: _load, child: const Text('Reintentar')),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
-                )
-              : _alertas.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: _load,
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            )
+          : _alertas.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.notifications_none,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No hay alertas',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _alertas.length,
+                itemBuilder: (context, i) {
+                  final a = _alertas[i];
+                  final empId = a['employee_id'] as String?;
+                  final nombre = _nombres[empId] ?? empId ?? '-';
+                  final tipo = a['tipo'] as String? ?? '';
+                  final desc = a['descripcion'] as String? ?? '';
+                  final created = a['created_at'] as String? ?? '';
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: Icon(
+                        _iconForTipo(tipo),
+                        color: _colorForTipo(tipo),
+                      ),
+                      title: Text(nombre),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.notifications_none, size: 64, color: Theme.of(context).colorScheme.outline),
-                          const SizedBox(height: 16),
-                          Text('No hay alertas', style: Theme.of(context).textTheme.titleMedium),
+                          Text(
+                            tipo,
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                          if (desc.isNotEmpty) Text(desc),
+                          Text(
+                            created.length > 19
+                                ? created.substring(0, 19)
+                                : created,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
                         ],
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _alertas.length,
-                        itemBuilder: (context, i) {
-                          final a = _alertas[i];
-                          final empId = a['employee_id'] as String?;
-                          final nombre = _nombres[empId] ?? empId ?? '-';
-                          final tipo = a['tipo'] as String? ?? '';
-                          final desc = a['descripcion'] as String? ?? '';
-                          final created = a['created_at'] as String? ?? '';
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              leading: Icon(
-                                _iconForTipo(tipo),
-                                color: _colorForTipo(tipo),
-                              ),
-                              title: Text(nombre),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(tipo, style: Theme.of(context).textTheme.labelMedium),
-                                  if (desc.isNotEmpty) Text(desc),
-                                  Text(created.length > 19 ? created.substring(0, 19) : created,
-                                      style: Theme.of(context).textTheme.bodySmall),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
                     ),
+                  );
+                },
+              ),
+            ),
     );
   }
 

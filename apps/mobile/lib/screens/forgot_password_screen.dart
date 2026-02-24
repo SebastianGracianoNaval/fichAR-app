@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import '../core/device_capabilities.dart';
 import '../services/auth_api_service.dart';
 import '../theme.dart';
+import '../theme/layout_tokens.dart';
 import '../widgets/fichar_button.dart';
+import '../widgets/inline_error.dart';
+import '../widgets/responsive_content_wrapper.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -55,7 +58,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final contentMaxWidth = 440.0;
+    final padding = MediaQuery.sizeOf(context).width >= kBreakpointTablet
+        ? kSpacingLg
+        : kSpacingMd;
 
     return Scaffold(
       appBar: AppBar(
@@ -65,41 +70,40 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return Container(
-            width: constraints.maxWidth,
-            height: constraints.maxHeight,
-            color: theme.colorScheme.surface,
-            child: SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(kSpacingLg),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: contentMaxWidth),
-                    child: Container(
-                      padding: const EdgeInsets.all(kSpacingLg),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(kRadiusXl),
-                        boxShadow: DeviceCapabilities.isLowEnd
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.06),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                      ),
-                      child: _sent ? _buildSuccess(context) : _buildForm(context),
-                    ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: theme.colorScheme.surface,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: padding,
+              vertical: kSpacingMd,
+            ),
+            child: ResponsiveContentWrapper(
+              width: ContentWidth.form,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(kSpacingLg),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(kRadiusXl),
+                    boxShadow: DeviceCapabilities.isLowEnd
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.06),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                   ),
+                  child: _sent ? _buildSuccess(context) : _buildForm(context),
                 ),
               ),
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
@@ -141,8 +145,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           Text(
             'Ingresa tu email y te enviaremos un enlace para restablecer tu contrasena.',
             style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: kSpacingXl),
@@ -161,10 +165,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
           if (_errorMessage != null) ...[
             const SizedBox(height: kSpacingMd),
-            Text(
-              _errorMessage!,
-              style: TextStyle(color: theme.colorScheme.error),
-            ),
+            InlineError(message: _errorMessage!),
           ],
           const SizedBox(height: kSpacingLg),
           FicharButton(

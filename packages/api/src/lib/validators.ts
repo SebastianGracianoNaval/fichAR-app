@@ -77,13 +77,14 @@ const MAX_LIMIT = 100;
 export function validatePagination(
   limitParam: string | null,
   offsetParam: string | null,
-  options?: { defaultLimit?: number },
+  options?: { defaultLimit?: number; maxLimit?: number },
 ): PaginationResult {
   const defaultLimit = options?.defaultLimit ?? DEFAULT_LIMIT;
+  const cap = options?.maxLimit ?? MAX_LIMIT;
   const limitRaw = parseInt(limitParam ?? '', 10);
   const offsetRaw = parseInt(offsetParam ?? '', 10);
 
-  const limit = Number.isNaN(limitRaw) || limitRaw <= 0 ? defaultLimit : Math.min(limitRaw, MAX_LIMIT);
+  const limit = Number.isNaN(limitRaw) || limitRaw <= 0 ? defaultLimit : Math.min(limitRaw, cap);
   const offset = Number.isNaN(offsetRaw) || offsetRaw < 0 ? 0 : offsetRaw;
 
   return { limit, offset };

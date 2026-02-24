@@ -1,5 +1,5 @@
 // fichAR Design System (definiciones/FRONTEND.md, plan-refactor-frontend)
-// Paleta A: Profesional. Tokens from design-system-patterns skill.
+// Paleta from mocks: primary teal, secondary blue. Tokens from design-system-patterns.
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -26,19 +26,19 @@ const Duration kAnimFast = Duration(milliseconds: 150);
 const Duration kAnimNormal = Duration(milliseconds: 250);
 const Duration kAnimSlow = Duration(milliseconds: 350);
 
-// Paleta A: Profesional (definiciones/FRONTEND.md)
-const Color _primary = Color(0xFF1E3A5F);
-const Color _secondary = Color(0xFF4A90D9);
-const Color _accent = Color(0xFF00C853);
-const Color _surface = Color(0xFFF5F7FA);
+// Paleta from mocks (00-deep-analysis.md)
+const Color _primary = Color(0xFF0F766E);
+const Color _secondary = Color(0xFF1E3A5F);
+const Color _surface = Color(0xFFFFFFFF);
+const Color _scaffold = Color(0xFFF8FAFC);
 const Color _onSurface = Color(0xFF1A1A2E);
-const Color _error = Color(0xFFD32F2F);
+const Color _error = Color(0xFFDC2626);
 
 ThemeData get ficharTheme {
   return ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: _secondary,
+      seedColor: _primary,
       primary: _primary,
       secondary: _secondary,
       surface: _surface,
@@ -48,10 +48,13 @@ ThemeData get ficharTheme {
       onSurface: _onSurface,
       onError: Colors.white,
     ),
-    scaffoldBackgroundColor: _surface,
+    scaffoldBackgroundColor: _scaffold,
     textTheme: GoogleFonts.nunitoTextTheme(
       ThemeData.light().textTheme.copyWith(
-        headlineLarge: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+        headlineLarge: const TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+        ),
         bodyLarge: const TextStyle(fontSize: 16),
       ),
     ),
@@ -61,17 +64,24 @@ ThemeData get ficharTheme {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: _accent,
+        backgroundColor: _primary,
         foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, kTouchTargetMin),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusLg)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kRadiusLg),
+        ),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(kRadiusLg)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(kRadiusLg),
+      ),
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: kSpacingMd, vertical: kSpacingMd),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: kSpacingMd,
+        vertical: kSpacingMd,
+      ),
     ),
   );
 }

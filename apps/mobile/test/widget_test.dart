@@ -7,10 +7,7 @@ import 'package:fichar_mobile/theme.dart';
 void main() {
   testWidgets('Login screen renders', (WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        theme: ficharTheme,
-        home: const LoginScreen(),
-      ),
+      MaterialApp(theme: ficharTheme, home: const LoginScreen()),
     );
 
     expect(find.text('fichAR'), findsOneWidget);

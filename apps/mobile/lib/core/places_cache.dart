@@ -8,7 +8,9 @@ class PlacesCache {
   static const _ttl = Duration(hours: 4);
 
   static bool get _isValid =>
-      _places != null && _fetchedAt != null && DateTime.now().difference(_fetchedAt!) < _ttl;
+      _places != null &&
+      _fetchedAt != null &&
+      DateTime.now().difference(_fetchedAt!) < _ttl;
 
   static Future<List<Place>> getPlaces({bool forceRefresh = false}) async {
     if (!forceRefresh && _isValid) return _places!;

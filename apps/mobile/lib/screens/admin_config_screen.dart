@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../theme.dart';
 import '../services/org_configs_api_service.dart';
+import '../widgets/inline_error.dart';
+import '../widgets/responsive_content_wrapper.dart';
 
 const _labels = {
   'geolocalizacion_obligatoria': 'Geolocalizacion obligatoria para fichar',
@@ -17,7 +20,13 @@ const _labels = {
 };
 
 const _sections = {
-  'Fichaje': ['geolocalizacion_obligatoria', 'tolerancia_gps_metros', 'geolocalizacion_radio_default', 'descanso_minimo_horas', 'modo_offline_habilitado'],
+  'Fichaje': [
+    'geolocalizacion_obligatoria',
+    'tolerancia_gps_metros',
+    'geolocalizacion_radio_default',
+    'descanso_minimo_horas',
+    'modo_offline_habilitado',
+  ],
   'Licencias': ['licencias_aprobador'],
   'Seguridad': ['mfa_obligatorio_admin', 'dispositivos_maximos'],
   'Importacion': ['import_welcome'],
@@ -68,7 +77,9 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
     for (final c in result.data) {
       _draft[c.key] = c.value;
       if (c.type == 'number' && (c.options == null || c.options!.isEmpty)) {
-        _controllers[c.key] = TextEditingController(text: (c.value as num?)?.toString() ?? '');
+        _controllers[c.key] = TextEditingController(
+          text: (c.value as num?)?.toString() ?? '',
+        );
       }
     }
     setState(() {
@@ -79,7 +90,14 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
   }
 
   dynamic _getValue(String key) {
-    return _draft[key] ?? _configs.firstWhere((c) => c.key == key, orElse: () => OrgConfigItem(key: key, value: null, type: 'string')).value;
+    return _draft[key] ??
+        _configs
+            .firstWhere(
+              (c) => c.key == key,
+              orElse: () =>
+                  OrgConfigItem(key: key, value: null, type: 'string'),
+            )
+            .value;
   }
 
   void _setValue(String key, dynamic value) {
@@ -108,9 +126,9 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
     final changed = _getChangedConfigs();
     if (changed.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sin cambios')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Sin cambios')));
       }
       return;
     }
@@ -125,13 +143,16 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
 
     if (result.ok) {
       HapticFeedback.mediumImpact();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Configuracion guardada')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Configuracion guardada')));
       _load();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.error ?? 'Error'), backgroundColor: Theme.of(context).colorScheme.error),
+        SnackBar(
+          content: Text(result.error ?? 'Error'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
     }
   }
@@ -159,27 +180,31 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!, style: TextStyle(color: theme.colorScheme.error), textAlign: TextAlign.center),
-                      const SizedBox(height: 16),
-                      FilledButton(onPressed: _load, child: const Text('Reintentar')),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _sections.length,
-                    itemBuilder: (context, idx) {
-                      final entry = _sections.entries.elementAt(idx);
-                      return _buildSection(theme, entry.key, entry.value);
-                    },
-                  ),
+          ? ResponsiveContentWrapper(
+              width: ContentWidth.list,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: kSpacingLg),
+                child: InlineError(
+                  message: _error!,
+                  onRetry: _load,
+                  isLoading: false,
                 ),
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ResponsiveContentWrapper(
+                width: ContentWidth.list,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _sections.length,
+                  itemBuilder: (context, idx) {
+                    final entry = _sections.entries.elementAt(idx);
+                    return _buildSection(theme, entry.key, entry.value);
+                  },
+                ),
+              ),
+            ),
     );
   }
 
@@ -192,7 +217,12 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          child: Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
         Card(
           child: Column(
@@ -222,9 +252,12 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
       );
     }
 
-    if (config.type == 'select' && config.options != null && config.options!.isNotEmpty) {
+    if (config.type == 'select' &&
+        config.options != null &&
+        config.options!.isNotEmpty) {
       final options = config.options!.map((o) => o as String).toList();
-      final current = value as String? ?? config.value as String? ?? options.first;
+      final current =
+          value as String? ?? config.value as String? ?? options.first;
       return ListTile(
         title: Text(label),
         subtitle: _getSubtitle(key),
@@ -237,16 +270,25 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
               contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               border: InputBorder.none,
             ),
-            items: options.map((o) => DropdownMenuItem(value: o, child: Text(o))).toList(),
+            items: options
+                .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+                .toList(),
             onChanged: (v) => _setValue(key, v),
           ),
         ),
       );
     }
 
-    if (config.type == 'number' && config.options != null && config.options!.isNotEmpty) {
-      final options = config.options!.map((o) => o as num).map((n) => n.toInt()).toList();
-      final current = value is num ? value.toInt() : (config.value is num ? (config.value as num).toInt() : 3);
+    if (config.type == 'number' &&
+        config.options != null &&
+        config.options!.isNotEmpty) {
+      final options = config.options!
+          .map((o) => o as num)
+          .map((n) => n.toInt())
+          .toList();
+      final current = value is num
+          ? value.toInt()
+          : (config.value is num ? (config.value as num).toInt() : 3);
       return ListTile(
         title: Text(label),
         subtitle: _getSubtitle(key),
@@ -260,10 +302,12 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
               border: InputBorder.none,
             ),
             items: options
-                .map((v) => DropdownMenuItem(
-                      value: v,
-                      child: Text(v == -1 ? 'Ilimitado' : v.toString()),
-                    ))
+                .map(
+                  (v) => DropdownMenuItem(
+                    value: v,
+                    child: Text(v == -1 ? 'Ilimitado' : v.toString()),
+                  ),
+                )
                 .toList(),
             onChanged: (v) => _setValue(key, v),
           ),
@@ -284,7 +328,10 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
                 ),
                 onChanged: (s) {
                   final n = int.tryParse(s);

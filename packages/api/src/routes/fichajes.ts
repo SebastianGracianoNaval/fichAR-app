@@ -65,6 +65,24 @@ async function validateGeolocation(
   if (dist > radio + tolerancia) {
     const meta = getRequestMeta(req);
     await logAudit('fichaje_rechazado_fuera_zona', { orgId: ctx.orgId, employeeId: ctx.employeeId, ip: meta.ip }, { lat: data.lat, long: data.long, lugar_id: data.lugar_id, distancia_m: Math.round(dist) }, 'info');
+    const notificar = await getOrgConfigBoolean(admin, ctx.orgId, 'fichaje_fuera_zona_notificar', true);
+    if (notificar) {
+      const { error: alertErr } = await admin.from('alertas').insert({
+        org_id: ctx.orgId,
+        employee_id: ctx.employeeId,
+        tipo: 'fuera_zona',
+        descripcion: `Intento de fichaje fuera de zona. Lugar: ${data.lugar_id}. Distancia aprox: ${Math.round(dist)} m.`,
+      });
+      if (alertErr) {
+        await logError(
+          'warning',
+          'alerta_fuera_zona_insert_failed',
+          { orgId: ctx.orgId, employeeId: ctx.employeeId },
+          { lugar_id: data.lugar_id },
+          new Error(alertErr?.message ?? 'alerta insert failed'),
+        );
+      }
+    }
     return Response.json(
       { error: 'Estás fuera de tu zona de trabajo. Acercate a tu lugar asignado para fichar.', code: 'fuera_zona' },
       { status: 400 },

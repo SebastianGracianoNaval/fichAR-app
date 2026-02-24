@@ -37,7 +37,7 @@ async function requireLicenciasAprobador(
 function parseDate(s: unknown): Date | null {
   if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
   const d = new Date(s);
-  return isNaN(d.getTime()) ? null : d;
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 export async function handleGetLicencias(req: Request): Promise<Response> {

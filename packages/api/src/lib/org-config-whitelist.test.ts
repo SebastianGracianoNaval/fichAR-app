@@ -12,7 +12,11 @@ describe('org-config-whitelist', () => {
     expect(keys).toContain('geolocalizacion_obligatoria');
     expect(keys).toContain('descanso_minimo_horas');
     expect(keys).toContain('geolocalizacion_radio_default');
-    expect(keys.length).toBeGreaterThanOrEqual(8);
+    expect(keys).toContain('app_mobile_habilitada');
+    expect(keys).toContain('app_desktop_habilitada');
+    expect(keys).toContain('app_web_habilitada');
+    expect(keys).toContain('fichaje_fuera_zona_notificar');
+    expect(keys.length).toBeGreaterThanOrEqual(12);
   });
 
   it('getSchema returns schema for valid key', () => {
@@ -71,5 +75,18 @@ describe('org-config-whitelist', () => {
 
   it('getMaxKeysPerRequest returns 20', () => {
     expect(getMaxKeysPerRequest()).toBe(20);
+  });
+
+  it('validateConfigValue accepts Batch1 boolean keys', () => {
+    expect(validateConfigValue('app_mobile_habilitada', true).valid).toBe(true);
+    expect(validateConfigValue('app_mobile_habilitada', false).valid).toBe(true);
+    expect(validateConfigValue('app_desktop_habilitada', false).valid).toBe(true);
+    expect(validateConfigValue('app_web_habilitada', true).valid).toBe(true);
+    expect(validateConfigValue('fichaje_fuera_zona_notificar', false).valid).toBe(true);
+  });
+
+  it('validateConfigValue rejects invalid type for Batch1 keys', () => {
+    expect(validateConfigValue('app_mobile_habilitada', 'true').valid).toBe(false);
+    expect(validateConfigValue('fichaje_fuera_zona_notificar', 1).valid).toBe(false);
   });
 });

@@ -24,7 +24,9 @@ function redirectTo(
   const dest = new URL(url, request.url);
   const res = NextResponse.redirect(dest);
   if (copyCookiesFrom) {
-    copyCookiesFrom.cookies.getAll().forEach((c) => res.cookies.set(c.name, c.value));
+    copyCookiesFrom.cookies.getAll().forEach((c) => {
+      res.cookies.set(c.name, c.value);
+    });
   }
   return res;
 }
@@ -57,9 +59,9 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
       },
       setAll(cookiesToSet) {
         supabaseResponse = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options)
-        );
+        cookiesToSet.forEach(({ name, value, options }) => {
+          supabaseResponse.cookies.set(name, value, options);
+        });
       },
     },
   });

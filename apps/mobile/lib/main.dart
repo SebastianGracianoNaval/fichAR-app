@@ -19,8 +19,7 @@ Future<void> main() async {
   final anonKey = dotenv.env['SUPABASE_ANON_KEY'];
   final apiUrl = dotenv.env['API_URL'];
 
-  if (
-      url == null ||
+  if (url == null ||
       url.isEmpty ||
       anonKey == null ||
       anonKey.isEmpty ||
@@ -32,10 +31,7 @@ Future<void> main() async {
     );
   }
 
-  await Supabase.initialize(
-    url: url,
-    anonKey: anonKey,
-  );
+  await Supabase.initialize(url: url, anonKey: anonKey);
 
   ApiClient.init();
 

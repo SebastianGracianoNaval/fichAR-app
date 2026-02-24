@@ -17,7 +17,8 @@ String friendlyError(Object e) {
     return 'Sin conexión. Verificá que tengas internet e intentá de nuevo.';
   }
   if (e.toString().contains('TypeError') ||
-      (e.toString().contains('type ') && e.toString().contains('is not a subtype'))) {
+      (e.toString().contains('type ') &&
+          e.toString().contains('is not a subtype'))) {
     return 'Error al cargar los datos. Intentá de nuevo.';
   }
   final s = formatApiError(e);

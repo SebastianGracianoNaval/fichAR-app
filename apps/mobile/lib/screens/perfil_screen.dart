@@ -6,6 +6,8 @@ import '../core/device_capabilities.dart';
 import '../services/me_api_service.dart';
 import '../theme.dart';
 import '../utils/error_utils.dart';
+import '../widgets/inline_error.dart';
+import '../widgets/responsive_content_wrapper.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -41,7 +43,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
       if (!mounted) return;
 
       final meResult = results[0] as ({MeResult? result, String? error});
-      final devicesResult = results[1] as ({List<DeviceSession>? devices, String? error});
+      final devicesResult =
+          results[1] as ({List<DeviceSession>? devices, String? error});
 
       setState(() {
         _loading = false;
@@ -100,9 +103,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
       }
       _loadData();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Dispositivo revocado')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Dispositivo revocado')));
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -126,54 +129,46 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mi perfil'),
-      ),
+      appBar: AppBar(title: const Text('Mi perfil')),
       body: _loading
           ? _buildSkeletonLoading(theme)
           : RefreshIndicator(
               onRefresh: _loadData,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final maxWidth = constraints.maxWidth > 440 ? 440.0 : constraints.maxWidth;
-                  return SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(kSpacingMd),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: maxWidth),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (_error != null)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: kSpacingMd),
-                                child: Text(
-                                  _error!,
-                                  style: TextStyle(color: theme.colorScheme.error),
-                                ),
-                              ),
-                            if (_me != null) _buildProfileCard(theme),
-                            const SizedBox(height: kSpacingLg),
-                            _buildDevicesCard(theme),
-                          ],
-                        ),
-                      ),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: ResponsiveContentWrapper(
+                  width: ContentWidth.formWide,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: kSpacingLg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (_error != null) ...[
+                          InlineError(
+                            message: _error!,
+                            onRetry: _loadData,
+                            isLoading: false,
+                          ),
+                          const SizedBox(height: kSpacingMd),
+                        ],
+                        if (_me != null) _buildProfileCard(theme),
+                        const SizedBox(height: kSpacingLg),
+                        _buildDevicesCard(theme),
+                      ],
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
             ),
     );
   }
 
   Widget _buildSkeletonLoading(ThemeData theme) {
-    final maxWidth = 440.0;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(kSpacingMd),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxWidth),
+      child: ResponsiveContentWrapper(
+        width: ContentWidth.formWide,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: kSpacingLg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -287,7 +282,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   ),
                   trailing: Semantics(
                     button: true,
-                    label: 'Revocar ${d.current ? "este dispositivo" : "dispositivo"}',
+                    label:
+                        'Revocar ${d.current ? "este dispositivo" : "dispositivo"}',
                     child: TextButton(
                       onPressed: () => _revokeDevice(d),
                       style: TextButton.styleFrom(
@@ -327,9 +323,7 @@ class _ProfileRow extends StatelessWidget {
             ),
           ),
         ),
-        Expanded(
-          child: Text(value, style: theme.textTheme.bodyMedium),
-        ),
+        Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
       ],
     );
   }

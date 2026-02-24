@@ -28,7 +28,8 @@ class OrgConfigItem {
 }
 
 class OrgConfigsApiService {
-  static Future<({List<OrgConfigItem> data, String? error})> getConfigs() async {
+  static Future<({List<OrgConfigItem> data, String? error})>
+  getConfigs() async {
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/org-configs');
     try {
       final res = await ApiClient.client
