@@ -614,6 +614,7 @@ export async function handleCreateInvite(req: Request): Promise<Response> {
 
   const sendEmail = data?.send_email !== false;
   let emailSent = false;
+  let emailError: string | undefined;
   if (sendEmail) {
     const baseUrl =
       process.env.INVITE_REDIRECT_BASE?.trim() ||
@@ -630,14 +631,12 @@ export async function handleCreateInvite(req: Request): Promise<Response> {
         .maybeSingle();
       const orgName = (orgRow as { name?: string } | null)?.name ?? 'fichAR';
       const name = data?.name?.trim() || email;
-      void sendWelcomeWithLink(email, name, link, orgName)
-        .then((result) => {
-          if (!result.ok) {
-            return logError('warning', 'invite_email_failed', { orgId: emp.org_id }, { email, reason: result.error });
-          }
-        })
-        .catch((err) => logError('critical', 'invite_email_exception', { orgId: emp.org_id }, { email }, err instanceof Error ? err : new Error(String(err))));
-      emailSent = true;
+      const result = await sendWelcomeWithLink(email, name, link, orgName);
+      emailSent = result.ok;
+      if (!result.ok) {
+        emailError = result.error;
+        await logError('warning', 'invite_email_failed', { orgId: emp.org_id }, { email, reason: result.error });
+      }
     }
   }
 
@@ -645,6 +644,7 @@ export async function handleCreateInvite(req: Request): Promise<Response> {
     inviteToken,
     expiresInHours: INVITE_EXP_HOURS,
     ...(sendEmail && { email_sent: emailSent }),
+    ...(emailError && { email_error: emailError }),
   });
 }
 
