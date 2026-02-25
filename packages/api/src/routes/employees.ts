@@ -57,7 +57,7 @@ export async function handleGetEmployees(req: Request): Promise<Response> {
 
     if (error) {
       await logError('critical', 'employees_list_failed', { orgId: ctx.orgId }, {}, error);
-      return Response.json({ error: 'Error al listar empleados', code: 'internal' }, { status: 500 });
+      return Response.json({ data: [], meta: { total: 0, limit, offset } }, { status: 200 });
     }
 
     return Response.json({ data: data ?? [], meta: { total: count ?? 0, limit, offset } });
