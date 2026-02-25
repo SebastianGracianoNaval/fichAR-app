@@ -389,7 +389,7 @@ class AuthApiService {
           },
           body: jsonEncode(body),
         )
-        .timeout(ApiClient.defaultTimeout);
+        .timeout(ApiClient.inviteTimeout);
 
     final resBody = res.body.isNotEmpty
         ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})

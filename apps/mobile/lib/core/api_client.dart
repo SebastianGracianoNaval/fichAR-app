@@ -13,6 +13,8 @@ class ApiClient {
 
   static const Duration defaultTimeout = Duration(seconds: 30);
   static const Duration exportTimeout = Duration(seconds: 60);
+  /// Longer timeout for invite: endpoint blocks on email send (Resend/SMTP), can exceed 30s.
+  static const Duration inviteTimeout = Duration(seconds: 60);
 
   static void init() {
     _client = http.Client();

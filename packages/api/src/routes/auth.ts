@@ -612,7 +612,6 @@ export async function handleCreateInvite(req: Request): Promise<Response> {
     .setExpirationTime(exp)
     .sign(secret);
 
-  let emailSent = false;
   const sendEmail = data?.send_email !== false;
   if (sendEmail) {
     const baseUrl =
@@ -630,18 +629,20 @@ export async function handleCreateInvite(req: Request): Promise<Response> {
         .maybeSingle();
       const orgName = (orgRow as { name?: string } | null)?.name ?? 'fichAR';
       const name = data?.name?.trim() || email;
-      const result = await sendWelcomeWithLink(email, name, link, orgName);
-      emailSent = result.ok;
-      if (!result.ok) {
-        await logError('warning', 'invite_email_failed', { orgId: emp.org_id }, { email, reason: result.error });
-      }
+      void sendWelcomeWithLink(email, name, link, orgName)
+        .then((result) => {
+          if (!result.ok) {
+            return logError('warning', 'invite_email_failed', { orgId: emp.org_id }, { email, reason: result.error });
+          }
+        })
+        .catch((err) => logError('critical', 'invite_email_exception', { orgId: emp.org_id }, { email }, err instanceof Error ? err : new Error(String(err))));
     }
   }
 
   return Response.json({
     inviteToken,
     expiresInHours: INVITE_EXP_HOURS,
-    ...(sendEmail && { email_sent: emailSent }),
+    ...(sendEmail && { email_sent: true }),
   });
 }
 
