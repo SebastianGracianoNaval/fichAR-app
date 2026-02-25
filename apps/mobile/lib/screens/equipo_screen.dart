@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../services/employees_api_service.dart';
 import '../utils/error_utils.dart';
+import '../widgets/responsive_content_wrapper.dart';
+import '../widgets/screen_error_view.dart';
 
 class EquipoScreen extends StatefulWidget {
   const EquipoScreen({super.key});
@@ -58,25 +60,23 @@ class _EquipoScreenState extends State<EquipoScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _error != null
           ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: _load,
-                    child: const Text('Reintentar'),
-                  ),
-                ],
+              child: ScreenErrorView(
+                message: 'Error al cargar tu equipo.',
+                subtitle: 'Revisá tu conexión e intentá de nuevo.',
+                onAction: _load,
+                contentWidth: ContentWidth.list,
               ),
             )
           : _employees.isEmpty
-          ? const Center(child: Text('No hay empleados en tu equipo'))
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'Aún no hay empleados en tu equipo.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            )
           : ListView.builder(
               itemCount: _employees.length,
               itemBuilder: (_, i) {

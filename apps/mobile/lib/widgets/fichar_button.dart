@@ -144,7 +144,9 @@ class _FicharButtonState extends State<FicharButton>
                       ),
                     )
                   : DefaultTextStyle(
-                      style: TextStyle(
+                      style: (theme.textTheme.labelLarge ??
+                              const TextStyle(fontSize: 16))
+                          .copyWith(
                         color: fgColor,
                         fontWeight: FontWeight.bold,
                       ),

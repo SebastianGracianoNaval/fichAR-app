@@ -32,24 +32,76 @@ class _AuthHomeResolverState extends State<AuthHomeResolver> {
     });
   }
 
+  Future<void> _signOut() async {
+    try {
+      await Supabase.instance.client.auth.signOut();
+    } catch (_) {
+      try {
+        await Supabase.instance.client.auth.signOut(
+          scope: SignOutScope.local,
+        );
+      } catch (_) {}
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_error == MeApiService.sessionExpiredError && _me == null) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Tu sesión expiró.',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Volvé a iniciar sesión para continuar.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: _signOut,
+                  icon: const Icon(Icons.logout, size: 20),
+                  label: const Text('Cerrar sesión'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     if (_error != null && _me == null) {
       return Scaffold(
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _fetchMe,
-                child: const Text('Reintentar'),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _error!,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _fetchMe,
+                  child: const Text('Reintentar'),
+                ),
+              ],
+            ),
           ),
         ),
       );

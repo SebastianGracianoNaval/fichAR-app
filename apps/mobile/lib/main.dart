@@ -1,14 +1,24 @@
 import 'package:device_preview/device_preview.dart';
-import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
 import 'core/api_client.dart';
+import 'core/current_url.dart';
 import 'core/device_capabilities.dart';
+import 'core/recovery_from_url_flag.dart';
 
 Future<void> main() async {
+  // Capture URL with fragment BEFORE any Flutter init; the router/engine may strip # later.
+  // Do not call setPathUrlStrategy() or configure routing before this; recovery would break.
+  final capturedUrl = kIsWeb ? getCurrentUrl() : null;
+  if (kIsWeb && capturedUrl != null && capturedUrl.fragment.isNotEmpty) {
+    // Debug: visible in browser console (Vercel production) to confirm what was read at startup.
+    debugPrint('URL detectada en el arranque: ${capturedUrl.toString()}');
+  }
+
   WidgetsFlutterBinding.ensureInitialized();
 
   await DeviceCapabilities.init();
@@ -31,7 +41,44 @@ Future<void> main() async {
     );
   }
 
-  await Supabase.initialize(url: url, anonKey: anonKey);
+  // Web: implicit flow so getSessionFromUrl accepts #access_token=... (recovery redirect).
+  await Supabase.initialize(
+    url: url,
+    anonKey: anonKey,
+    authOptions: kIsWeb
+        ? const FlutterAuthClientOptions(authFlowType: AuthFlowType.implicit)
+        : const FlutterAuthClientOptions(),
+  );
+
+  // Log what the app sees after init (router may have stripped fragment by then).
+  if (kIsWeb) {
+    final hrefAfterInit = getCurrentUrlRaw();
+    debugPrint(
+      'window.location.href (después de Supabase.initialize): $hrefAfterInit',
+    );
+  }
+
+  // P-AUTH-03 / recovery: use the URL captured at startup; block until session is processed.
+  if (kIsWeb &&
+      capturedUrl != null &&
+      capturedUrl.fragment.isNotEmpty &&
+      (capturedUrl.fragment.contains('access_token=') ||
+          capturedUrl.fragment.contains('type=recovery'))) {
+    try {
+      await Supabase.instance.client.auth.getSessionFromUrl(capturedUrl);
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session != null) {
+        debugPrint('Sesión de recuperación detectada y establecida');
+        setRecoveryFromUrl(true);
+      }
+    } catch (e, st) {
+      if (kReleaseMode) {
+        debugPrint('getSessionFromUrl failed: $e');
+      } else {
+        debugPrint('getSessionFromUrl failed: $e\n$st');
+      }
+    }
+  }
 
   ApiClient.init();
 

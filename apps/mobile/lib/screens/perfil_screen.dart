@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/device_capabilities.dart';
 import '../services/me_api_service.dart';
 import '../theme.dart';
-import '../utils/error_utils.dart';
 import '../widgets/inline_error.dart';
 import '../widgets/responsive_content_wrapper.dart';
 
@@ -21,6 +20,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
   List<DeviceSession> _devices = [];
   bool _loading = true;
   String? _error;
+  String? _devicesError;
 
   @override
   void initState() {
@@ -32,35 +32,39 @@ class _PerfilScreenState extends State<PerfilScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _devicesError = null;
     });
 
-    try {
-      final results = await Future.wait([
-        MeApiService.getMe(),
-        MeApiService.getDevices(),
-      ]);
-
-      if (!mounted) return;
-
-      final meResult = results[0] as ({MeResult? result, String? error});
-      final devicesResult =
-          results[1] as ({List<DeviceSession>? devices, String? error});
-
+    final meResult = await MeApiService.getMe();
+    if (!mounted) return;
+    if (meResult.error != null) {
       setState(() {
         _loading = false;
-        _me = meResult.result;
-        _error = meResult.error ?? devicesResult.error;
-        _devices = devicesResult.devices ?? [];
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = friendlyError(e);
+        _error = meResult.error;
         _me = null;
         _devices = [];
       });
+      return;
     }
+
+    final devicesResult = await MeApiService.getDevices();
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _me = meResult.result;
+      _devices = devicesResult.devices ?? [];
+      _devicesError = devicesResult.error;
+    });
+  }
+
+  Future<void> _loadDevicesOnly() async {
+    setState(() => _devicesError = null);
+    final result = await MeApiService.getDevices();
+    if (!mounted) return;
+    setState(() {
+      _devices = result.devices ?? [];
+      _devicesError = result.error;
+    });
   }
 
   Future<void> _revokeDevice(DeviceSession device) async {
@@ -115,6 +119,18 @@ class _PerfilScreenState extends State<PerfilScreen> {
     }
   }
 
+  Future<void> _signOut() async {
+    try {
+      await Supabase.instance.client.auth.signOut();
+    } catch (_) {
+      try {
+        await Supabase.instance.client.auth.signOut(
+          scope: SignOutScope.local,
+        );
+      } catch (_) {}
+    }
+  }
+
   String _formatDate(String iso) {
     try {
       final dt = DateTime.parse(iso).toLocal();
@@ -124,9 +140,51 @@ class _PerfilScreenState extends State<PerfilScreen> {
     }
   }
 
+  bool get _isSessionExpired =>
+      _error == MeApiService.sessionExpiredError;
+
+  bool get _isProfileEmpty =>
+      _me != null &&
+      (_me!.name == null || _me!.name!.trim().isEmpty);
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    if (!_loading && _isSessionExpired) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Mi perfil')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Tu sesión expiró.',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Volvé a iniciar sesión para continuar.',
+                  style: theme.textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: _signOut,
+                  icon: const Icon(Icons.logout, size: 20),
+                  label: const Text('Cerrar sesión'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Mi perfil')),
@@ -143,7 +201,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        if (_error != null) ...[
+                        if (_error != null && !_isSessionExpired) ...[
                           InlineError(
                             message: _error!,
                             onRetry: _loadData,
@@ -151,15 +209,48 @@ class _PerfilScreenState extends State<PerfilScreen> {
                           ),
                           const SizedBox(height: kSpacingMd),
                         ],
+                        if (_me != null && _isProfileEmpty)
+                          _buildCompleteProfileBanner(theme),
+                        if (_me != null && _isProfileEmpty)
+                          const SizedBox(height: kSpacingMd),
                         if (_me != null) _buildProfileCard(theme),
                         const SizedBox(height: kSpacingLg),
-                        _buildDevicesCard(theme),
+                        _buildDevicesCard(theme, _devicesError, _loadDevicesOnly),
                       ],
                     ),
                   ),
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildCompleteProfileBanner(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(kSpacingLg),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(kRadiusLg),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Bienvenido!, completemos tu perfil!',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: kSpacingSm),
+          Text(
+            'Agregá tu foto, teléfono y datos para que tu equipo te reconozca.',
+            style: theme.textTheme.bodyMedium,
+          ),
+        ],
+      ),
     );
   }
 
@@ -225,7 +316,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
-  Widget _buildDevicesCard(ThemeData theme) {
+  Widget _buildDevicesCard(
+    ThemeData theme,
+    String? devicesError,
+    VoidCallback onRetryDevices,
+  ) {
     return Container(
       padding: const EdgeInsets.all(kSpacingLg),
       decoration: BoxDecoration(
@@ -246,14 +341,23 @@ class _PerfilScreenState extends State<PerfilScreen> {
         children: [
           Text('Dispositivos', style: theme.textTheme.titleMedium),
           const SizedBox(height: kSpacingMd),
-          if (_devices.isEmpty)
+          if (devicesError != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: kSpacingMd),
+              child: InlineError(
+                message: 'No se pudieron cargar los dispositivos.',
+                onRetry: onRetryDevices,
+                isLoading: false,
+              ),
+            )
+          else if (_devices.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: kSpacingLg),
               child: Row(
                 children: [
                   Icon(Icons.phone_android_outlined, size: 24),
                   SizedBox(width: kSpacingMd),
-                  Text('No hay otros dispositivos'),
+                  Text('Este es tu dispositivo actual'),
                 ],
               ),
             )

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../core/device_capabilities.dart';
 import '../services/auth_api_service.dart';
@@ -75,33 +76,42 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         height: double.infinity,
         color: theme.colorScheme.surface,
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: padding,
-              vertical: kSpacingMd,
-            ),
-            child: ResponsiveContentWrapper(
-              width: ContentWidth.form,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(kSpacingLg),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerLowest,
-                    borderRadius: BorderRadius.circular(kRadiusXl),
-                    boxShadow: DeviceCapabilities.isLowEnd
-                        ? null
-                        : [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.06),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                  ),
-                  child: _sent ? _buildSuccess(context) : _buildForm(context),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: padding,
+                  vertical: kSpacingMd,
                 ),
-              ),
-            ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: ResponsiveContentWrapper(
+                    width: ContentWidth.form,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(kSpacingLg),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerLowest,
+                          borderRadius: BorderRadius.circular(kRadiusXl),
+                          boxShadow: DeviceCapabilities.isLowEnd
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.06),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                        ),
+                        child: _sent
+                            ? _buildSuccess(context)
+                            : _buildForm(context),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -110,27 +120,39 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Widget _buildSuccess(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Icon(
-          Icons.mark_email_read_outlined,
-          size: 64,
-          color: theme.colorScheme.primary,
-        ),
-        const SizedBox(height: kSpacingLg),
-        Text(
-          'Si el email existe, recibiras un enlace en minutos.',
-          style: theme.textTheme.bodyLarge,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: kSpacingXl),
-        FicharButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Volver al login'),
-        ),
-      ],
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (_, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.enter ||
+                event.logicalKey == LogicalKeyboardKey.numpadEnter)) {
+          Navigator.of(context).pop();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Icon(
+            Icons.mark_email_read_outlined,
+            size: 64,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(height: kSpacingLg),
+          Text(
+            'Si el email existe, recibiras un enlace en minutos.',
+            style: theme.textTheme.bodyLarge,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: kSpacingXl),
+          FicharButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Volver al login'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -153,6 +175,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _onSubmit(),
             decoration: const InputDecoration(
               labelText: 'Email',
               hintText: 'tu@email.com',

@@ -122,7 +122,7 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
     return changed;
   }
 
-  Future<void> _save() async {
+  Future<bool> _save() async {
     final changed = _getChangedConfigs();
     if (changed.isEmpty) {
       if (mounted) {
@@ -130,14 +130,14 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
           context,
         ).showSnackBar(const SnackBar(content: Text('Sin cambios')));
       }
-      return;
+      return true;
     }
 
-    if (_saving) return;
+    if (_saving) return false;
     setState(() => _saving = true);
 
     final result = await OrgConfigsApiService.patchConfigs(changed);
-    if (!mounted) return;
+    if (!mounted) return false;
 
     setState(() => _saving = false);
 
@@ -147,37 +147,80 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
         context,
       ).showSnackBar(const SnackBar(content: Text('Configuracion guardada')));
       _load();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.error ?? 'Error'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      return true;
     }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result.error ?? 'Error'),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
+    return false;
+  }
+
+  Future<bool> _onWillPop() async {
+    final changed = _getChangedConfigs();
+    if (changed.isEmpty) return true;
+    final choice = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Guardar cambios'),
+        content: const Text(
+          '¿Guardar cambios antes de salir?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'cancel'),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'discard'),
+            child: const Text('Descartar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, 'save'),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+    if (choice == 'cancel') return false;
+    if (choice == 'discard') return true;
+    if (choice == 'save') return await _save();
+    return false;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Configuracion'),
-        actions: [
-          if (!_loading && _configs.isNotEmpty)
-            TextButton(
-              onPressed: _saving ? null : _save,
-              child: _saving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Guardar'),
-            ),
-        ],
-      ),
-      body: _loading
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final allow = await _onWillPop();
+        if (allow && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Configuracion'),
+          actions: [
+            if (!_loading && _configs.isNotEmpty)
+              TextButton(
+                onPressed: _saving ? null : _save,
+                child: _saving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Guardar'),
+              ),
+          ],
+        ),
+        body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
           ? ResponsiveContentWrapper(
@@ -205,6 +248,7 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
                 ),
               ),
             ),
+      ),
     );
   }
 

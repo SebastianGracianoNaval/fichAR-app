@@ -5,11 +5,41 @@ import 'legal_audit_dashboard_screen.dart';
 import 'legal_audit_hash_chain_screen.dart';
 import 'legal_audit_logs_screen.dart';
 
-class LegalAuditShell extends StatelessWidget {
+class LegalAuditShell extends StatefulWidget {
   const LegalAuditShell({super.key});
 
+  @override
+  State<LegalAuditShell> createState() => _LegalAuditShellState();
+}
+
+class _LegalAuditShellState extends State<LegalAuditShell> {
+  bool _signingOut = false;
+
   Future<void> _signOut(BuildContext context) async {
-    await Supabase.instance.client.auth.signOut();
+    if (_signingOut) return;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _signingOut = true);
+    try {
+      await Supabase.instance.client.auth.signOut();
+    } catch (e) {
+      debugPrint('signOut failed: $e');
+      try {
+        await Supabase.instance.client.auth.signOut(
+          scope: SignOutScope.local,
+        );
+      } catch (_) {}
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Sesión cerrada localmente. Si tenés problemas, volvé a iniciar sesión.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _signingOut = false);
+    }
   }
 
   @override
@@ -28,8 +58,15 @@ class LegalAuditShell extends StatelessWidget {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () => _signOut(context),
+              icon: _signingOut
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.logout),
+              onPressed: _signingOut ? null : () => _signOut(context),
+              tooltip: 'Cerrar sesión',
             ),
           ],
         ),

@@ -291,7 +291,7 @@ class AuthApiService {
         .post(
           url,
           headers: const {'Content-Type': 'application/json'},
-          body: jsonEncode({'email': email}),
+          body: jsonEncode({'email': email, 'redirect_to': 'app'}),
         )
         .timeout(ApiClient.defaultTimeout);
     final body = res.body.isNotEmpty
@@ -357,5 +357,50 @@ class AuthApiService {
     } catch (_) {
       // Non-critical: best effort
     }
+  }
+
+  static Future<({bool ok, String? error})> createInvite({
+    required String email,
+    String role = 'empleado',
+    String? name,
+    bool sendEmail = true,
+  }) async {
+    final token = await ApiClient.getToken();
+    if (token == null) {
+      return (ok: false, error: 'No hay sesión');
+    }
+
+    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/invite');
+    final body = <String, dynamic>{
+      'email': email.trim().toLowerCase(),
+      'role': role,
+      'send_email': sendEmail,
+    };
+    if (name != null && name.trim().isNotEmpty) {
+      body['name'] = name.trim();
+    }
+
+    final res = await ApiClient.client
+        .post(
+          url,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode(body),
+        )
+        .timeout(ApiClient.defaultTimeout);
+
+    final resBody = res.body.isNotEmpty
+        ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
+        : <String, dynamic>{};
+
+    if (res.statusCode == 200 || res.statusCode == 201) {
+      return (ok: true, error: null);
+    }
+    return (
+      ok: false,
+      error: resBody['error'] as String? ?? 'Error al enviar invitación',
+    );
   }
 }

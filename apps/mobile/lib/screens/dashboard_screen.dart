@@ -16,6 +16,7 @@ import '../widgets/responsive_content_wrapper.dart';
 import '../services/dashboard_api_service.dart';
 import '../services/fichajes_api_service.dart';
 import '../services/licencias_api_service.dart';
+import '../services/me_api_service.dart';
 import '../utils/error_utils.dart';
 import 'admin_config_screen.dart';
 import 'admin_empleados_screen.dart';
@@ -28,6 +29,7 @@ import 'licencias_screen.dart';
 import 'mis_horas_screen.dart';
 import 'perfil_screen.dart';
 import 'reportes_screen.dart';
+import 'solicitudes_jornada_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key, required this.role});
@@ -50,11 +52,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _kpisLoading = true;
   String? _kpisError;
 
+  String? _orgName;
+  bool _profileIncomplete = false;
+  bool _signingOut = false;
+
   @override
   void initState() {
     super.initState();
+    _loadMe();
     if (_isEmployee) _loadDayData();
     if (widget.role == 'admin') _loadKpis();
+  }
+
+  Future<void> _loadMe() async {
+    final result = await MeApiService.getMe();
+    if (!mounted) return;
+    setState(() {
+      _orgName = result.result?.orgName;
+      _profileIncomplete = result.result != null &&
+          (result.result!.name == null || result.result!.name!.trim().isEmpty);
+    });
   }
 
   Future<void> _loadKpis() async {
@@ -171,8 +188,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  void _showSignOutConfirmation(BuildContext context) {
+    final theme = Theme.of(context);
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const SingleChildScrollView(
+          child: Text(
+            '¿Estás seguro de que querés cerrar sesión?',
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.onSurfaceVariant,
+            ),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _signOut(context);
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+            ),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _signOut(BuildContext context) async {
-    await Supabase.instance.client.auth.signOut();
+    if (_signingOut) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    setState(() => _signingOut = true);
+    var signedOut = false;
+    try {
+      await Supabase.instance.client.auth.signOut();
+      signedOut = true;
+    } catch (e) {
+      debugPrint('signOut failed: $e');
+      try {
+        await Supabase.instance.client.auth.signOut(
+          scope: SignOutScope.local,
+        );
+        signedOut = true;
+      } catch (_) {}
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Sesión cerrada localmente. Si tenés problemas, volvé a iniciar sesión.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _signingOut = false);
+      if (mounted && signedOut) {
+        navigator.pushNamedAndRemoveUntil('/login', (route) => false);
+      }
+    }
   }
 
   @override
@@ -183,8 +266,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: const Text('fichAR'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _signOut(context),
+            icon: _signingOut
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.logout),
+            onPressed: _signingOut ? null : () => _showSignOutConfirmation(context),
+            tooltip: 'Cerrar sesión',
           ),
         ],
       ),
@@ -205,6 +295,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (_orgName != null && _orgName!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: kSpacingMd),
+                          child: Text(
+                            'Bienvenido a $_orgName',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      if (_profileIncomplete)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: kSpacingMd),
+                          child: Text(
+                            'Faltan datos a completar',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ),
                       if (_isEmployee) ...[
                         _buildFicharSection(theme),
                         const SizedBox(height: kSpacingMd),
@@ -345,18 +455,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _SummaryChip(
-                icon: Icons.access_time,
-                label: 'Ultimo fichaje',
-                value: entradaHoy,
+              Expanded(
+                child: _SummaryChip(
+                  icon: Icons.access_time,
+                  label: 'Ultimo fichaje',
+                  value: entradaHoy,
+                ),
               ),
-              _SummaryChip(
-                icon: Icons.account_balance_wallet,
-                label: 'Banco',
-                value: '${_saldoHoras?.toStringAsFixed(1) ?? '0'} h',
-                color: (_saldoHoras ?? 0) >= 0
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.error,
+              Expanded(
+                child: _SummaryChip(
+                  icon: Icons.account_balance_wallet,
+                  label: 'Banco',
+                  value: '${_saldoHoras?.toStringAsFixed(1) ?? '0'} h',
+                  color: (_saldoHoras ?? 0) >= 0
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.error,
+                ),
               ),
             ],
           ),
@@ -396,6 +510,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return _buildKpiCards(theme, _kpis!, screenWidth);
   }
 
+  static const double _kpiAspectRatio = 0.92;
+
   Widget _buildKpiSkeleton(ThemeData theme, double screenWidth) {
     final crossAxisCount = screenWidth >= kBreakpointDesktop ? 4 : 2;
     return GridView.count(
@@ -404,13 +520,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       crossAxisCount: crossAxisCount,
       mainAxisSpacing: kSpacingMd,
       crossAxisSpacing: kSpacingMd,
-      childAspectRatio: 1.1,
+      childAspectRatio: _kpiAspectRatio,
+      padding: EdgeInsets.zero,
       children: List.generate(
         4,
-        (_) => Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(kRadiusLg),
+        (_) => Padding(
+          padding: const EdgeInsets.all(kSpacingXs),
+          child: Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(kRadiusLg),
+            ),
           ),
         ),
       ),
@@ -423,8 +543,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     double screenWidth,
   ) {
     final crossAxisCount = screenWidth >= kBreakpointDesktop ? 4 : 2;
-    final cardPadding = screenWidth >= kBreakpointDesktop ? kSpacingLg : 16.0;
-
     final cards = [
       _KpiCard(
         icon: Icons.people,
@@ -457,25 +575,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
       crossAxisCount: crossAxisCount,
       mainAxisSpacing: kSpacingMd,
       crossAxisSpacing: kSpacingMd,
-      childAspectRatio: screenWidth >= kBreakpointDesktop ? 1.2 : 1.1,
+      childAspectRatio: _kpiAspectRatio,
+      padding: EdgeInsets.zero,
       children: cards
           .map(
-            (c) => Container(
-              padding: EdgeInsets.all(cardPadding),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: DeviceCapabilities.isLowEnd
-                    ? null
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+            (c) => Padding(
+              padding: const EdgeInsets.all(kSpacingXs),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(kRadiusLg),
+                  boxShadow: DeviceCapabilities.isLowEnd
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                ),
+                child: c,
               ),
-              child: c,
             ),
           )
           .toList(),
@@ -492,12 +613,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildNavGrid(BuildContext context, double screenWidth) {
-    final crossAxisCount = screenWidth >= kBreakpointDesktop
-        ? 6
-        : screenWidth >= kBreakpointTablet
-        ? 4
-        : 2;
-    final childAspectRatio = screenWidth >= kBreakpointDesktop ? 1.15 : 0.95;
+    final crossAxisCount =
+        screenWidth >= kBreakpointTablet ? 3 : 2;
+    const double childAspectRatio = 0.92;
+
+    final items = <({IconData icon, String title, VoidCallback onTap})>[
+      (icon: Icons.person, title: 'Perfil', onTap: () => _push(context, const PerfilScreen())),
+      if (_isEmployee) (icon: Icons.schedule, title: 'Mis Horas', onTap: () => _push(context, const MisHorasScreen())),
+      if (_isEmployee) (icon: Icons.medical_services, title: 'Licencias', onTap: () => _push(context, const LicenciasScreen())),
+      (icon: Icons.schedule_send, title: 'Solicitudes jornada', onTap: () => _push(context, SolicitudesJornadaScreen(role: widget.role))),
+      if (widget.role == 'admin') (icon: Icons.people, title: 'Empleados', onTap: () => _push(context, const AdminEmpleadosScreen())),
+      if (widget.role == 'admin') (icon: Icons.location_on, title: 'Lugares', onTap: () => _push(context, const AdminLugaresScreen())),
+      if (['admin', 'supervisor'].contains(widget.role)) (icon: Icons.groups, title: 'Mi Equipo', onTap: () => _push(context, const EquipoScreen())),
+      if (['admin', 'supervisor'].contains(widget.role)) (icon: Icons.check_circle, title: 'Aprobar Licencias', onTap: () => _push(context, const LicenciasAprobarScreen())),
+      if (['admin', 'supervisor'].contains(widget.role)) (icon: Icons.warning, title: 'Alertas', onTap: () => _push(context, const AlertasScreen())),
+      if (widget.role == 'admin') (icon: Icons.assessment, title: 'Reportes', onTap: () => _push(context, const ReportesScreen())),
+      if (widget.role == 'admin') (icon: Icons.history, title: 'Logs', onTap: () => _push(context, const LegalAuditLogsScreen())),
+      if (widget.role == 'admin') (icon: Icons.settings, title: 'Configuracion', onTap: () => _push(context, const AdminConfigScreen())),
+    ];
 
     return GridView.count(
       shrinkWrap: true,
@@ -506,107 +639,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
       mainAxisSpacing: kSpacingMd,
       crossAxisSpacing: kSpacingMd,
       childAspectRatio: childAspectRatio,
-      children: [
-        _NavCard(
-          icon: Icons.person,
-          title: 'Perfil',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const PerfilScreen()),
-          ),
-        ),
-        if (_isEmployee)
-          _NavCard(
-            icon: Icons.schedule,
-            title: 'Mis Horas',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const MisHorasScreen()),
+      padding: EdgeInsets.zero,
+      children: items
+          .map(
+            (item) => Padding(
+              padding: const EdgeInsets.all(kSpacingXs),
+              child: _NavCard(
+                icon: item.icon,
+                title: item.title,
+                onTap: item.onTap,
+              ),
             ),
-          ),
-        if (_isEmployee)
-          _NavCard(
-            icon: Icons.medical_services,
-            title: 'Licencias',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const LicenciasScreen()),
-            ),
-          ),
-        if (['admin'].contains(widget.role))
-          _NavCard(
-            icon: Icons.people,
-            title: 'Empleados',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AdminEmpleadosScreen()),
-            ),
-          ),
-        if (['admin'].contains(widget.role))
-          _NavCard(
-            icon: Icons.location_on,
-            title: 'Lugares',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AdminLugaresScreen()),
-            ),
-          ),
-        if (['admin', 'supervisor'].contains(widget.role))
-          _NavCard(
-            icon: Icons.groups,
-            title: 'Mi Equipo',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const EquipoScreen()),
-            ),
-          ),
-        if (['admin', 'supervisor'].contains(widget.role))
-          _NavCard(
-            icon: Icons.check_circle,
-            title: 'Aprobar Licencias',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const LicenciasAprobarScreen()),
-            ),
-          ),
-        if (['admin', 'supervisor'].contains(widget.role))
-          _NavCard(
-            icon: Icons.warning,
-            title: 'Alertas',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AlertasScreen()),
-            ),
-          ),
-        if (['admin'].contains(widget.role))
-          _NavCard(
-            icon: Icons.assessment,
-            title: 'Reportes',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ReportesScreen()),
-            ),
-          ),
-        if (['admin'].contains(widget.role))
-          _NavCard(
-            icon: Icons.history,
-            title: 'Logs',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const LegalAuditLogsScreen()),
-            ),
-          ),
-        if (['admin'].contains(widget.role))
-          _NavCard(
-            icon: Icons.settings,
-            title: 'Configuracion',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AdminConfigScreen()),
-            ),
-          ),
-      ],
+          )
+          .toList(),
     );
+  }
+
+  void _push(BuildContext context, Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
   }
 }
 
@@ -623,28 +673,51 @@ class _KpiCard extends StatelessWidget {
   final String value;
   final Color color;
 
+  static const double _iconSize = 24;
+  static const double _valueFontSize = 20;
+  static const double _labelFontSize = 12;
+  static const double _verticalGap = 6;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 24, color: color),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
+    final colorScheme = theme.colorScheme;
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      padding: const EdgeInsets.all(kSpacingMd),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: _iconSize, color: color),
+          const SizedBox(height: _verticalGap),
+          Text(
+            value,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontSize: _valueFontSize,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-        ),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+          const SizedBox(height: 2),
+          Tooltip(
+            message: label,
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: _labelFontSize,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -666,15 +739,28 @@ class _SummaryChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           icon,
-          size: 28,
+          size: 26,
           color: color ?? theme.colorScheme.onSurfaceVariant,
         ),
         const SizedBox(height: 4),
-        Text(label, style: theme.textTheme.bodySmall),
-        Text(value, style: theme.textTheme.titleMedium?.copyWith(color: color)),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+        ),
+        Text(
+          value,
+          style: theme.textTheme.titleMedium?.copyWith(color: color),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }
@@ -691,13 +777,14 @@ class _NavCard extends StatelessWidget {
   final String title;
   final VoidCallback onTap;
 
+  static const double _iconSize = 40;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isWide = MediaQuery.sizeOf(context).width >= kBreakpointDesktop;
-    final iconSize = isWide ? 40.0 : 48.0;
-
     return Container(
+      width: double.infinity,
+      height: double.infinity,
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(kRadiusMd),
@@ -716,28 +803,36 @@ class _NavCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(kRadiusMd),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: isWide ? kSpacingMd : kSpacingLg,
-              vertical: isWide ? kSpacingMd : kSpacingLg,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(icon, size: iconSize, color: theme.colorScheme.primary),
-                SizedBox(height: isWide ? kSpacingXs : kSpacingSm),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: kSpacingSm,
+                vertical: kSpacingMd,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    size: _iconSize,
+                    color: theme.colorScheme.primary,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                  const SizedBox(height: kSpacingSm),
+                  Tooltip(
+                    message: title,
+                    child: Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -228,6 +228,52 @@ export async function sendWelcomeWithLink(
   });
 }
 
+function buildResetPasswordHtml(link: string): string {
+  const safeLink = escapeHtml(link);
+  const appName = process.env.APP_NAME?.trim() || 'fichAR';
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Restablecer contraseña - ${escapeHtml(appName)}</title></head>
+<body style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">
+  <h2>Restablecer tu contraseña</h2>
+  <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>${escapeHtml(appName)}</strong>.</p>
+  <p style="margin:32px 0">
+    <a href="${safeLink}"
+       style="background:#0F766E;color:#fff;padding:12px 24px;border-radius:4px;text-decoration:none;font-weight:bold">
+      Restablecer contraseña
+    </a>
+  </p>
+  <p style="color:#666;font-size:13px">Este enlace expira en 1 hora. Si no solicitaste este correo, podés ignorarlo.</p>
+</body>
+</html>`;
+}
+
+function buildResetPasswordText(link: string): string {
+  const appName = process.env.APP_NAME?.trim() || 'fichAR';
+  return `Restablecer tu contraseña - ${appName}
+
+Recibimos una solicitud para restablecer la contraseña de tu cuenta.
+
+Restablecer contraseña: ${link}
+
+Este enlace expira en 1 hora. Si no solicitaste este correo, podés ignorarlo.`;
+}
+
+export async function sendResetPasswordLink(
+  email: string,
+  link: string,
+): Promise<WelcomeEmailResult> {
+  const appName = process.env.APP_NAME?.trim() || 'fichAR';
+  const subject = `Restablecer tu contraseña - ${appName}`;
+  return sendEmail({
+    to: email,
+    from: getFrom(),
+    subject,
+    html: buildResetPasswordHtml(link),
+    text: buildResetPasswordText(link),
+  });
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')

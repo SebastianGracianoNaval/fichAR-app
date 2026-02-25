@@ -21,13 +21,16 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _passwordFocusNode = FocusNode();
   bool _loading = false;
+  bool _obscurePassword = true;
   String? _errorMessage;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -187,6 +190,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               TextFormField(
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) {
+                                  FocusScope.of(context).requestFocus(_passwordFocusNode);
+                                },
                                 decoration: const InputDecoration(
                                   labelText: 'Email',
                                   hintText: 'tu@email.com',
@@ -204,7 +211,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               const SizedBox(height: kSpacingMd),
                               TextFormField(
                                 controller: _passwordController,
-                                obscureText: true,
+                                focusNode: _passwordFocusNode,
+                                obscureText: _obscurePassword,
+                                textInputAction: TextInputAction.done,
+                                onFieldSubmitted: (_) {
+                                  if (!_loading) _onSubmit();
+                                },
                                 decoration: const InputDecoration(
                                   labelText: 'Contrasena',
                                 ),
@@ -214,6 +226,29 @@ class _LoginScreenState extends State<LoginScreen> {
                                   }
                                   return null;
                                 },
+                              ),
+                              const SizedBox(height: kSpacingSm),
+                              Semantics(
+                                label: 'Mostrar contrasena',
+                                child: CheckboxListTile(
+                                  value: !_obscurePassword,
+                                  onChanged: (value) {
+                                    setState(() => _obscurePassword = value != true);
+                                    if (DeviceCapabilities.hasHaptics) {
+                                      HapticFeedback.selectionClick();
+                                    }
+                                  },
+                                  title: Text(
+                                    'Mostrar contrasena',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  controlAffinity: ListTileControlAffinity.leading,
+                                  contentPadding: EdgeInsets.zero,
+                                  dense: true,
+                                  activeColor: theme.colorScheme.primary,
+                                ),
                               ),
                               if (_errorMessage != null) ...[
                                 const SizedBox(height: kSpacingMd),

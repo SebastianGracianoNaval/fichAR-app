@@ -127,7 +127,7 @@ class _AlertasScreenState extends State<AlertasScreen> {
                     child: ListTile(
                       leading: Icon(
                         _iconForTipo(tipo),
-                        color: _colorForTipo(tipo),
+                        color: _colorForTipo(context, tipo),
                       ),
                       title: Text(nombre),
                       subtitle: Column(
@@ -161,10 +161,10 @@ class _AlertasScreenState extends State<AlertasScreen> {
     return Icons.warning;
   }
 
-  Color _colorForTipo(String tipo) {
+  Color _colorForTipo(BuildContext context, String tipo) {
     if (tipo.contains('descanso')) return Colors.orange;
     if (tipo.contains('banco')) return Colors.amber;
     if (tipo.contains('zona')) return Colors.red;
-    return Colors.blue;
+    return Theme.of(context).colorScheme.primary;
   }
 }

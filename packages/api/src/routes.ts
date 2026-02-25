@@ -68,6 +68,11 @@ import {
 } from './routes/integrations.ts';
 import { handleGetAlertas } from './routes/alertas.ts';
 import { handleGetBanco, handleGetBancoEquipo } from './routes/banco.ts';
+import {
+  handlePostSolicitudJornada,
+  handleGetSolicitudesJornada,
+  handlePatchSolicitudJornada,
+} from './routes/solicitudes-jornada.ts';
 import { handlePostReportesExport } from './routes/reportes.ts';
 import { handleGetAdminDashboard } from './routes/dashboard.ts';
 import {
@@ -201,6 +206,10 @@ const routes: Route[] = [
   exact('GET', '/banco', handleGetBanco),
   exact('GET', '/banco/equipo', handleGetBancoEquipo),
   exact('POST', '/reportes/export', handlePostReportesExport),
+
+  exact('POST', '/solicitudes-jornada', handlePostSolicitudJornada),
+  exact('GET', '/solicitudes-jornada', handleGetSolicitudesJornada),
+  dynamic('PATCH', '/solicitudes-jornada/', '', handlePatchSolicitudJornada, (id) => id.length > 0 && !id.includes('/')),
 ];
 
 function isDynamic(r: Route): r is DynamicRoute {

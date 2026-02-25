@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../services/fichajes_api_service.dart';
 import '../services/licencias_api_service.dart';
+import '../widgets/responsive_content_wrapper.dart';
+import '../widgets/screen_error_view.dart';
 
 class MisHorasScreen extends StatefulWidget {
   const MisHorasScreen({super.key});
@@ -14,12 +16,16 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
   double? _saldoHoras;
   String? _error;
   bool _loading = true;
+  bool _loadingMonth = false;
   List<Fichaje> _fichajes = [];
   int _total = 0;
   int _offset = 0;
   static const _pageSize = 20;
   bool _loadingMore = false;
   DateTime _mesActual = DateTime(DateTime.now().year, DateTime.now().month);
+
+  bool get _hasData =>
+      _fichajes.isNotEmpty || _saldoHoras != null || _total > 0;
 
   @override
   void initState() {
@@ -28,8 +34,13 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
   }
 
   Future<void> _loadData() async {
+    final isFirstLoad = !_hasData;
     setState(() {
-      _loading = true;
+      if (isFirstLoad) {
+        _loading = true;
+      } else {
+        _loadingMonth = true;
+      }
       _error = null;
       _offset = 0;
     });
@@ -63,6 +74,7 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
 
     setState(() {
       _loading = false;
+      _loadingMonth = false;
       _saldoHoras = bancoResult.saldoHoras;
       _error = bancoResult.error ?? fichajesResult.error;
       _fichajes = fichajesResult.data;
@@ -109,52 +121,142 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
     _loadData();
   }
 
+  Widget _buildSkeleton(ThemeData theme) {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: ResponsiveContentWrapper(
+        width: ContentWidth.list,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 16,
+                        width: 120,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        height: 32,
+                        width: 80,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: null,
+                  ),
+                  Container(
+                    height: 24,
+                    width: 140,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Mis Horas')),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildSkeleton(theme)
           : _error != null
           ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _error!,
-                    style: TextStyle(color: theme.colorScheme.error),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: _loadData,
-                    child: const Text('Reintentar'),
-                  ),
-                ],
+              child: ScreenErrorView(
+                message: ScreenErrorView.genericLoadError,
+                onAction: _loadData,
+                contentWidth: ContentWidth.list,
               ),
             )
           : RefreshIndicator(
               onRefresh: _loadData,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _buildBancoCard(theme),
-                  const SizedBox(height: 24),
-                  _buildMonthSelector(theme),
-                  const SizedBox(height: 16),
-                  _buildFichajesTable(theme),
-                  if (_offset < _total) ...[
-                    const SizedBox(height: 16),
-                    Center(
-                      child: _loadingMore
-                          ? const CircularProgressIndicator()
-                          : TextButton(
-                              onPressed: _loadMore,
-                              child: const Text('Cargar mas'),
-                            ),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: ResponsiveContentWrapper(
+                  width: ContentWidth.list,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildBancoCard(theme),
+                        const SizedBox(height: 24),
+                        _buildMonthSelector(theme),
+                        const SizedBox(height: 16),
+                        _loadingMonth
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Column(
+                                    children: [
+                                      const CircularProgressIndicator(),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Cargando...',
+                                        style: theme.textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : _buildFichajesTable(theme),
+                        if (_offset < _total) ...[
+                          const SizedBox(height: 16),
+                          Center(
+                            child: _loadingMore
+                                ? const CircularProgressIndicator()
+                                : TextButton(
+                                    onPressed: _loadMore,
+                                    child: const Text('Cargar mas'),
+                                  ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
-                ],
+                  ),
+                ),
               ),
             ),
     );

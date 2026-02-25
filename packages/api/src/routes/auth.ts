@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '../lib/supabase.ts';
 import { checkLoginRateLimit, recordLoginFailure, clearLoginFailure, FAIL_THRESHOLD } from '../lib/rate-limit.ts';
 import { parseBody, validateCuil, validateEmail, validatePassword } from '../lib/validators.ts';
 import { logAudit, logError, getRequestMeta } from '../lib/logger.ts';
+import { sendResetPasswordLink, sendWelcomeWithLink } from '../lib/email-service.ts';
 import { getOrgConfigBoolean, getOrgConfigNumber } from '../lib/org-config.ts';
 import { decodeJwt } from 'jose';
 import { VALID_ROLES } from '@fichar/shared';
@@ -145,13 +146,42 @@ export async function handleForgotPassword(req: Request): Promise<Response> {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const data = parseBody<{ email: string }>(body);
+  const data = parseBody<{ email: string; redirect_to?: string }>(body);
   const email = data?.email?.trim?.();
   if (!email || !validateEmail(email)) {
     return Response.json({ error: 'Email inválido' }, { status: 400 });
   }
 
-  const redirectUrl = process.env.RESET_PASSWORD_REDIRECT_URL ?? undefined;
+  const redirectToApp = (data?.redirect_to ?? '').toLowerCase() === 'app';
+  const redirectUrl = redirectToApp
+    ? (process.env.RESET_PASSWORD_REDIRECT_URL_APP?.trim() || undefined)
+    : (process.env.RESET_PASSWORD_REDIRECT_URL?.trim() || undefined);
+  const emailProvider = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
+
+  if (emailProvider) {
+    const { data: linkData, error: linkErr } = await getSupabaseAdmin().auth.admin.generateLink({
+      type: 'recovery',
+      email: email.toLowerCase(),
+      options: { redirectTo: redirectUrl },
+    });
+
+    if (linkErr) {
+      await logError('warning', 'forgot_password_failed', undefined, {}, linkErr);
+    } else {
+      const actionLink = (linkData?.properties as { action_link?: string } | undefined)?.action_link;
+      if (actionLink) {
+        const result = await sendResetPasswordLink(email.toLowerCase(), actionLink);
+        if (!result.ok) {
+          await logError('warning', 'forgot_password_email_failed', undefined, { email: email.toLowerCase(), reason: result.error });
+        }
+      }
+    }
+
+    await logAudit('forgot_password', { ip: meta.ip, userAgent: meta.userAgent }, {}, 'info');
+    return Response.json({
+      message: 'Si el email existe, recibirás un enlace en minutos.',
+    });
+  }
 
   const { error } = await getSupabaseAdmin().auth.resetPasswordForEmail(email.toLowerCase(), {
     redirectTo: redirectUrl,
@@ -483,6 +513,16 @@ export async function handleGetMe(req: Request): Promise<Response> {
   const requiresPasswordChange =
     emp.password_changed_at !== undefined ? emp.password_changed_at === null : false;
 
+  let org_name: string | null = null;
+  const { data: orgRow } = await admin
+    .from('organizations')
+    .select('name')
+    .eq('id', emp.org_id)
+    .maybeSingle();
+  if (orgRow && typeof (orgRow as { name?: string }).name === 'string') {
+    org_name = (orgRow as { name: string }).name;
+  }
+
   const empWithNameCuil = emp as { name?: string; cuil?: string };
   const cuilFormatted = empWithNameCuil.cuil
     ? formatCuilDisplay(empWithNameCuil.cuil)
@@ -491,6 +531,7 @@ export async function handleGetMe(req: Request): Promise<Response> {
   return Response.json({
     id: emp.id,
     org_id: emp.org_id,
+    org_name: org_name ?? null,
     role: emp.role,
     email: (emp as { email: string | null }).email ?? user.email,
     name: empWithNameCuil.name ?? null,
@@ -537,7 +578,7 @@ export async function handleCreateInvite(req: Request): Promise<Response> {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const data = parseBody<{ email: string; role?: string }>(body);
+  const data = parseBody<{ email: string; role?: string; name?: string; send_email?: boolean }>(body);
   const email = data?.email?.trim?.();
   if (!email || !validateEmail(email)) {
     return Response.json({ error: 'Email inválido' }, { status: 400 });
@@ -555,7 +596,7 @@ export async function handleCreateInvite(req: Request): Promise<Response> {
     .eq('email', email.toLowerCase());
 
   if (existing && existing.length > 0) {
-    return Response.json({ error: 'El email ya pertenece a esta organización' }, { status: 409 });
+    return Response.json({ error: 'Ya existe un empleado con ese correo', code: 'email_exists' }, { status: 409 });
   }
 
   const inviteSecret = process.env.INVITE_SECRET;
@@ -571,7 +612,37 @@ export async function handleCreateInvite(req: Request): Promise<Response> {
     .setExpirationTime(exp)
     .sign(secret);
 
-  return Response.json({ inviteToken, expiresInHours: INVITE_EXP_HOURS });
+  let emailSent = false;
+  const sendEmail = data?.send_email !== false;
+  if (sendEmail) {
+    const baseUrl =
+      process.env.INVITE_REDIRECT_BASE?.trim() ||
+      process.env.RESET_PASSWORD_REDIRECT_URL?.trim() ||
+      '';
+    const link = baseUrl
+      ? `${baseUrl.replace(/\/$/, '')}#/register?inviteToken=${encodeURIComponent(inviteToken)}`
+      : '';
+    if (link) {
+      const { data: orgRow } = await getSupabaseAdmin()
+        .from('organizations')
+        .select('name')
+        .eq('id', emp.org_id)
+        .maybeSingle();
+      const orgName = (orgRow as { name?: string } | null)?.name ?? 'fichAR';
+      const name = data?.name?.trim() || email;
+      const result = await sendWelcomeWithLink(email, name, link, orgName);
+      emailSent = result.ok;
+      if (!result.ok) {
+        await logError('warning', 'invite_email_failed', { orgId: emp.org_id }, { email, reason: result.error });
+      }
+    }
+  }
+
+  return Response.json({
+    inviteToken,
+    expiresInHours: INVITE_EXP_HOURS,
+    ...(sendEmail && { email_sent: emailSent }),
+  });
 }
 
 export async function handleMfaVerify(req: Request): Promise<Response> {

@@ -32,7 +32,9 @@ La API (packages/api) requiere en `.env` (raiz del repo):
 - `SUPABASE_URL` — URL del proyecto
 - `SUPABASE_SERVICE_ROLE_KEY` — Clave service_role (Dashboard > Settings > API). Solo servidor, nunca en cliente.
 - `INVITE_SECRET` — **Requerido** para POST /auth/invite y POST /auth/register. Secreto para firmar tokens de invitacion. No usar `SUPABASE_SERVICE_ROLE_KEY`. Generar con `openssl rand -hex 32`.
-- `RESET_PASSWORD_REDIRECT_URL` — (opcional) URL de redireccion tras reset de password.
+- `RESET_PASSWORD_REDIRECT_URL` — (opcional) URL de redireccion tras reset de password para **fichar-management** (Next.js). Usada cuando el reset se solicita desde management (Supabase en cliente) o cuando la API recibe POST /auth/forgot-password sin `redirect_to: 'app'`.
+- `RESET_PASSWORD_REDIRECT_URL_APP` — (opcional) URL de redireccion para **fichar-app** (empleados, Flutter web). Usada cuando la app Flutter llama a la API con `redirect_to: 'app'`. Así "Olvidé mi contraseña" desde la app redirige a la app; desde management, a management.
+- Si `EMAIL_PROVIDER` esta definido (gmail/sendgrid/resend), el correo de "restablecer contrasena" lo envia la **API**; si no, **Supabase Auth** (Dashboard > Authentication > Email / SMTP).
 - `HASH_PEPPER` — **Requerido** para POST /fichajes. Secreto para cadena de hashes (32+ bytes). Generar: `openssl rand -hex 32`.
 - `MANAGEMENT_API_KEY` — **Requerido** para POST /management/organizations (fichar-management). Ver `documentation/tecnica/management-api.md`.
 - `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN` — **Opcional**. Para rate limiting distribuido (multi-instancia). Sin estas variables se usa almacenamiento in-memory (solo una instancia). Crear base Redis gratuita en https://console.upstash.com, copiar credenciales REST.

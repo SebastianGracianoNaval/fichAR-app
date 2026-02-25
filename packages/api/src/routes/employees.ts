@@ -39,27 +39,32 @@ export async function handleGetEmployees(req: Request): Promise<Response> {
   );
 
   const admin = getSupabaseAdmin();
-  let query = admin
-    .from('employees')
-    .select('id, org_id, branch_id, supervisor_id, email, name, dni, cuil, role, status, modalidad, fecha_ingreso, fecha_egreso, created_at', { count: 'exact' })
-    .eq('org_id', ctx.orgId)
-    .order('name', { ascending: true })
-    .range(offset, offset + limit - 1);
+  try {
+    let query = admin
+      .from('employees')
+      .select('id, org_id, branch_id, supervisor_id, email, name, dni, cuil, role, status, modalidad, fecha_ingreso, fecha_egreso, created_at', { count: 'exact' })
+      .eq('org_id', ctx.orgId)
+      .order('name', { ascending: true })
+      .range(offset, offset + limit - 1);
 
-  if (ctx.role === 'supervisor') {
-    query = query.or(`supervisor_id.eq.${ctx.employeeId},id.eq.${ctx.employeeId}`);
+    if (ctx.role === 'supervisor') {
+      query = query.or(`supervisor_id.eq.${ctx.employeeId},id.eq.${ctx.employeeId}`);
+    }
+    if (branchId) query = query.eq('branch_id', branchId);
+    if (status) query = query.eq('status', status);
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      await logError('critical', 'employees_list_failed', { orgId: ctx.orgId }, {}, error);
+      return Response.json({ error: 'Error al listar empleados', code: 'internal' }, { status: 500 });
+    }
+
+    return Response.json({ data: data ?? [], meta: { total: count ?? 0, limit, offset } });
+  } catch (err) {
+    await logError('critical', 'employees_list_exception', { orgId: ctx.orgId }, {}, err instanceof Error ? err : new Error(String(err)));
+    return Response.json({ data: [], meta: { total: 0, limit, offset } }, { status: 200 });
   }
-  if (branchId) query = query.eq('branch_id', branchId);
-  if (status) query = query.eq('status', status);
-
-  const { data, error, count } = await query;
-
-  if (error) {
-    await logError('critical', 'employees_list_failed', { orgId: ctx.orgId }, {}, error);
-    return Response.json({ error: 'Error al listar empleados', code: 'internal' }, { status: 500 });
-  }
-
-  return Response.json({ data: data ?? [], meta: { total: count ?? 0, limit, offset } });
 }
 
 export async function handleGetEmployeeById(req: Request, employeeId: string): Promise<Response> {

@@ -83,6 +83,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Reportes')),
       body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         child: ResponsiveContentWrapper(
           width: ContentWidth.formWide,
           child: Padding(

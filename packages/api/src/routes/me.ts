@@ -31,8 +31,11 @@ export async function handleGetMeDevices(req: Request): Promise<Response> {
     .order('updated_at', { ascending: false });
 
   if (error) {
-    await logError('critical', 'me_devices_list_failed', { orgId: ctx.orgId, employeeId: ctx.employeeId }, {}, error);
-    return Response.json({ error: 'Error al listar dispositivos', code: 'internal' }, { status: 500 });
+    await logError('warning', 'me_devices_list_failed', { orgId: ctx.orgId, employeeId: ctx.employeeId }, {}, error);
+    const fallback = currentSessionId
+      ? [{ id: currentSessionId, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), current: true }]
+      : [];
+    return Response.json({ data: fallback });
   }
 
   const devices = (sessions ?? []).map((s) => ({
@@ -41,6 +44,15 @@ export async function handleGetMeDevices(req: Request): Promise<Response> {
     updated_at: s.updated_at,
     current: s.id === currentSessionId,
   }));
+
+  if (devices.length === 0 && currentSessionId) {
+    devices.push({
+      id: currentSessionId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      current: true,
+    });
+  }
 
   return Response.json({ data: devices });
 }

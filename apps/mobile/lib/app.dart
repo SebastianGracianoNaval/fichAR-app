@@ -2,6 +2,7 @@ import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'core/recovery_from_url_flag.dart';
 import 'screens/change_password_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/login_screen.dart';
@@ -30,8 +31,13 @@ class FicharApp extends StatelessWidget {
               body: Center(child: CircularProgressIndicator()),
             );
           }
+          // P-AUTH-03: persistence if stream emitted before passwordRecovery
+          if (recoveryFromUrl) {
+            setRecoveryFromUrl(false);
+            return const ResetPasswordScreen();
+          }
           final event = snapshot.data?.event;
-          // P-AUTH-03: show reset-password form when user clicks welcome/recovery link
+          // P-AUTH-03: show reset-password when recovery link is processed (first priority)
           if (event == AuthChangeEvent.passwordRecovery) {
             return const ResetPasswordScreen();
           }

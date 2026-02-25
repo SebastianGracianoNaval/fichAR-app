@@ -67,9 +67,20 @@ ThemeData get ficharTheme {
         backgroundColor: _primary,
         foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, kTouchTargetMin),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(kRadiusLg),
         ),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        textStyle: const TextStyle(fontSize: 16),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        textStyle: const TextStyle(fontSize: 16),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(

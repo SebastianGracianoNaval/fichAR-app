@@ -10,6 +10,7 @@ class MeResult {
     required this.email,
     this.name,
     this.cuil,
+    this.orgName,
     this.requiresPasswordChange = false,
   });
 
@@ -19,6 +20,7 @@ class MeResult {
   final String email;
   final String? name;
   final String? cuil;
+  final String? orgName;
   final bool requiresPasswordChange;
 
   factory MeResult.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class MeResult {
       email: json['email'] as String? ?? '',
       name: json['name'] as String?,
       cuil: json['cuil'] as String?,
+      orgName: json['org_name'] as String?,
       requiresPasswordChange:
           json['requires_password_change'] as bool? ?? false,
     );
@@ -59,10 +62,12 @@ class DeviceSession {
 }
 
 class MeApiService {
+  static const String sessionExpiredError = 'session_expired';
+
   static Future<({MeResult? result, String? error})> getMe() async {
     final token = await ApiClient.getToken();
     if (token == null) {
-      return (result: null, error: 'No hay sesión activa');
+      return (result: null, error: sessionExpiredError);
     }
 
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/me');
@@ -70,6 +75,9 @@ class MeApiService {
         .get(url, headers: {'Authorization': 'Bearer $token'})
         .timeout(ApiClient.defaultTimeout);
 
+    if (res.statusCode == 401) {
+      return (result: null, error: sessionExpiredError);
+    }
     if (res.statusCode != 200) {
       final body = res.body.isNotEmpty
           ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
@@ -101,7 +109,7 @@ class MeApiService {
   getDevices() async {
     final token = await ApiClient.getToken();
     if (token == null) {
-      return (devices: null, error: 'No hay sesión activa');
+      return (devices: null, error: sessionExpiredError);
     }
 
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/me/devices');
@@ -109,6 +117,9 @@ class MeApiService {
         .get(url, headers: {'Authorization': 'Bearer $token'})
         .timeout(ApiClient.defaultTimeout);
 
+    if (res.statusCode == 401) {
+      return (devices: null, error: sessionExpiredError);
+    }
     if (res.statusCode != 200) {
       final body = res.body.isNotEmpty
           ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
