@@ -316,26 +316,34 @@ class _AddEmployeeDialogState extends State<_AddEmployeeDialog> {
     final apellido = _apellidoCtrl.text.trim();
     final name = [nombre, apellido].where((s) => s.isNotEmpty).join(' ');
 
-    final result = await AuthApiService.createInvite(
-      email: correo,
-      role: 'empleado',
-      name: name.isEmpty ? null : name,
-      sendEmail: true,
-    );
-
-    if (!mounted) return;
-    setState(() => _sending = false);
-
-    if (result.ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invitación enviada por correo al empleado'),
-        ),
+    try {
+      final result = await AuthApiService.createInvite(
+        email: correo,
+        role: 'empleado',
+        name: name.isEmpty ? null : name,
+        sendEmail: true,
       );
-      widget.onInvited();
-      Navigator.of(context).pop();
-    } else {
-      setState(() => _error = result.error);
+
+      if (!mounted) return;
+      setState(() => _sending = false);
+
+      if (result.ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invitación enviada por correo al empleado'),
+          ),
+        );
+        widget.onInvited();
+        Navigator.of(context).pop();
+      } else {
+        setState(() => _error = result.error);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _sending = false;
+        _error = friendlyError(e);
+      });
     }
   }
 
@@ -357,6 +365,7 @@ class _AddEmployeeDialogState extends State<_AddEmployeeDialog> {
                   border: OutlineInputBorder(),
                 ),
                 textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -366,6 +375,7 @@ class _AddEmployeeDialogState extends State<_AddEmployeeDialog> {
                   border: OutlineInputBorder(),
                 ),
                 textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -375,6 +385,7 @@ class _AddEmployeeDialogState extends State<_AddEmployeeDialog> {
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -385,6 +396,8 @@ class _AddEmployeeDialogState extends State<_AddEmployeeDialog> {
                 ),
                 keyboardType: TextInputType.emailAddress,
                 autocorrect: false,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _submit(),
                 validator: (v) {
                   final s = v?.trim() ?? '';
                   if (s.isEmpty) return 'El correo es obligatorio';
