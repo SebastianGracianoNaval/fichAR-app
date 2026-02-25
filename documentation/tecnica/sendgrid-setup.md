@@ -115,3 +115,13 @@ Si no llega:
 - Revisar carpeta Spam
 - En SendGrid > Activity ver si hubo bounce o error
 - Revisar logs de la API (Railway) para `sendgrid_send_failed` o `sendgrid_api_key_missing`
+
+---
+
+## 6. Error 404 NOT_FOUND al hacer clic en el enlace del correo
+
+Si el usuario ve **404: NOT_FOUND** (Code: NOT_FOUND, dominio `uXXXXX.ct.sendgrid.net`) al hacer clic en el enlace de "Establecer contraseña" o "Restablecer contraseña", la causa es el **click tracking** de SendGrid. SendGrid reemplaza el enlace por un redirect propio (`ct.sendgrid.net`); si ese redirect falla (enlaces con muchos parámetros, branded links, etc.), el usuario nunca llega a tu app.
+
+**Solución aplicada en código:** En los correos transaccionales (bienvenida e invite, restablecer contraseña) los enlaces llevan el atributo `clicktracking="off"` en el `<a>`. Así SendGrid no reemplaza el enlace y el clic va directo a `web-fichar.vercel.app/...`, sin pasar por `ct.sendgrid.net`.
+
+**Alternativa en la cuenta SendGrid:** Si quisieras desactivar click tracking para todo el dominio: **Settings** > **Tracking** > **Click Tracking** y desactivar. Para correos transaccionales con tokens en la URL, se recomienda no usar click tracking en esos enlaces (ya resuelto en código).

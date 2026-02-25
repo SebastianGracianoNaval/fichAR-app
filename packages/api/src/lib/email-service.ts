@@ -197,7 +197,7 @@ function buildWelcomeHtml(name: string, orgName: string, link: string): string {
   <p>Hola ${name},</p>
   <p>Tu cuenta en <strong>${orgName}</strong> ha sido creada. Para acceder, primero debés establecer tu contraseña.</p>
   <p style="margin:32px 0">
-    <a href="${link}"
+    <a href="${link}" clicktracking="off"
        style="background:#1976d2;color:#fff;padding:12px 24px;border-radius:4px;text-decoration:none;font-weight:bold">
       Establecer contraseña
     </a>
@@ -248,7 +248,7 @@ function buildResetPasswordHtml(link: string): string {
   <h2>Restablecer tu contraseña</h2>
   <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>${escapeHtml(appName)}</strong>.</p>
   <p style="margin:32px 0">
-    <a href="${safeLink}"
+    <a href="${safeLink}" clicktracking="off"
        style="background:#0F766E;color:#fff;padding:12px 24px;border-radius:4px;text-decoration:none;font-weight:bold">
       Restablecer contraseña
     </a>
