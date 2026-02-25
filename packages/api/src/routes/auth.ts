@@ -613,6 +613,7 @@ export async function handleCreateInvite(req: Request): Promise<Response> {
     .sign(secret);
 
   const sendEmail = data?.send_email !== false;
+  let emailSent = false;
   if (sendEmail) {
     const baseUrl =
       process.env.INVITE_REDIRECT_BASE?.trim() ||
@@ -636,13 +637,14 @@ export async function handleCreateInvite(req: Request): Promise<Response> {
           }
         })
         .catch((err) => logError('critical', 'invite_email_exception', { orgId: emp.org_id }, { email }, err instanceof Error ? err : new Error(String(err))));
+      emailSent = true;
     }
   }
 
   return Response.json({
     inviteToken,
     expiresInHours: INVITE_EXP_HOURS,
-    ...(sendEmail && { email_sent: true }),
+    ...(sendEmail && { email_sent: emailSent }),
   });
 }
 
