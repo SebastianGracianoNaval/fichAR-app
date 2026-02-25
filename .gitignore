@@ -20,6 +20,7 @@ out/
 .flutter-plugins-dependencies
 .packages
 pubspec.lock
+deploy-web.sh
 
 # IDE
 .idea/

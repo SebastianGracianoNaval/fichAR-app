@@ -240,9 +240,14 @@ export async function handleRegister(req: Request): Promise<Response> {
     return Response.json({ error: 'Email inválido' }, { status: 400 });
   }
 
-  if (!validateCuil(data.cuil)) {
-    return Response.json({ error: 'CUIL inválido (formato: XX-XXXXXXXX-X)' }, { status: 400 });
+  const cuilDigits = data.cuil.replace(/-/g, '');
+  if (!/^\d{11}$/.test(cuilDigits)) {
+    return Response.json({ error: 'CUIL inválido (11 dígitos, ej. 27-12345678-0)' }, { status: 400 });
   }
+  // Strict CUIL (digito verificador modulo 11) disabled for MVP; re-enable when required:
+  // if (!validateCuil(data.cuil)) {
+  //   return Response.json({ error: 'CUIL inválido (formato: XX-XXXXXXXX-X)' }, { status: 400 });
+  // }
 
   const role = data.role ?? 'empleado';
   if (!(VALID_ROLES as readonly string[]).includes(role)) {

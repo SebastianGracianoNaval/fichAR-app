@@ -234,6 +234,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
+                    inputFormatters: [CuilInputFormatter()],
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) {
                       if (!_loading) _submit();
@@ -266,6 +267,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Formatea CUIL mientras se escribe: XX-XXXXXXXX-X (guiones automáticos).
+class CuilInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    final limited = digits.length > 11 ? digits.substring(0, 11) : digits;
+    if (limited.isEmpty) {
+      return TextEditingValue(
+        text: '',
+        selection: const TextSelection.collapsed(offset: 0),
+      );
+    }
+    final buffer = StringBuffer();
+    for (int i = 0; i < limited.length; i++) {
+      if (i == 2) buffer.write('-');
+      if (i == 10) buffer.write('-');
+      buffer.write(limited[i]);
+    }
+    final formatted = buffer.toString();
+    final offset = limited.length + (limited.length > 2 ? 1 : 0) + (limited.length > 10 ? 1 : 0);
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: offset.clamp(0, formatted.length)),
     );
   }
 }
