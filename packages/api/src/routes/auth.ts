@@ -621,7 +621,7 @@ export async function handleCreateInvite(req: Request): Promise<Response> {
       process.env.RESET_PASSWORD_REDIRECT_URL?.trim() ||
       '';
     const link = baseUrl
-      ? `${baseUrl.replace(/\/$/, '')}#/register?inviteToken=${encodeURIComponent(inviteToken)}`
+      ? `${baseUrl.replace(/\/$/, '')}/register?inviteToken=${encodeURIComponent(inviteToken)}&email=${encodeURIComponent(email.toLowerCase())}`
       : '';
     if (link) {
       const { data: orgRow } = await getSupabaseAdmin()

@@ -59,6 +59,7 @@ async function sendViaSmtp(payload: EmailPayload): Promise<WelcomeEmailResult> {
   }
 }
 
+/** Same categories for all SendGrid emails: invite, welcome (management), reset password. */
 function getSendGridCategories(): string[] {
   const raw = process.env.EMAIL_SENDGRID_CATEGORIES?.trim();
   if (!raw) return [];

@@ -403,4 +403,40 @@ class AuthApiService {
       error: resBody['error'] as String? ?? 'Error al enviar invitación',
     );
   }
+
+  static Future<({bool ok, String? error})> register({
+    required String inviteToken,
+    required String email,
+    required String password,
+    required String name,
+    required String dni,
+    required String cuil,
+  }) async {
+    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/auth/register');
+    final body = {
+      'inviteToken': inviteToken,
+      'email': email.trim().toLowerCase(),
+      'password': password,
+      'name': name.trim(),
+      'dni': dni.trim(),
+      'cuil': cuil.replaceAll('-', '').trim(),
+    };
+    final res = await ApiClient.client
+        .post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(body),
+        )
+        .timeout(ApiClient.defaultTimeout);
+    final resBody = res.body.isNotEmpty
+        ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
+        : <String, dynamic>{};
+    if (res.statusCode == 201 || res.statusCode == 200) {
+      return (ok: true, error: null);
+    }
+    return (
+      ok: false,
+      error: resBody['error'] as String? ?? 'Error al completar registro',
+    );
+  }
 }

@@ -8,6 +8,7 @@ import 'app.dart';
 import 'core/api_client.dart';
 import 'core/current_url.dart';
 import 'core/device_capabilities.dart';
+import 'core/invite_from_url.dart';
 import 'core/recovery_from_url_flag.dart';
 
 Future<void> main() async {
@@ -15,8 +16,23 @@ Future<void> main() async {
   // Do not call setPathUrlStrategy() or configure routing before this; recovery would break.
   final capturedUrl = kIsWeb ? getCurrentUrl() : null;
   if (kIsWeb && capturedUrl != null && capturedUrl.fragment.isNotEmpty) {
-    // Debug: visible in browser console (Vercel production) to confirm what was read at startup.
     debugPrint('URL detectada en el arranque: ${capturedUrl.toString()}');
+  }
+  if (kIsWeb && capturedUrl != null) {
+    final q = capturedUrl.queryParameters;
+    String? token = q['inviteToken'];
+    String? email = q['email'];
+    if (token == null && capturedUrl.fragment.isNotEmpty) {
+      final frag = capturedUrl.fragment;
+      if (frag.contains('inviteToken=')) {
+        final params = Uri.splitQueryString(frag.contains('?') ? frag.substring(frag.indexOf('?') + 1) : frag);
+        token = params['inviteToken'];
+        email = params['email'];
+      }
+    }
+    if (token != null && token.isNotEmpty) {
+      setInviteFromUrl(token: token, email: email);
+    }
   }
 
   WidgetsFlutterBinding.ensureInitialized();

@@ -15,6 +15,7 @@ En el proyecto de la API en Railway, en **Variables**, usar **solo una** de las 
 | `EMAIL_PROVIDER` | `sendgrid` |
 | `SENDGRID_API_KEY` | `SG.xxx...` (tu API Key de SendGrid) |
 | `EMAIL_FROM` | `fichAR Management <ficharmanagement@gmail.com>` |
+| `EMAIL_SENDGRID_CATEGORIES` | (opcional) Misma campaña que en management. Ej: `fichar-welcome` o `fichar-invite,fichar-welcome`. Se aplica a **todos** los correos (invite, bienvenida org, reset password). |
 
 Requisitos SendGrid:
 
@@ -36,6 +37,14 @@ No usar Gmail en Railway para invite/bienvenida; el SMTP suele hacer timeout des
 3. Revisar respuesta: `email_sent: true` y que llegue el correo.
 4. Si `email_sent: false`, ver `email_error` en la respuesta y los logs en Railway (buscar `sendgrid_send_failed` o `sendgrid_api_key_missing`).
 5. En SendGrid > Activity podés ver cada envío.
+
+---
+
+## Link de invite y click tracking
+
+El correo de invitación incluye un link para completar el registro. Si usás **click tracking** en SendGrid, el link pasa por un redirect de SendGrid. Ese redirect suele **perder el fragmento** (#/register?inviteToken=...), por eso la app puede mostrar "Tu sesión expiró" (entra sin token y con sesión vieja).
+
+La API ya genera el link con **query params** en lugar de hash: `https://web-fichar.vercel.app/register?inviteToken=xxx&email=yyy`. Así el redirect de SendGrid conserva el token y la app muestra la pantalla de registro. Opcional: en SendGrid podés desactivar click tracking para los mails transaccionales si preferís que el usuario vaya directo al destino.
 
 ---
 

@@ -44,8 +44,8 @@ SENDGRID_API_KEY=SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 EMAIL_FROM=fichAR Management <noreply@tudominio.com>
 APP_NAME=fichAR
 
-# Categorias para tracking en SendGrid (opcional, como en n8n). Separar por coma.
-EMAIL_SENDGRID_CATEGORIES=fichar-test-2302
+# Categorias/campaña SendGrid: misma para todos los correos (invite, bienvenida management, reset password). Separar por coma.
+EMAIL_SENDGRID_CATEGORIES=fichar-welcome
 ```
 
 Reemplazar:
@@ -78,7 +78,7 @@ Cuando es `true`, la API no llama a SendGrid. El flujo de crear org sigue funcio
 | `EMAIL_PROVIDER` | `sendgrid` |
 | `SENDGRID_API_KEY` | `SG.xxx...` (tu API key) |
 | `EMAIL_FROM` | `fichAR Management <tu@email.com>` |
-| `EMAIL_SENDGRID_CATEGORIES` | (opcional) `fichar-test-2302` o `fichar-welcome,fichar-test-2302` |
+| `EMAIL_SENDGRID_CATEGORIES` | (opcional) Misma campaña para invite, bienvenida y reset. Ej: `fichar-welcome` o `fichar-invite,fichar-welcome` |
 
 ### 3.2 Desactivar envios
 

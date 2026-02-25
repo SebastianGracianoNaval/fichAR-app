@@ -2,12 +2,14 @@ import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'core/invite_from_url.dart';
 import 'core/recovery_from_url_flag.dart';
 import 'screens/change_password_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/mfa_enroll_screen.dart';
 import 'screens/mfa_verify_screen.dart';
+import 'screens/register_screen.dart';
 import 'screens/reset_password_screen.dart';
 import 'services/auth_api_service.dart';
 import 'theme.dart';
@@ -31,7 +33,9 @@ class FicharApp extends StatelessWidget {
               body: Center(child: CircularProgressIndicator()),
             );
           }
-          // P-AUTH-03: persistence if stream emitted before passwordRecovery
+          if (hasInviteFromUrl) {
+            return const RegisterScreen();
+          }
           if (recoveryFromUrl) {
             setRecoveryFromUrl(false);
             return const ResetPasswordScreen();
@@ -50,6 +54,7 @@ class FicharApp extends StatelessWidget {
       ),
       routes: {
         '/login': (_) => const LoginScreen(),
+        '/register': (_) => const RegisterScreen(),
         '/forgot-password': (_) => const ForgotPasswordScreen(),
         '/reset-password': (_) => const ResetPasswordScreen(),
         '/dashboard': (_) => const AuthHomeResolver(),
