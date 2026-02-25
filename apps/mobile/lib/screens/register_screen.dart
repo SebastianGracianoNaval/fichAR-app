@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../core/device_capabilities.dart';
 import '../core/invite_from_url.dart';
 import '../services/auth_api_service.dart';
 import '../theme.dart';
 import '../utils/error_utils.dart';
+import '../widgets/inline_error.dart';
 import '../widgets/responsive_content_wrapper.dart';
+
+/// If true, the email from the invite link can be edited. Set to false to lock email to invite value.
+const bool kRegisterEmailEditable = true;
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -21,7 +26,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nameCtrl = TextEditingController();
   final _dniCtrl = TextEditingController();
   final _cuilCtrl = TextEditingController();
+  final _passwordFocusNode = FocusNode();
+  final _nameFocusNode = FocusNode();
+  final _dniFocusNode = FocusNode();
+  final _cuilFocusNode = FocusNode();
   bool _loading = false;
+  bool _obscurePassword = true;
   String? _error;
 
   @override
@@ -37,6 +47,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _nameCtrl.dispose();
     _dniCtrl.dispose();
     _cuilCtrl.dispose();
+    _passwordFocusNode.dispose();
+    _nameFocusNode.dispose();
+    _dniFocusNode.dispose();
+    _cuilFocusNode.dispose();
     super.dispose();
   }
 
@@ -130,7 +144,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     keyboardType: TextInputType.emailAddress,
                     autocorrect: false,
-                    readOnly: true,
+                    readOnly: !kRegisterEmailEditable,
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) {
+                      FocusScope.of(context).requestFocus(_passwordFocusNode);
+                    },
                     validator: (v) {
                       final s = v?.trim() ?? '';
                       if (s.isEmpty) return 'Requerido';
@@ -141,50 +159,90 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: kSpacingMd),
                   TextFormField(
                     controller: _passwordCtrl,
+                    focusNode: _passwordFocusNode,
                     decoration: const InputDecoration(
                       labelText: 'Contraseña',
                       border: OutlineInputBorder(),
                     ),
-                    obscureText: true,
+                    obscureText: _obscurePassword,
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) {
+                      FocusScope.of(context).requestFocus(_nameFocusNode);
+                    },
                     validator: _validatePassword,
+                  ),
+                  const SizedBox(height: kSpacingSm),
+                  Semantics(
+                    label: 'Mostrar contraseña',
+                    child: CheckboxListTile(
+                      value: !_obscurePassword,
+                      onChanged: (value) {
+                        setState(() => _obscurePassword = value != true);
+                        if (DeviceCapabilities.hasHaptics) {
+                          HapticFeedback.selectionClick();
+                        }
+                      },
+                      title: Text(
+                        'Ver contraseña',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                      ),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      activeColor: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                   const SizedBox(height: kSpacingMd),
                   TextFormField(
                     controller: _nameCtrl,
+                    focusNode: _nameFocusNode,
                     decoration: const InputDecoration(
                       labelText: 'Nombre completo',
                       border: OutlineInputBorder(),
                     ),
                     textCapitalization: TextCapitalization.words,
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) {
+                      FocusScope.of(context).requestFocus(_dniFocusNode);
+                    },
                     validator: (v) => (v?.trim().isEmpty ?? true) ? 'Requerido' : null,
                   ),
                   const SizedBox(height: kSpacingMd),
                   TextFormField(
                     controller: _dniCtrl,
+                    focusNode: _dniFocusNode,
                     decoration: const InputDecoration(
                       labelText: 'DNI',
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) {
+                      FocusScope.of(context).requestFocus(_cuilFocusNode);
+                    },
                     validator: (v) => (v?.trim().isEmpty ?? true) ? 'Requerido' : null,
                   ),
                   const SizedBox(height: kSpacingMd),
                   TextFormField(
                     controller: _cuilCtrl,
+                    focusNode: _cuilFocusNode,
                     decoration: const InputDecoration(
                       labelText: 'CUIL (11 dígitos, ej. 27-12345678-0)',
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) {
+                      if (!_loading) _submit();
+                    },
                     validator: _validateCuil,
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: kSpacingMd),
-                    Text(
-                      _error!,
-                      style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13),
-                    ),
+                    InlineError(message: _error!),
                   ],
                   const SizedBox(height: kSpacingLg),
                   FilledButton(
