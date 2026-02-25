@@ -98,6 +98,10 @@ async function sendViaSendGrid(payload: EmailPayload): Promise<WelcomeEmailResul
   if (categories.length > 0) {
     body.categories = categories.slice(0, 10);
   }
+  // Disable click tracking so links go directly to our app (no ct.sendgrid.net redirect, no 404).
+  body.tracking_settings = {
+    click_tracking: { enable: false, enable_text: false },
+  };
 
   try {
     const controller = new AbortController();
@@ -197,7 +201,7 @@ function buildWelcomeHtml(name: string, orgName: string, link: string): string {
   <p>Hola ${name},</p>
   <p>Tu cuenta en <strong>${orgName}</strong> ha sido creada. Para acceder, primero debés establecer tu contraseña.</p>
   <p style="margin:32px 0">
-    <a href="${link}" clicktracking="off"
+    <a clicktracking="off" href="${escapeHtml(link)}"
        style="background:#1976d2;color:#fff;padding:12px 24px;border-radius:4px;text-decoration:none;font-weight:bold">
       Establecer contraseña
     </a>
@@ -248,7 +252,7 @@ function buildResetPasswordHtml(link: string): string {
   <h2>Restablecer tu contraseña</h2>
   <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>${escapeHtml(appName)}</strong>.</p>
   <p style="margin:32px 0">
-    <a href="${safeLink}" clicktracking="off"
+    <a clicktracking="off" href="${safeLink}"
        style="background:#0F766E;color:#fff;padding:12px 24px;border-radius:4px;text-decoration:none;font-weight:bold">
       Restablecer contraseña
     </a>

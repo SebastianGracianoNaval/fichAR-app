@@ -78,6 +78,7 @@ Cuando es `true`, la API no llama a SendGrid. El flujo de crear org sigue funcio
 | `EMAIL_PROVIDER` | `sendgrid` |
 | `SENDGRID_API_KEY` | `SG.xxx...` (tu API key) |
 | `EMAIL_FROM` | `fichAR Management <tu@email.com>` |
+| `INVITE_REDIRECT_BASE` | URL base del enlace de invitación (Flutter web). Ej: `https://web-fichar.vercel.app` (sin barra final). Si no se define, se usa RESET_PASSWORD_REDIRECT_URL. |
 | `EMAIL_SENDGRID_CATEGORIES` | (opcional) Misma campaña para invite, bienvenida y reset. Ej: `fichar-welcome` o `fichar-invite,fichar-welcome` |
 
 ### 3.2 Desactivar envios
@@ -122,6 +123,6 @@ Si no llega:
 
 Si el usuario ve **404: NOT_FOUND** (Code: NOT_FOUND, dominio `uXXXXX.ct.sendgrid.net`) al hacer clic en el enlace de "Establecer contraseña" o "Restablecer contraseña", la causa es el **click tracking** de SendGrid. SendGrid reemplaza el enlace por un redirect propio (`ct.sendgrid.net`); si ese redirect falla (enlaces con muchos parámetros, branded links, etc.), el usuario nunca llega a tu app.
 
-**Solución aplicada en código:** En los correos transaccionales (bienvenida e invite, restablecer contraseña) los enlaces llevan el atributo `clicktracking="off"` en el `<a>`. Así SendGrid no reemplaza el enlace y el clic va directo a `web-fichar.vercel.app/...`, sin pasar por `ct.sendgrid.net`.
+**Solución aplicada en código:** (1) En cada envío por SendGrid la API envía `tracking_settings: { click_tracking: { enable: false } }`, así ningún enlace se reemplaza por el redirect de SendGrid. (2) Además, los enlaces en el HTML llevan el atributo `clicktracking="off"` en el `<a>` por si la cuenta tuviera click tracking activo por defecto. Con esto el clic va directo a la URL de la app (p. ej. `https://web-fichar.vercel.app/register?inviteToken=...&email=...`) y no pasa por `ct.sendgrid.net`.
 
-**Alternativa en la cuenta SendGrid:** Si quisieras desactivar click tracking para todo el dominio: **Settings** > **Tracking** > **Click Tracking** y desactivar. Para correos transaccionales con tokens en la URL, se recomienda no usar click tracking en esos enlaces (ya resuelto en código).
+**Configuración necesaria:** El enlace de invitación usa `INVITE_REDIRECT_BASE` (o, si no está definido, `RESET_PASSWORD_REDIRECT_URL`). Para que el invite lleve a la app Flutter web, en Railway debe estar definido `INVITE_REDIRECT_BASE=https://web-fichar.vercel.app` (sin barra final).
