@@ -99,6 +99,8 @@ async function sendViaSendGrid(payload: EmailPayload): Promise<WelcomeEmailResul
   }
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
       method: 'POST',
       headers: {
@@ -106,7 +108,9 @@ async function sendViaSendGrid(payload: EmailPayload): Promise<WelcomeEmailResul
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!res.ok) {
       const text = await res.text();
@@ -120,7 +124,12 @@ async function sendViaSendGrid(payload: EmailPayload): Promise<WelcomeEmailResul
 
     return { ok: true };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg =
+      err instanceof Error && err.name === 'AbortError'
+        ? 'SendGrid timeout'
+        : err instanceof Error
+          ? err.message
+          : String(err);
     await logError('warning', 'sendgrid_send_exception', undefined, { email: payload.to, reason: msg });
     return { ok: false, error: msg };
   }
