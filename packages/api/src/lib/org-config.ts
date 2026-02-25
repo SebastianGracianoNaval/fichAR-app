@@ -28,9 +28,15 @@ export async function getOrgConfigBoolean(
   defaultValue: boolean,
 ): Promise<boolean> {
   const raw = await getOrgConfig(admin, orgId, key);
-  if (!raw) return defaultValue;
+  if (raw == null) return defaultValue;
   const v = raw as unknown;
-  return typeof v === 'boolean' ? v : defaultValue;
+  if (typeof v === 'boolean') return v;
+  if (typeof v === 'string') {
+    const s = v.trim().toLowerCase();
+    if (s === 'true') return true;
+    if (s === 'false') return false;
+  }
+  return defaultValue;
 }
 
 export async function getOrgConfigNumber(

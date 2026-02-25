@@ -53,6 +53,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _kpisError;
 
   String? _orgName;
+  String? _userName;
+  String? _userEmail;
   bool _profileIncomplete = false;
   bool _signingOut = false;
 
@@ -69,6 +71,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (!mounted) return;
     setState(() {
       _orgName = result.result?.orgName;
+      _userName = result.result?.name?.trim();
+      _userEmail = result.result?.email;
       _profileIncomplete = result.result != null &&
           (result.result!.name == null || result.result!.name!.trim().isEmpty);
     });
@@ -265,6 +269,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text('fichAR'),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 4, top: 4, bottom: 4),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _userName ?? _userEmail ?? '...',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (_userEmail != null && _userName != null)
+                    Text(
+                      _userEmail!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onPrimary.withValues(alpha: 0.9),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
+          ),
           IconButton(
             icon: _signingOut
                 ? const SizedBox(

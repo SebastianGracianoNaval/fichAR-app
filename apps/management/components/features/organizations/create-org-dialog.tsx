@@ -37,13 +37,17 @@ export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
 
   const form = useForm<CreateOrgFormValues>({
     resolver: zodResolver(createOrgSchema),
-    defaultValues: { orgName: "", adminEmail: "" },
+    defaultValues: { orgName: "", adminEmail: "", adminFullName: "" },
   });
 
   async function onSubmit(values: CreateOrgFormValues) {
     setLoading(true);
     try {
-      const result = await createOrgAction(values.orgName.trim(), values.adminEmail.trim().toLowerCase());
+      const result = await createOrgAction(
+        values.orgName.trim(),
+        values.adminEmail.trim().toLowerCase(),
+        values.adminFullName?.trim() || undefined
+      );
 
       if (!result.ok) {
         toast.error(result.error);
@@ -90,6 +94,24 @@ export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
                     <Input
                       id="orgName"
                       placeholder="Ej: Mi Empresa SA"
+                      disabled={loading}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="adminFullName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel htmlFor="adminFullName">Nombre completo del administrador</FormLabel>
+                  <FormControl>
+                    <Input
+                      id="adminFullName"
+                      placeholder="Ej: Juan Perez"
                       disabled={loading}
                       {...field}
                     />

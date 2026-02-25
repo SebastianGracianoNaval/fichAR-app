@@ -26,6 +26,8 @@ export async function handlePostSolicitudJornada(req: Request): Promise<Response
     tipo?: string;
     fecha_objetivo?: string;
     horas_solicitadas?: number;
+    hora_desde?: string;
+    hora_hasta?: string;
     employee_id?: string;
   };
   const tipo = data?.tipo?.trim();
@@ -47,6 +49,25 @@ export async function handlePostSolicitudJornada(req: Request): Promise<Response
       ? data.horas_solicitadas
       : null;
 
+  const timeRegex = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+  const horaDesdeRaw = typeof data?.hora_desde === 'string' ? data.hora_desde.trim() : null;
+  const horaHastaRaw = typeof data?.hora_hasta === 'string' ? data.hora_hasta.trim() : null;
+  const horaDesde = horaDesdeRaw && timeRegex.test(horaDesdeRaw) ? `${horaDesdeRaw}:00` : null;
+  const horaHasta = horaHastaRaw && timeRegex.test(horaHastaRaw) ? `${horaHastaRaw}:00` : null;
+  if (horaDesde && horaHasta && horaDesde >= horaHasta) {
+    return Response.json(
+      { error: 'hora_hasta debe ser posterior a hora_desde' },
+      { status: 400 },
+    );
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  if (fechaObjetivoDate && fechaObjetivoDate < today) {
+    return Response.json(
+      { error: 'fecha_objetivo no puede ser anterior a hoy' },
+      { status: 400 },
+    );
+  }
+
   let solicitanteEmployeeId = ctx.employeeId;
   if (canApprove(ctx.role) && typeof data?.employee_id === 'string' && data.employee_id.trim()) {
     const empId = data.employee_id.trim();
@@ -63,18 +84,22 @@ export async function handlePostSolicitudJornada(req: Request): Promise<Response
   const fechaLimite = new Date(`${targetDateStr}T23:59:59.999Z`);
 
   const admin = getSupabaseAdmin();
+  const insertPayload: Record<string, unknown> = {
+    org_id: ctx.orgId,
+    employee_id: solicitanteEmployeeId,
+    solicitante_employee_id: solicitanteEmployeeId,
+    tipo,
+    fecha_objetivo: fechaObjetivoDate,
+    fecha_limite_aceptacion: fechaLimite.toISOString(),
+    horas_solicitadas: horasSolicitadas,
+  };
+  if (horaDesde) insertPayload.hora_desde = horaDesde;
+  if (horaHasta) insertPayload.hora_hasta = horaHasta;
+
   const { data: row, error } = await admin
     .from('solicitudes_jornada')
-    .insert({
-      org_id: ctx.orgId,
-      employee_id: solicitanteEmployeeId,
-      solicitante_employee_id: solicitanteEmployeeId,
-      tipo,
-      fecha_objetivo: fechaObjetivoDate,
-      fecha_limite_aceptacion: fechaLimite.toISOString(),
-      horas_solicitadas: horasSolicitadas,
-    })
-    .select('id, tipo, estado, fecha_solicitud, fecha_objetivo, horas_solicitadas, created_at')
+    .insert(insertPayload)
+    .select('id, tipo, estado, fecha_solicitud, fecha_objetivo, horas_solicitadas, hora_desde, hora_hasta, created_at')
     .single();
 
   if (error) {
@@ -110,7 +135,7 @@ export async function handleGetSolicitudesJornada(req: Request): Promise<Respons
   let query = admin
     .from('solicitudes_jornada')
     .select(
-      'id, org_id, employee_id, tipo, estado, solicitante_employee_id, aprobador_employee_id, fecha_solicitud, fecha_objetivo, fecha_limite_aceptacion, horas_solicitadas, motivo_rechazo, created_at, updated_at, solicitante:employees!solicitante_employee_id(name)',
+      'id, org_id, employee_id, tipo, estado, solicitante_employee_id, aprobador_employee_id, fecha_solicitud, fecha_objetivo, fecha_limite_aceptacion, horas_solicitadas, hora_desde, hora_hasta, motivo_rechazo, created_at, updated_at, solicitante:employees!solicitante_employee_id(name)',
       { count: 'exact' },
     )
     .eq('org_id', ctx.orgId)

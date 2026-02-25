@@ -238,13 +238,47 @@ class _AdminConfigScreenState extends State<AdminConfigScreen> {
               onRefresh: _load,
               child: ResponsiveContentWrapper(
                 width: ContentWidth.list,
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _sections.length,
-                  itemBuilder: (context, idx) {
-                    final entry = _sections.entries.elementAt(idx);
-                    return _buildSection(theme, entry.key, entry.value);
-                  },
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(kSpacingMd),
+                        itemCount: _sections.length,
+                        itemBuilder: (context, idx) {
+                          final entry = _sections.entries.elementAt(idx);
+                          return _buildSection(theme, entry.key, entry.value);
+                        },
+                      ),
+                    ),
+                    SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          kSpacingMd,
+                          kSpacingSm,
+                          kSpacingMd,
+                          kSpacingMd,
+                        ),
+                        child: SizedBox(
+                          height: kTouchTargetMin,
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: _saving ? null : _save,
+                            child: _saving
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text('Guardar'),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

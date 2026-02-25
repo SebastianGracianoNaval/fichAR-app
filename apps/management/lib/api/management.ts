@@ -137,10 +137,19 @@ export class ManagementApiException extends Error {
 export async function createOrganization(
   orgName: string,
   adminEmail: string,
-  apiKey: string
+  apiKey: string,
+  adminFullName?: string
 ): Promise<CreateOrganizationResult> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+  const body: { orgName: string; adminEmail: string; adminFullName?: string } = {
+    orgName,
+    adminEmail,
+  };
+  if (adminFullName != null && adminFullName.trim().length > 0) {
+    body.adminFullName = adminFullName.trim().slice(0, 255);
+  }
 
   try {
     const res = await fetch(`${getApiUrl()}/api/v1/management/organizations`, {
@@ -149,7 +158,7 @@ export async function createOrganization(
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ orgName, adminEmail }),
+      body: JSON.stringify(body),
       signal: controller.signal,
     });
 

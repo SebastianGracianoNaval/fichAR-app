@@ -32,6 +32,7 @@ interface CreateOrgError {
 async function createOrgWithAdmin(
   orgName: string,
   adminEmail: string,
+  adminFullName?: string,
 ): Promise<CreateOrgResult | CreateOrgError> {
   const admin = getSupabaseAdmin();
   const tempPassword = generateTempPassword();
@@ -66,6 +67,11 @@ async function createOrgWithAdmin(
     return { status: 500, body: { error: 'Error al crear usuario' } };
   }
 
+  const adminName =
+    typeof adminFullName === 'string' && adminFullName.trim().length > 0
+      ? adminFullName.trim().slice(0, 255)
+      : PLACEHOLDER_ADMIN_NAME;
+
   const { error: empErr } = await admin.from('employees').insert({
     org_id: org.id,
     auth_user_id: authUser.user.id,
@@ -74,7 +80,7 @@ async function createOrgWithAdmin(
     status: 'activo',
     dni: PLACEHOLDER_DNI,
     cuil: PLACEHOLDER_CUIL,
-    name: PLACEHOLDER_ADMIN_NAME,
+    name: adminName,
   });
 
   if (empErr) {
@@ -99,6 +105,7 @@ async function createOrgWithAdmin(
 interface ManagementCreateOrgBody {
   orgName?: string;
   adminEmail?: string;
+  adminFullName?: string;
 }
 
 export async function handleManagementCreateOrg(req: Request): Promise<Response> {
@@ -115,6 +122,14 @@ export async function handleManagementCreateOrg(req: Request): Promise<Response>
   const data = parseBody<ManagementCreateOrgBody>(body);
   const orgName = data?.orgName?.trim();
   const adminEmail = data?.adminEmail?.trim()?.toLowerCase();
+  const adminFullName =
+    typeof data?.adminFullName === 'string' ? data.adminFullName.trim() : undefined;
+  if (adminFullName && adminFullName.length > 255) {
+    return Response.json(
+      { error: 'adminFullName max 255 caracteres' },
+      { status: 400 },
+    );
+  }
 
   if (!orgName || orgName.length > 255) {
     return Response.json(
@@ -127,7 +142,7 @@ export async function handleManagementCreateOrg(req: Request): Promise<Response>
     return Response.json({ error: 'adminEmail inválido' }, { status: 400 });
   }
 
-  const result = await createOrgWithAdmin(orgName, adminEmail);
+  const result = await createOrgWithAdmin(orgName, adminEmail, adminFullName);
 
   if ('status' in result) {
     return Response.json(result.body, { status: result.status });

@@ -59,7 +59,8 @@ Crea una organización y su primer administrador. Envía email con contraseña t
 ```json
 {
   "orgName": "string (max 255)",
-  "adminEmail": "string (email válido)"
+  "adminEmail": "string (email válido)",
+  "adminFullName": "string (opcional, max 255). Nombre completo del administrador; si se omite, se usa 'Admin'."
 }
 ```
 

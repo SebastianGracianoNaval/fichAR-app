@@ -62,11 +62,12 @@ export type CreateOrgResult =
 
 export async function createOrgAction(
   orgName: string,
-  adminEmail: string
+  adminEmail: string,
+  adminFullName?: string
 ): Promise<CreateOrgResult> {
   try {
     const key = getApiKey();
-    const data = await createOrganization(orgName, adminEmail, key);
+    const data = await createOrganization(orgName, adminEmail, key, adminFullName);
     return { ok: true, data };
   } catch (e) {
     if (e instanceof ManagementApiException) {

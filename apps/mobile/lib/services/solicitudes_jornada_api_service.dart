@@ -10,6 +10,8 @@ class SolicitudJornada {
     required this.fechaSolicitud,
     this.fechaObjetivo,
     this.horasSolicitadas,
+    this.horaDesde,
+    this.horaHasta,
     this.motivoRechazo,
     this.createdAt,
     this.updatedAt,
@@ -23,11 +25,24 @@ class SolicitudJornada {
   final String fechaSolicitud;
   final String? fechaObjetivo;
   final double? horasSolicitadas;
+  final String? horaDesde;
+  final String? horaHasta;
   final String? motivoRechazo;
   final String? createdAt;
   final String? updatedAt;
   final String? solicitanteNombre;
   final bool estaVencida;
+
+  static String? _timeToHHmm(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    final parts = raw.split(':');
+    if (parts.length >= 2) {
+      final h = parts[0].padLeft(2, '0');
+      final m = parts[1].padLeft(2, '0');
+      return '$h:$m';
+    }
+    return raw;
+  }
 
   factory SolicitudJornada.fromJson(Map<String, dynamic> json) {
     final horas = json['horas_solicitadas'];
@@ -40,6 +55,8 @@ class SolicitudJornada {
       fechaSolicitud: json['fecha_solicitud'] as String? ?? '',
       fechaObjetivo: json['fecha_objetivo'] as String?,
       horasSolicitadas: horas is num ? horas.toDouble() : null,
+      horaDesde: _timeToHHmm(json['hora_desde'] as String?),
+      horaHasta: _timeToHHmm(json['hora_hasta'] as String?),
       motivoRechazo: json['motivo_rechazo'] as String?,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
@@ -103,6 +120,8 @@ class SolicitudesJornadaApiService {
     required String tipo,
     String? fechaObjetivo,
     double? horasSolicitadas,
+    String? horaDesde,
+    String? horaHasta,
     String? employeeId,
   }) async {
     final token = await ApiClient.getToken();
@@ -115,6 +134,8 @@ class SolicitudesJornadaApiService {
     if (horasSolicitadas != null) {
       body['horas_solicitadas'] = horasSolicitadas;
     }
+    if (horaDesde != null && horaDesde.isNotEmpty) body['hora_desde'] = horaDesde;
+    if (horaHasta != null && horaHasta.isNotEmpty) body['hora_hasta'] = horaHasta;
     if (employeeId != null && employeeId.isNotEmpty) {
       body['employee_id'] = employeeId;
     }

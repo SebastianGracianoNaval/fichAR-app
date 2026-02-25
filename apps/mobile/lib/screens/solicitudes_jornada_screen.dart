@@ -77,6 +77,12 @@ class _SolicitudesJornadaScreenState extends State<SolicitudesJornadaScreen> {
     );
     if (tipo == null || !mounted) return;
 
+    final dateTimeResult = await _pickFechaYHora(tipo);
+    if (dateTimeResult == null || !mounted) return;
+    final fechaObjetivo = dateTimeResult.fecha;
+    final horaDesde = dateTimeResult.horaDesde;
+    final horaHasta = dateTimeResult.horaHasta;
+
     String? employeeId;
     if (_canApprove) {
       employeeId = await _pickEmployeeForSolicitud();
@@ -86,6 +92,9 @@ class _SolicitudesJornadaScreenState extends State<SolicitudesJornadaScreen> {
     try {
       await SolicitudesJornadaApiService.create(
         tipo: tipo,
+        fechaObjetivo: fechaObjetivo,
+        horaDesde: horaDesde,
+        horaHasta: horaHasta,
         employeeId: employeeId,
       );
       if (!mounted) return;
@@ -99,6 +108,46 @@ class _SolicitudesJornadaScreenState extends State<SolicitudesJornadaScreen> {
         SnackBar(content: Text(formatApiError(e))),
       );
     }
+  }
+
+  Future<({String fecha, String horaDesde, String horaHasta})?> _pickFechaYHora(String tipo) async {
+    final now = DateTime.now();
+    final initialDate = now;
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (pickedDate == null || !mounted) return null;
+
+    const defaultDesde = TimeOfDay(hour: 9, minute: 0);
+    const defaultHasta = TimeOfDay(hour: 18, minute: 0);
+    final horaDesde = await showTimePicker(
+      context: context,
+      initialTime: defaultDesde,
+    );
+    if (horaDesde == null || !mounted) return null;
+    final horaHasta = await showTimePicker(
+      context: context,
+      initialTime: horaDesde.hour < defaultHasta.hour || (horaDesde.hour == defaultHasta.hour && horaDesde.minute < defaultHasta.minute)
+          ? defaultHasta
+          : horaDesde,
+    );
+    if (horaHasta == null || !mounted) return null;
+
+    if (horaDesde.hour > horaHasta.hour || (horaDesde.hour == horaHasta.hour && horaDesde.minute >= horaHasta.minute)) {
+      if (!mounted) return null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La hora hasta debe ser posterior a la hora desde')),
+      );
+      return null;
+    }
+
+    final fecha = '${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}';
+    final from = '${horaDesde.hour.toString().padLeft(2, '0')}:${horaDesde.minute.toString().padLeft(2, '0')}';
+    final to = '${horaHasta.hour.toString().padLeft(2, '0')}:${horaHasta.minute.toString().padLeft(2, '0')}';
+    return (fecha: fecha, horaDesde: from, horaHasta: to);
   }
 
   Future<String?> _pickEmployeeForSolicitud() async {
@@ -313,7 +362,13 @@ class _SolicitudesJornadaScreenState extends State<SolicitudesJornadaScreen> {
                                       ],
                                     ),
                                     subtitle: Text(
-                                      '${s.solicitanteNombre != null ? "${s.solicitanteNombre} · " : ""}${s.fechaSolicitud} - ${s.estado}${s.motivoRechazo != null ? "\nRechazo: ${s.motivoRechazo}" : ""}',
+                      [
+                        if (s.solicitanteNombre != null) s.solicitanteNombre!,
+                        s.fechaSolicitud,
+                        if (s.fechaObjetivo != null) s.fechaObjetivo!,
+                        if (s.horaDesde != null && s.horaHasta != null) '${s.horaDesde}–${s.horaHasta}',
+                        s.estado,
+                      ].join(' · ') + (s.motivoRechazo != null ? '\nRechazo: ${s.motivoRechazo}' : ''),
                                     ),
                                     trailing:
                                         _canApprove && s.estado == 'pendiente'
