@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../services/employees_api_service.dart';
 import '../services/solicitudes_jornada_api_service.dart';
+import '../theme.dart';
 import '../utils/error_utils.dart';
 import '../widgets/responsive_content_wrapper.dart';
 
@@ -75,8 +77,17 @@ class _SolicitudesJornadaScreenState extends State<SolicitudesJornadaScreen> {
     );
     if (tipo == null || !mounted) return;
 
+    String? employeeId;
+    if (_canApprove) {
+      employeeId = await _pickEmployeeForSolicitud();
+      if (!mounted) return;
+    }
+
     try {
-      await SolicitudesJornadaApiService.create(tipo: tipo);
+      await SolicitudesJornadaApiService.create(
+        tipo: tipo,
+        employeeId: employeeId,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Solicitud enviada')),
@@ -87,6 +98,46 @@ class _SolicitudesJornadaScreenState extends State<SolicitudesJornadaScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(formatApiError(e))),
       );
+    }
+  }
+
+  Future<String?> _pickEmployeeForSolicitud() async {
+    try {
+      final result = await EmployeesApiService.getEmployees(
+        status: 'activo',
+        limit: 100,
+      );
+      if (!mounted) return null;
+      final employees = result.data;
+      if (employees.isEmpty) return null;
+
+      return showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('¿Para quién es la solicitud?'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  title: const Text('Para mí'),
+                  onTap: () => Navigator.pop(ctx),
+                ),
+                const Divider(),
+                ...employees.map(
+                  (e) => ListTile(
+                    title: Text(e.name),
+                    subtitle: e.email.isNotEmpty ? Text(e.email) : null,
+                    onTap: () => Navigator.pop(ctx, e.id),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (_) {
+      return null;
     }
   }
 
@@ -179,12 +230,12 @@ class _SolicitudesJornadaScreenState extends State<SolicitudesJornadaScreen> {
           : _error != null
               ? Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(kSpacingLg),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: kSpacingMd),
                         FilledButton(
                           onPressed: _load,
                           child: const Text('Reintentar'),
@@ -195,12 +246,28 @@ class _SolicitudesJornadaScreenState extends State<SolicitudesJornadaScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: _load,
-                  child: _list.isEmpty
-                      ? SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          child: SizedBox(
-                            height: MediaQuery.sizeOf(context).height * 0.5,
-                            child: Center(
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: kSpacingLg,
+                      vertical: kSpacingMd,
+                    ),
+                    child: ResponsiveContentWrapper(
+                      width: ContentWidth.list,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: _loading ? null : _createSolicitud,
+                            icon: const Icon(Icons.add, size: 20),
+                            label: const Text('Nueva solicitud'),
+                          ),
+                          const SizedBox(height: kSpacingMd),
+                          if (_list.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: kSpacingXl,
+                              ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -209,7 +276,7 @@ class _SolicitudesJornadaScreenState extends State<SolicitudesJornadaScreen> {
                                     size: 64,
                                     color: theme.colorScheme.onSurfaceVariant,
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: kSpacingMd),
                                   Text(
                                     _canApprove
                                         ? 'No hay solicitudes pendientes'
@@ -219,53 +286,63 @@ class _SolicitudesJornadaScreenState extends State<SolicitudesJornadaScreen> {
                                   ),
                                 ],
                               ),
-                            ),
-                          ),
-                        )
-                      : ResponsiveContentWrapper(
-                          width: ContentWidth.list,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _list.length,
-                            itemBuilder: (_, i) {
-                              final s = _list[i];
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                child: ListTile(
-                                  title: Text(s.tipoLabel),
-                                  subtitle: Text(
-                                    '${s.fechaSolicitud} - ${s.estado}'
-                                    '${s.motivoRechazo != null ? "\nRechazo: ${s.motivoRechazo}" : ""}',
+                            )
+                          else
+                            ..._list.map(
+                              (s) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Card(
+                                  child: ListTile(
+                                    title: Row(
+                                      children: [
+                                        Expanded(child: Text(s.tipoLabel)),
+                                        if (s.estaVencida)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              left: kSpacingSm,
+                                            ),
+                                            child: Chip(
+                                              label: const Text('Vencida'),
+                                              labelStyle: theme.textTheme.labelSmall,
+                                              visualDensity: VisualDensity.compact,
+                                              padding: EdgeInsets.zero,
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize.shrinkWrap,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    subtitle: Text(
+                                      '${s.solicitanteNombre != null ? "${s.solicitanteNombre} · " : ""}${s.fechaSolicitud} - ${s.estado}${s.motivoRechazo != null ? "\nRechazo: ${s.motivoRechazo}" : ""}',
+                                    ),
+                                    trailing:
+                                        _canApprove && s.estado == 'pendiente'
+                                            ? Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  IconButton(
+                                                    icon: const Icon(Icons.check),
+                                                    onPressed: () => _approve(s),
+                                                    tooltip: 'Aprobar',
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.close),
+                                                    onPressed: () =>
+                                                        _rejectWithMotivo(s),
+                                                    tooltip: 'Rechazar',
+                                                  ),
+                                                ],
+                                              )
+                                            : null,
                                   ),
-                                  trailing: _canApprove && s.estado == 'pendiente'
-                                      ? Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            IconButton(
-                                              icon: const Icon(Icons.check),
-                                              onPressed: () => _approve(s),
-                                              tooltip: 'Aprobar',
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(Icons.close),
-                                              onPressed: () => _rejectWithMotivo(s),
-                                              tooltip: 'Rechazar',
-                                            ),
-                                          ],
-                                        )
-                                      : null,
                                 ),
-                              );
-                            },
-                          ),
-                        ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-      floatingActionButton: !_canApprove
-          ? FloatingActionButton(
-              onPressed: _loading ? null : _createSolicitud,
-              child: const Icon(Icons.add),
-            )
-          : null,
     );
   }
 }

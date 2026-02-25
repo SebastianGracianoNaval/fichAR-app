@@ -656,7 +656,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _push(BuildContext context, Widget screen) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen))
+        .then((_) {
+      if (mounted && widget.role == 'admin') _loadKpis();
+    });
   }
 }
 

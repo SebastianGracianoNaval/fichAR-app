@@ -28,7 +28,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _currentController = TextEditingController();
   final _newController = TextEditingController();
   final _confirmController = TextEditingController();
+  final _currentFocus = FocusNode();
+  final _newFocus = FocusNode();
+  final _confirmFocus = FocusNode();
   bool _loading = false;
+  bool _obscurePasswords = true;
   String? _errorMessage;
 
   @override
@@ -50,6 +54,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     _currentController.dispose();
     _newController.dispose();
     _confirmController.dispose();
+    _currentFocus.dispose();
+    _newFocus.dispose();
+    _confirmFocus.dispose();
     super.dispose();
   }
 
@@ -138,95 +145,134 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           height: double.infinity,
           color: theme.colorScheme.surface,
           child: SafeArea(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: padding,
-                vertical: kSpacingMd,
-              ),
-              child: ResponsiveContentWrapper(
-                width: ContentWidth.form,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(kSpacingLg),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(kRadiusXl),
-                      boxShadow: DeviceCapabilities.isLowEnd
-                          ? null
-                          : [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.06),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
                     ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            'Por seguridad, debés cambiar tu contraseña antes de continuar.',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: padding,
+                        vertical: kSpacingMd,
+                      ),
+                      child: Center(
+                        child: ResponsiveContentWrapper(
+                          width: ContentWidth.form,
+                          child: Container(
+                            padding: const EdgeInsets.all(kSpacingLg),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerLowest,
+                              borderRadius: BorderRadius.circular(kRadiusXl),
+                              boxShadow: DeviceCapabilities.isLowEnd
+                                  ? null
+                                  : [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.06),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: kSpacingXl),
-                          TextFormField(
-                            controller: _currentController,
-                            obscureText: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Contraseña actual',
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Por seguridad, debés cambiar tu contraseña antes de continuar.',
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: kSpacingXl),
+                              TextFormField(
+                                controller: _currentController,
+                                focusNode: _currentFocus,
+                                obscureText: _obscurePasswords,
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) =>
+                                    FocusScope.of(context).requestFocus(_newFocus),
+                                decoration: const InputDecoration(
+                                  labelText: 'Contraseña actual',
+                                ),
+                                validator: (v) => (v == null || v.isEmpty)
+                                    ? 'Ingresá tu contraseña actual'
+                                    : null,
+                              ),
+                              const SizedBox(height: kSpacingMd),
+                              TextFormField(
+                                controller: _newController,
+                                focusNode: _newFocus,
+                                obscureText: _obscurePasswords,
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) =>
+                                    FocusScope.of(context).requestFocus(_confirmFocus),
+                                decoration: const InputDecoration(
+                                  labelText: 'Nueva contraseña',
+                                ),
+                                validator: _validatePassword,
+                              ),
+                              const SizedBox(height: kSpacingMd),
+                              TextFormField(
+                                controller: _confirmController,
+                                focusNode: _confirmFocus,
+                                obscureText: _obscurePasswords,
+                                textInputAction: TextInputAction.done,
+                                onFieldSubmitted: (_) => _onSubmit(),
+                                decoration: const InputDecoration(
+                                  labelText: 'Confirmar nueva contraseña',
+                                ),
+                                validator: (v) {
+                                  if (v == null || v.isEmpty) {
+                                    return 'Confirmá tu contraseña';
+                                  }
+                                  if (v != _newController.text) {
+                                    return 'Las contraseñas no coinciden';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: kSpacingMd),
+                              CheckboxListTile(
+                                value: !_obscurePasswords,
+                                onChanged: (v) {
+                                  setState(
+                                    () => _obscurePasswords = v != true,
+                                  );
+                                },
+                                title: Text(
+                                  'Mostrar contraseñas',
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                                controlAffinity: ListTileControlAffinity.leading,
+                                contentPadding: EdgeInsets.zero,
+                                dense: true,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              if (_errorMessage != null) ...[
+                                const SizedBox(height: kSpacingMd),
+                                InlineError(message: _errorMessage!),
+                              ],
+                              const SizedBox(height: kSpacingLg),
+                              FicharButton(
+                                onPressed: _loading ? null : _onSubmit,
+                                loading: _loading,
+                                child: const Text('Cambiar contraseña'),
+                              ),
+                              ],
                             ),
-                            validator: (v) => (v == null || v.isEmpty)
-                                ? 'Ingresá tu contraseña actual'
-                                : null,
                           ),
-                          const SizedBox(height: kSpacingMd),
-                          TextFormField(
-                            controller: _newController,
-                            obscureText: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Nueva contraseña',
-                            ),
-                            validator: _validatePassword,
-                          ),
-                          const SizedBox(height: kSpacingMd),
-                          TextFormField(
-                            controller: _confirmController,
-                            obscureText: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Confirmar nueva contraseña',
-                            ),
-                            validator: (v) {
-                              if (v == null || v.isEmpty) {
-                                return 'Confirmá tu contraseña';
-                              }
-                              if (v != _newController.text) {
-                                return 'Las contraseñas no coinciden';
-                              }
-                              return null;
-                            },
-                          ),
-                          if (_errorMessage != null) ...[
-                            const SizedBox(height: kSpacingMd),
-                            InlineError(message: _errorMessage!),
-                          ],
-                          const SizedBox(height: kSpacingLg),
-                          FicharButton(
-                            onPressed: _loading ? null : _onSubmit,
-                            loading: _loading,
-                            child: const Text('Cambiar contraseña'),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+                );
+              },
             ),
           ),
         ),

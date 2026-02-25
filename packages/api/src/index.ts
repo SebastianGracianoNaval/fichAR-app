@@ -64,7 +64,7 @@ function applySecurityHeaders(res: Response, req: Request): Response {
   if (corsOrigin) {
     headers.set('Access-Control-Allow-Origin', corsOrigin);
     headers.set('Vary', 'Origin');
-    headers.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    headers.set('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
     headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Api-Key');
     headers.set('Access-Control-Max-Age', '600');
   }

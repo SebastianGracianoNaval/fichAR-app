@@ -22,7 +22,12 @@ export async function handlePostSolicitudJornada(req: Request): Promise<Response
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const data = body as { tipo?: string; fecha_objetivo?: string; horas_solicitadas?: number };
+  const data = body as {
+    tipo?: string;
+    fecha_objetivo?: string;
+    horas_solicitadas?: number;
+    employee_id?: string;
+  };
   const tipo = data?.tipo?.trim();
   if (!tipo || !VALID_TIPO.includes(tipo as (typeof VALID_TIPO)[number])) {
     return Response.json(
@@ -42,15 +47,31 @@ export async function handlePostSolicitudJornada(req: Request): Promise<Response
       ? data.horas_solicitadas
       : null;
 
+  let solicitanteEmployeeId = ctx.employeeId;
+  if (canApprove(ctx.role) && typeof data?.employee_id === 'string' && data.employee_id.trim()) {
+    const empId = data.employee_id.trim();
+    const { data: emp } = await getSupabaseAdmin()
+      .from('employees')
+      .select('id')
+      .eq('id', empId)
+      .eq('org_id', ctx.orgId)
+      .maybeSingle();
+    if (emp) solicitanteEmployeeId = emp.id;
+  }
+
+  const targetDateStr = fechaObjetivoDate ?? new Date().toISOString().slice(0, 10);
+  const fechaLimite = new Date(`${targetDateStr}T23:59:59.999Z`);
+
   const admin = getSupabaseAdmin();
   const { data: row, error } = await admin
     .from('solicitudes_jornada')
     .insert({
       org_id: ctx.orgId,
-      employee_id: ctx.employeeId,
-      solicitante_employee_id: ctx.employeeId,
+      employee_id: solicitanteEmployeeId,
+      solicitante_employee_id: solicitanteEmployeeId,
       tipo,
       fecha_objetivo: fechaObjetivoDate,
+      fecha_limite_aceptacion: fechaLimite.toISOString(),
       horas_solicitadas: horasSolicitadas,
     })
     .select('id, tipo, estado, fecha_solicitud, fecha_objetivo, horas_solicitadas, created_at')
@@ -89,7 +110,7 @@ export async function handleGetSolicitudesJornada(req: Request): Promise<Respons
   let query = admin
     .from('solicitudes_jornada')
     .select(
-      'id, org_id, employee_id, tipo, estado, solicitante_employee_id, aprobador_employee_id, fecha_solicitud, fecha_objetivo, horas_solicitadas, motivo_rechazo, created_at, updated_at',
+      'id, org_id, employee_id, tipo, estado, solicitante_employee_id, aprobador_employee_id, fecha_solicitud, fecha_objetivo, fecha_limite_aceptacion, horas_solicitadas, motivo_rechazo, created_at, updated_at, solicitante:employees!solicitante_employee_id(name)',
       { count: 'exact' },
     )
     .eq('org_id', ctx.orgId)
@@ -109,7 +130,20 @@ export async function handleGetSolicitudesJornada(req: Request): Promise<Respons
     return Response.json({ error: 'Error al listar solicitudes', code: 'internal' }, { status: 500 });
   }
 
-  return Response.json({ data: data ?? [], meta: { total: count ?? 0, limit, offset } });
+  const now = new Date();
+  const enriched = (data ?? []).map((row: Record<string, unknown>) => {
+    const solicitante = row.solicitante as { name?: string } | null | undefined;
+    const solicitanteNombre = solicitante?.name ?? null;
+    const fechaLimite = row.fecha_limite_aceptacion as string | null | undefined;
+    const estaVencida =
+      row.estado === 'pendiente' &&
+      fechaLimite &&
+      now > new Date(fechaLimite);
+    const { solicitante: _s, ...rest } = row;
+    return { ...rest, solicitante_nombre: solicitanteNombre, esta_vencida: estaVencida };
+  });
+
+  return Response.json({ data: enriched, meta: { total: count ?? 0, limit, offset } });
 }
 
 export async function handlePatchSolicitudJornada(req: Request, id: string): Promise<Response> {

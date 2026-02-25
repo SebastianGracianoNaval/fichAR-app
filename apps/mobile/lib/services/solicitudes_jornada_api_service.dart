@@ -13,6 +13,8 @@ class SolicitudJornada {
     this.motivoRechazo,
     this.createdAt,
     this.updatedAt,
+    this.solicitanteNombre,
+    this.estaVencida = false,
   });
 
   final String id;
@@ -24,9 +26,13 @@ class SolicitudJornada {
   final String? motivoRechazo;
   final String? createdAt;
   final String? updatedAt;
+  final String? solicitanteNombre;
+  final bool estaVencida;
 
   factory SolicitudJornada.fromJson(Map<String, dynamic> json) {
     final horas = json['horas_solicitadas'];
+    final estaVencida = json['esta_vencida'] as bool? ?? false;
+    final solicitanteNombre = json['solicitante_nombre'] as String?;
     return SolicitudJornada(
       id: json['id'] as String,
       tipo: json['tipo'] as String? ?? '',
@@ -37,6 +43,8 @@ class SolicitudJornada {
       motivoRechazo: json['motivo_rechazo'] as String?,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
+      solicitanteNombre: solicitanteNombre,
+      estaVencida: estaVencida,
     );
   }
 
@@ -95,6 +103,7 @@ class SolicitudesJornadaApiService {
     required String tipo,
     String? fechaObjetivo,
     double? horasSolicitadas,
+    String? employeeId,
   }) async {
     final token = await ApiClient.getToken();
     if (token == null) throw Exception('No hay sesión');
@@ -105,6 +114,9 @@ class SolicitudesJornadaApiService {
     }
     if (horasSolicitadas != null) {
       body['horas_solicitadas'] = horasSolicitadas;
+    }
+    if (employeeId != null && employeeId.isNotEmpty) {
+      body['employee_id'] = employeeId;
     }
 
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/solicitudes-jornada');
