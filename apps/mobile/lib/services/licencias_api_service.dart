@@ -4,6 +4,25 @@ import 'package:http/http.dart' as http;
 
 import '../core/api_client.dart';
 
+/// Result of uploading one adjunto for a licencia (CL-016, CL-017).
+class LicenciaAdjuntoUpload {
+  const LicenciaAdjuntoUpload({
+    required this.storagePath,
+    this.filename,
+    this.mimeType,
+  });
+  final String storagePath;
+  final String? filename;
+  final String? mimeType;
+
+  Map<String, String> toJson() {
+    final m = <String, String>{'storage_path': storagePath};
+    if (filename != null) m['filename'] = filename!;
+    if (mimeType != null) m['mime_type'] = mimeType!;
+    return m;
+  }
+}
+
 class LicenciasApiService {
   static Future<({List<Map<String, dynamic>> data, int total, String? error})>
   getLicencias({
@@ -34,6 +53,45 @@ class LicenciasApiService {
         .get(uri, headers: await ApiClient.authHeaders())
         .timeout(ApiClient.defaultTimeout);
     return _parseListResponse(res);
+  }
+
+  /// Upload one file for a licencia adjunto. Validates 5 MB, PDF/JPG/PNG (CL-017).
+  /// Returns storage_path + filename + mime_type to pass to createLicencia.
+  static Future<({LicenciaAdjuntoUpload? data, String? error})> uploadAdjunto(
+    List<int> fileBytes, {
+    required String filename,
+    String? mimeType,
+  }) async {
+    final url = Uri.parse('${ApiClient.baseUrl}/api/v1/licencias/upload');
+    final token = await ApiClient.getToken();
+    if (token == null) return (data: null, error: 'No hay sesión activa');
+    final request = http.MultipartRequest('POST', url);
+    request.headers['Authorization'] = 'Bearer $token';
+    request.files.add(http.MultipartFile.fromBytes(
+      'file',
+      fileBytes,
+      filename: filename,
+    ));
+    final streamed = await request.send().timeout(ApiClient.defaultTimeout);
+    final res = await http.Response.fromStream(streamed);
+    if (res.statusCode != 201) {
+      final body = res.body.isNotEmpty
+          ? (jsonDecode(res.body) as Map<String, dynamic>? ?? const {})
+          : <String, dynamic>{};
+      return (
+        data: null,
+        error: body['error'] as String? ?? 'Error al subir el archivo',
+      );
+    }
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (
+      data: LicenciaAdjuntoUpload(
+        storagePath: body['storage_path'] as String,
+        filename: body['filename'] as String?,
+        mimeType: body['mime_type'] as String?,
+      ),
+      error: null,
+    );
   }
 
   static Future<({Map<String, dynamic>? data, String? error})> createLicencia({

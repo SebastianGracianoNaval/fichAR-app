@@ -15,6 +15,20 @@ import 'services/auth_api_service.dart';
 import 'theme.dart';
 import 'widgets/auth_home_resolver.dart';
 
+/// Routes that do not require an active Supabase session.
+const _publicRoutes = {'/login', '/register', '/forgot-password', '/reset-password'};
+
+Widget _guardRoute(BuildContext context, Widget child) {
+  final session = Supabase.instance.client.auth.currentSession;
+  if (session == null) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+    });
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+  }
+  return child;
+}
+
 class FicharApp extends StatelessWidget {
   const FicharApp({super.key});
 
@@ -41,7 +55,7 @@ class FicharApp extends StatelessWidget {
             return const ResetPasswordScreen();
           }
           final event = snapshot.data?.event;
-          // P-AUTH-03: show reset-password when recovery link is processed (first priority)
+          // P-AUTH-03: show reset-password when recovery link is processed
           if (event == AuthChangeEvent.passwordRecovery) {
             return const ResetPasswordScreen();
           }
@@ -52,39 +66,52 @@ class FicharApp extends StatelessWidget {
           return const LoginScreen();
         },
       ),
-      routes: {
-        '/login': (_) => const LoginScreen(),
-        '/register': (_) => const RegisterScreen(),
-        '/forgot-password': (_) => const ForgotPasswordScreen(),
-        '/reset-password': (_) => const ResetPasswordScreen(),
-        '/dashboard': (_) => const AuthHomeResolver(),
-        '/mfa-enroll': (ctx) {
-          final args =
-              ModalRoute.of(ctx)?.settings.arguments
-                  as MfaEnrollmentRequiredResult?;
-          if (args == null) return const LoginScreen();
-          return MfaEnrollScreen(
-            refreshToken: args.refreshToken,
-            message: args.message,
-          );
-        },
-        '/mfa-verify': (ctx) {
-          final args =
-              ModalRoute.of(ctx)?.settings.arguments
-                  as MfaVerificationRequiredResult?;
-          if (args == null) return const LoginScreen();
-          return MfaVerifyScreen(
-            refreshToken: args.refreshToken,
-            message: args.message,
-          );
-        },
-        '/change-password': (ctx) {
-          final args =
-              ModalRoute.of(ctx)?.settings.arguments
-                  as PasswordChangeRequiredResult?;
-          return ChangePasswordScreen(refreshToken: args?.refreshToken ?? '');
-        },
-        '/legal-audit': (_) => const AuthHomeResolver(),
+      onGenerateRoute: (settings) {
+        final name = settings.name;
+        if (name == null) return null;
+
+        final builders = <String, Widget Function(BuildContext)>{
+          '/login': (_) => const LoginScreen(),
+          '/register': (_) => const RegisterScreen(),
+          '/forgot-password': (_) => const ForgotPasswordScreen(),
+          '/reset-password': (_) => const ResetPasswordScreen(),
+          '/dashboard': (_) => const AuthHomeResolver(),
+          '/mfa-enroll': (ctx) {
+            final args = settings.arguments as MfaEnrollmentRequiredResult?;
+            if (args == null) return const LoginScreen();
+            return MfaEnrollScreen(
+              refreshToken: args.refreshToken,
+              message: args.message,
+            );
+          },
+          '/mfa-verify': (ctx) {
+            final args = settings.arguments as MfaVerificationRequiredResult?;
+            if (args == null) return const LoginScreen();
+            return MfaVerifyScreen(
+              refreshToken: args.refreshToken,
+              message: args.message,
+            );
+          },
+          '/change-password': (ctx) {
+            final args = settings.arguments as PasswordChangeRequiredResult?;
+            return ChangePasswordScreen(
+              refreshToken: args?.refreshToken ?? '',
+            );
+          },
+          '/legal-audit': (_) => const AuthHomeResolver(),
+        };
+
+        final builder = builders[name];
+        if (builder == null) return null;
+
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (ctx) {
+            final child = builder(ctx);
+            if (_publicRoutes.contains(name)) return child;
+            return _guardRoute(ctx, child);
+          },
+        );
       },
     );
   }

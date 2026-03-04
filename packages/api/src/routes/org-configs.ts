@@ -2,6 +2,8 @@ import { getSupabaseAdmin } from '../lib/supabase.ts';
 import { requireAuth } from '../lib/auth-middleware.ts';
 import { requireAdmin } from '../lib/require-admin.ts';
 import { logAudit, logError, getRequestMeta } from '../lib/logger.ts';
+
+// GET org-configs: any authenticated user (needed to gate UI by CFG-*). PATCH: admin only.
 import {
   getWhitelistKeys,
   getSchema,
@@ -45,6 +47,7 @@ function parseAndValidatePatchBody(body: unknown): { ok: true; configs: Record<s
 function toJsonbValue(schema: { type: string; default: boolean | number | string }, raw: unknown): unknown {
   if (schema.type === 'number') return Math.round(Number(raw));
   if (schema.type === 'select') return typeof raw === 'string' ? raw.trim().toLowerCase() : schema.default;
+  if (schema.type === 'string') return typeof raw === 'string' ? raw : schema.default;
   return raw === true || raw === false ? raw : schema.default;
 }
 
@@ -52,9 +55,6 @@ export async function handleGetOrgConfigs(req: Request): Promise<Response> {
   const authResult = await requireAuth(req);
   if (!authResult.ok) return authResult.res;
   const { ctx } = authResult;
-
-  const adminCheck = requireAdmin(ctx);
-  if (adminCheck) return adminCheck;
 
   const whitelist = getWhitelistKeys();
   const admin = getSupabaseAdmin();

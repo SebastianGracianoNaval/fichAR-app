@@ -11,6 +11,10 @@ const MAX_MOTIVO_RECHAZO = 500;
 const MIN_MOTIVO_RECHAZO = 10;
 const MAX_DIAS_FUTURO = 365;
 
+const LICENCIA_ADJUNTOS_BUCKET = 'licencia-adjuntos';
+const MAX_ADJUNTO_BYTES = 5 * 1024 * 1024; // 5 MB per CL-017
+const ADJUNTO_MIMES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+
 function canApprove(role: string): boolean {
   return ADMIN_OR_SUPERVISOR.includes(role);
 }
@@ -255,6 +259,84 @@ export async function handlePostLicencias(req: Request): Promise<Response> {
   );
 
   return Response.json(inserted, { status: 201 });
+}
+
+function sanitizeFilename(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 100) || 'file';
+}
+
+export async function handlePostLicenciasUpload(req: Request): Promise<Response> {
+  const authResult = await requireAuth(req);
+  if (!authResult.ok) return authResult.res;
+  const { ctx } = authResult;
+
+  let formData: FormData;
+  try {
+    formData = await req.formData();
+  } catch {
+    return Response.json({ error: 'Invalid form data' }, { status: 400 });
+  }
+
+  const file = formData.get('file');
+  if (!file || typeof file === 'string') {
+    return Response.json(
+      { error: 'Solo se permiten archivos PDF, JPG o PNG de hasta 5 MB.', code: 'adjunto_invalido' },
+      { status: 400 },
+    );
+  }
+
+  const blob = file as Blob;
+  const size = blob.size;
+  if (size > MAX_ADJUNTO_BYTES) {
+    return Response.json(
+      { error: 'Solo se permiten archivos PDF, JPG o PNG de hasta 5 MB.', code: 'adjunto_invalido' },
+      { status: 400 },
+    );
+  }
+
+  const mime = (blob as { type?: string }).type?.toLowerCase() ?? '';
+  const allowed = ADJUNTO_MIMES.some((m) => m === mime || (m === 'image/jpg' && mime === 'image/jpeg'));
+  if (!allowed) {
+    return Response.json(
+      { error: 'Solo se permiten archivos PDF, JPG o PNG de hasta 5 MB.', code: 'adjunto_invalido' },
+      { status: 400 },
+    );
+  }
+
+  const name = (file as File).name ?? 'file';
+  const safeName = sanitizeFilename(name);
+  const path = `${ctx.orgId}/${ctx.employeeId}/${crypto.randomUUID()}_${safeName}`;
+
+  const admin = getSupabaseAdmin();
+  const { data: buckets } = await admin.storage.listBuckets();
+  const bucketExists = buckets?.some((b) => b.name === LICENCIA_ADJUNTOS_BUCKET);
+  if (!bucketExists) {
+    const { error: createErr } = await admin.storage.createBucket(LICENCIA_ADJUNTOS_BUCKET, {
+      public: false,
+      fileSizeLimit: MAX_ADJUNTO_BYTES,
+      allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+    });
+    if (createErr) {
+      await logError('critical', 'licencia_upload_bucket_failed', { orgId: ctx.orgId }, {}, createErr);
+      return Response.json({ error: 'Error al preparar almacenamiento' }, { status: 500 });
+    }
+  }
+
+  const buffer = Buffer.from(await blob.arrayBuffer());
+  const { error: uploadErr } = await admin.storage.from(LICENCIA_ADJUNTOS_BUCKET).upload(path, buffer, {
+    contentType: mime || 'application/octet-stream',
+    upsert: false,
+  });
+
+  if (uploadErr) {
+    await logError('critical', 'licencia_upload_failed', { orgId: ctx.orgId, path }, {}, uploadErr);
+    return Response.json({ error: 'Error al subir el archivo' }, { status: 500 });
+  }
+
+  return Response.json(
+    { storage_path: path, filename: name, mime_type: mime || undefined },
+    { status: 201 },
+  );
 }
 
 export async function handlePostLicenciaAprobar(req: Request, licenciaId: string): Promise<Response> {

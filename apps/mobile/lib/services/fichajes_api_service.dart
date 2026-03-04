@@ -75,12 +75,12 @@ class FichajesApiService {
     String? idempotencyKey,
   }) async {
     final url = Uri.parse('${ApiClient.baseUrl}/api/v1/fichajes');
-    final body = {
+    final body = <String, dynamic>{
       'tipo': tipo,
       'lat': ?lat,
       'long': ?long,
-      'lugar_id': ?lugarId,
-      'idempotency_key': ?idempotencyKey,
+      'lugar_id': ?(lugarId?.isNotEmpty == true ? lugarId : null),
+      'idempotency_key': ?(idempotencyKey?.isNotEmpty == true ? idempotencyKey : null),
     };
 
     final res = await ApiClient.withRetry(() async {

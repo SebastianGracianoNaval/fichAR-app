@@ -48,11 +48,15 @@ class _EquipoScreenState extends State<EquipoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mi Equipo'),
+        title: Semantics(
+          header: true,
+          child: const Text('Mi Equipo'),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loading ? null : _load,
+            tooltip: 'Actualizar lista',
           ),
         ],
       ),

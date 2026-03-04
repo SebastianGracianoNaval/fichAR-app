@@ -1,27 +1,46 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../services/fichajes_api_service.dart';
 import 'api_client.dart';
 
-/// Persistent queue for offline fichajes. Stores as JSON file.
+/// Persistent queue for offline fichajes. Stores encrypted via flutter_secure_storage.
 /// CFG-009: when offline mode is enabled, fichajes are queued locally.
+/// SEGURIDAD 6.2: offline data must be encrypted at rest.
 class OfflineQueue {
-  static const _fileName = 'fichajes_pendientes.json';
+  static const _storageKey = 'fichajes_pendientes';
+  static const _legacyFileName = 'fichajes_pendientes.json';
 
-  static Future<File> _getFile() async {
-    final dir = await getApplicationDocumentsDirectory();
-    return File('${dir.path}/$_fileName');
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
+
+  /// Migrate from legacy plaintext file if it exists.
+  static Future<void> _migrateLegacyIfNeeded() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final legacyFile = File('${dir.path}/$_legacyFileName');
+      if (await legacyFile.exists()) {
+        final content = await legacyFile.readAsString();
+        if (content.isNotEmpty) {
+          await _storage.write(key: _storageKey, value: content);
+        }
+        await legacyFile.delete();
+      }
+    } catch (_) {
+      // Migration failure is non-fatal; queue starts empty
+    }
   }
 
   static Future<List<Map<String, dynamic>>> getPending() async {
+    await _migrateLegacyIfNeeded();
     try {
-      final file = await _getFile();
-      if (!await file.exists()) return [];
-      final content = await file.readAsString();
-      if (content.isEmpty) return [];
+      final content = await _storage.read(key: _storageKey);
+      if (content == null || content.isEmpty) return [];
       final list = jsonDecode(content) as List<dynamic>;
       return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     } catch (_) {
@@ -40,20 +59,18 @@ class OfflineQueue {
     final pending = await getPending();
     pending.add({
       'tipo': tipo,
-      'lat': ?lat,
-      'long': ?long,
-      'lugar_id': ?lugarId,
+      'lat': lat,
+      'long': long,
+      'lugar_id': lugarId,
       'idempotency_key': idempotencyKey,
       'timestamp_dispositivo': timestampDispositivo,
       'queued_at': DateTime.now().toIso8601String(),
     });
-    final file = await _getFile();
-    await file.writeAsString(jsonEncode(pending));
+    await _savePending(pending);
   }
 
   static Future<void> _savePending(List<Map<String, dynamic>> pending) async {
-    final file = await _getFile();
-    await file.writeAsString(jsonEncode(pending));
+    await _storage.write(key: _storageKey, value: jsonEncode(pending));
   }
 
   static Future<int> get pendingCount async {

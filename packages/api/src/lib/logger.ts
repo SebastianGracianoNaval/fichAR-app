@@ -59,6 +59,7 @@ export async function logAudit(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('audit_logs insert failed', { action, error: msg });
+    await logError('critical', 'audit_logs_insert_failed', ctx, { action, error: msg });
   }
 }
 
@@ -79,7 +80,7 @@ export async function logError(
     ...(process.env.NODE_ENV !== 'production' && err?.stack ? { stack: err.stack } : {}),
   };
   console.error(JSON.stringify(entry));
-  if (severity === 'critical' || severity === 'warning') {
+  if ((severity === 'critical' || severity === 'warning') && action !== 'audit_logs_insert_failed') {
     await logAudit(action, ctx ?? {}, details ?? {}, severity);
   }
 }

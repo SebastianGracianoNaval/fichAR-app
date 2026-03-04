@@ -23,6 +23,7 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
   static const _pageSize = 20;
   bool _loadingMore = false;
   DateTime _mesActual = DateTime(DateTime.now().year, DateTime.now().month);
+  final ScrollController _scrollController = ScrollController();
 
   bool get _hasData =>
       _fichajes.isNotEmpty || _saldoHoras != null || _total > 0;
@@ -31,6 +32,23 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
   void initState() {
     super.initState();
     _loadData();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 200 &&
+        !_loadingMore &&
+        _offset < _total) {
+      _loadMore();
+    }
   }
 
   Future<void> _loadData() async {
@@ -213,6 +231,7 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
           : RefreshIndicator(
               onRefresh: _loadData,
               child: SingleChildScrollView(
+                controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: ResponsiveContentWrapper(
                   width: ContentWidth.list,
@@ -241,16 +260,16 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
                                   ),
                                 ),
                               )
-                            : _buildFichajesTable(theme),
+                            : _buildFichajesList(theme),
                         if (_offset < _total) ...[
                           const SizedBox(height: 16),
                           Center(
                             child: _loadingMore
-                                ? const CircularProgressIndicator()
-                                : TextButton(
-                                    onPressed: _loadMore,
-                                    child: const Text('Cargar mas'),
-                                  ),
+                                ? const Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: CircularProgressIndicator(),
+                                  )
+                                : const SizedBox.shrink(),
                           ),
                         ],
                       ],
@@ -328,7 +347,7 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
     );
   }
 
-  Widget _buildFichajesTable(ThemeData theme) {
+  Widget _buildFichajesList(ThemeData theme) {
     if (_fichajes.isEmpty) {
       return Center(
         child: Padding(
@@ -343,39 +362,98 @@ class _MisHorasScreenState extends State<MisHorasScreen> {
       );
     }
 
-    return DataTable(
-      columnSpacing: 16,
-      columns: const [
-        DataColumn(label: Text('Fecha')),
-        DataColumn(label: Text('Tipo')),
-        DataColumn(label: Text('Hora')),
-      ],
-      rows: _fichajes.map((f) {
-        final dt = DateTime.tryParse(f.timestampServidor)?.toLocal();
-        final fecha = dt != null
-            ? '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}'
-            : '-';
-        final hora = dt != null
-            ? '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}'
-            : '-';
-        return DataRow(
-          cells: [
-            DataCell(Text(fecha)),
-            DataCell(
-              Text(
-                f.tipo == 'entrada' ? 'Entrada' : 'Salida',
-                style: TextStyle(
-                  color: f.tipo == 'entrada'
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.tertiary,
-                  fontWeight: FontWeight.w500,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: Text(
+                'Fecha',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            DataCell(Text(hora)),
+            Expanded(
+              flex: 1,
+              child: Text(
+                'Tipo',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: Text(
+                'Hora',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                'Lugar',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ],
-        );
-      }).toList(),
+        ),
+        const SizedBox(height: 8),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _fichajes.length,
+          itemBuilder: (context, i) => _buildFichajeRow(theme, _fichajes[i]),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFichajeRow(ThemeData theme, Fichaje f) {
+    final dt = DateTime.tryParse(f.timestampServidor)?.toLocal();
+    final fecha = dt != null
+        ? '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}'
+        : '-';
+    final hora = dt != null
+        ? '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}'
+        : '-';
+    // P-EMP-02: Lugar. API no devuelve nombre de lugar; mostrar — hasta que exista lugar_nombre.
+    const lugar = '—';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(flex: 2, child: Text(fecha)),
+          Expanded(
+            flex: 1,
+            child: Text(
+              f.tipo == 'entrada' ? 'Entrada' : 'Salida',
+              style: TextStyle(
+                color: f.tipo == 'entrada'
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.tertiary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(flex: 1, child: Text(hora)),
+          Expanded(
+            flex: 2,
+            child: Text(
+              lugar,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

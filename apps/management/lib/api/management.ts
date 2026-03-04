@@ -8,6 +8,8 @@ function getApiUrl(): string {
   return url.replace(/\/$/, "");
 }
 
+// --- Types ---
+
 export type ManagementLoginResult = {
   access_token: string;
   refresh_token: string;
@@ -18,82 +20,6 @@ export type ManagementLoginError = {
   error: string;
   retryAfter?: number;
 };
-
-export async function managementLogin(
-  email: string,
-  password: string
-): Promise<ManagementLoginResult> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
-
-  try {
-    const res = await fetch(`${getApiUrl()}/api/v1/management/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: email.trim().toLowerCase(),
-        password,
-      }),
-      signal: controller.signal,
-    });
-
-    const data = (await res.json().catch(() => ({}))) as
-      | ManagementLoginResult
-      | ManagementLoginError;
-
-    clearTimeout(timeoutId);
-
-    if (res.status === 429) {
-      const msg =
-        typeof (data as ManagementLoginError).error === "string"
-          ? (data as ManagementLoginError).error
-          : "Demasiados intentos. Espere unos minutos.";
-      throw new ManagementApiException(msg, "service_unavailable", 429);
-    }
-    if (res.status === 401) {
-      throw new ManagementApiException(
-        typeof (data as ManagementLoginError).error === "string"
-          ? (data as ManagementLoginError).error
-          : "Credenciales incorrectas",
-        "validation_error",
-        401
-      );
-    }
-    if (!res.ok) {
-      const message =
-        typeof (data as ManagementLoginError).error === "string"
-          ? (data as ManagementLoginError).error
-          : `HTTP ${res.status}`;
-      throw new ManagementApiException(message, mapStatusToCode(res.status), res.status);
-    }
-
-    const result = data as ManagementLoginResult;
-    if (
-      !result.access_token ||
-      !result.refresh_token ||
-      typeof result.expires_in !== "number"
-    ) {
-      throw new ManagementApiException(
-        "Respuesta invalida del servidor",
-        "service_unavailable"
-      );
-    }
-    return result;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    if (err instanceof ManagementApiException) throw err;
-    if (err instanceof Error && err.name === "AbortError") {
-      throw new ManagementApiException(
-        "Servicio no disponible. Reintente mas tarde.",
-        "service_unavailable"
-      );
-    }
-    throw new ManagementApiException(
-      err instanceof Error ? err.message : "Error desconocido",
-      "network_error"
-    );
-  }
-}
 
 export type CreateOrganizationResult = {
   orgId: string;
@@ -112,6 +38,31 @@ export type ManagementApiError = {
     | "network_error";
   status?: number;
 };
+
+export type OrganizationListItem = {
+  id: string;
+  name: string;
+  created_at: string;
+  employee_count: number;
+};
+
+export type OrganizationDetail = OrganizationListItem & {
+  admin_email: string | null;
+};
+
+export type ListOrganizationsResult = {
+  items: OrganizationListItem[];
+  total: number;
+  page: number;
+  limit: number;
+};
+
+export type ManagementStats = {
+  organization_count: number;
+  employee_count: number;
+};
+
+// --- Infrastructure ---
 
 function mapStatusToCode(status: number): ManagementApiError["code"] {
   if (status === 400) return "validation_error";
@@ -134,89 +85,46 @@ export class ManagementApiException extends Error {
   }
 }
 
-export async function createOrganization(
-  orgName: string,
-  adminEmail: string,
-  apiKey: string,
-  adminFullName?: string
-): Promise<CreateOrganizationResult> {
+function throwApiError(status: number, data: unknown): never {
+  const obj = data as Record<string, unknown> | null;
+  const message = typeof obj?.error === "string"
+    ? (obj.error as string)
+    : `HTTP ${status}`;
+  throw new ManagementApiException(message, mapStatusToCode(status), status);
+}
+
+async function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
 
-  const body: { orgName: string; adminEmail: string; adminFullName?: string } = {
-    orgName,
-    adminEmail,
-  };
-  if (adminFullName != null && adminFullName.trim().length > 0) {
-    body.adminFullName = adminFullName.trim().slice(0, 255);
-  }
-
   try {
-    const res = await fetch(`${getApiUrl()}/api/v1/management/organizations`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-
-    const data = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
-
-    clearTimeout(timeoutId);
-
-    if (!res.ok) {
-      const code = data?.code === "email_exists" ? "email_exists" : mapStatusToCode(res.status);
-      const message = (typeof data?.error === "string" ? data.error : null) ?? `HTTP ${res.status}`;
-      throw new ManagementApiException(message, code, res.status);
-    }
-
-    return data as CreateOrganizationResult;
+    return await fn(controller.signal);
   } catch (err) {
-    clearTimeout(timeoutId);
-
-    if (err instanceof ManagementApiException) {
-      throw err;
-    }
-    if (err instanceof Error) {
-      if (err.name === "AbortError") {
-        throw new ManagementApiException(
-          "Servicio no disponible. Reintente mas tarde.",
-          "service_unavailable"
-        );
-      }
+    if (err instanceof ManagementApiException) throw err;
+    if (err instanceof Error && err.name === "AbortError") {
       throw new ManagementApiException(
-        err.message,
-        "network_error"
+        "Servicio no disponible. Reintente mas tarde.",
+        "service_unavailable"
       );
     }
-    throw new ManagementApiException("Error desconocido", "network_error");
+    throw new ManagementApiException(
+      err instanceof Error ? err.message : "Error desconocido",
+      "network_error"
+    );
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
-export type OrganizationListItem = {
-  id: string;
-  name: string;
-  created_at: string;
-  employee_count: number;
-};
+const RETRY_DELAY_MS = 300;
 
-export type OrganizationDetail = OrganizationListItem & {
-  admin_email: string | null;
-};
-
-export type ListOrganizationsResult = {
-  items: OrganizationListItem[];
-  total: number;
-  page: number;
-  limit: number;
-};
-
+/**
+ * Retries on 5xx and on network errors (with delay). Does not retry on 4xx.
+ */
 async function fetchWithRetry(
   url: string,
   opts: RequestInit,
-  retries = 1
+  retries = 2
 ): Promise<Response> {
   let lastErr: unknown;
   for (let i = 0; i <= retries; i++) {
@@ -227,60 +135,128 @@ async function fetchWithRetry(
     } catch (e) {
       lastErr = e;
       if (i === retries) throw e;
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
     }
   }
   throw lastErr;
 }
 
-export type ManagementStats = {
-  organization_count: number;
-  employee_count: number;
+type ApiRequestConfig<T> = {
+  method: "GET" | "POST";
+  path: string;
+  body?: object;
+  apiKey?: string;
+  allow404?: boolean;
+  parse?: (data: unknown) => T;
 };
 
-export async function getStats(apiKey: string): Promise<ManagementStats> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+async function apiRequest<T>(
+  config: ApiRequestConfig<T>
+): Promise<T | null> {
+  const { method, path, body, apiKey, allow404, parse } = config;
+  return withTimeout(async (signal) => {
+    const base = getApiUrl();
+    const url = path.startsWith("/") ? `${base}${path}` : `${base}/${path}`;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+    const res = await fetchWithRetry(url, {
+      method,
+      headers,
+      ...(body != null && { body: JSON.stringify(body) }),
+      signal,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 404 && allow404) return null as T;
+    if (!res.ok) throwApiError(res.status, data);
+    return (parse ? parse(data) : data) as T;
+  });
+}
 
-  try {
+// --- API Functions ---
+
+export async function managementLogin(
+  email: string,
+  password: string
+): Promise<ManagementLoginResult> {
+  return withTimeout(async (signal) => {
     const res = await fetchWithRetry(
-      `${getApiUrl()}/api/v1/management/stats`,
+      `${getApiUrl()}/api/v1/management/auth/login`,
       {
-        method: "GET",
-        headers: { Authorization: `Bearer ${apiKey}` },
-        signal: controller.signal,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+        signal,
       }
     );
 
     const data = (await res.json().catch(() => ({}))) as
-      | ManagementStats
-      | { error?: string };
+      | ManagementLoginResult
+      | ManagementLoginError;
 
-    clearTimeout(timeoutId);
-
-    if (!res.ok) {
-      const code = mapStatusToCode(res.status);
-      const message =
-        (typeof (data as { error?: string }).error === "string"
-          ? (data as { error: string }).error
-          : null) ?? `HTTP ${res.status}`;
-      throw new ManagementApiException(message, code, res.status);
+    if (res.status === 429) {
+      const msg =
+        typeof (data as ManagementLoginError).error === "string"
+          ? (data as ManagementLoginError).error
+          : "Demasiados intentos. Espere unos minutos.";
+      throw new ManagementApiException(msg, "service_unavailable", 429);
     }
-
-    return data as ManagementStats;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    if (err instanceof ManagementApiException) throw err;
-    if (err instanceof Error && err.name === "AbortError") {
+    if (res.status === 401) {
       throw new ManagementApiException(
-        "Servicio no disponible. Reintente mas tarde.",
+        typeof (data as ManagementLoginError).error === "string"
+          ? (data as ManagementLoginError).error
+          : "Credenciales incorrectas",
+        "validation_error",
+        401
+      );
+    }
+    if (!res.ok) throwApiError(res.status, data);
+
+    const result = data as ManagementLoginResult;
+    if (
+      !result.access_token ||
+      !result.refresh_token ||
+      typeof result.expires_in !== "number"
+    ) {
+      throw new ManagementApiException(
+        "Respuesta invalida del servidor",
         "service_unavailable"
       );
     }
-    throw new ManagementApiException(
-      err instanceof Error ? err.message : "Error desconocido",
-      "network_error"
-    );
+    return result;
+  });
+}
+
+export async function createOrganization(
+  orgName: string,
+  adminEmail: string,
+  apiKey: string,
+  adminFullName?: string
+): Promise<CreateOrganizationResult> {
+  const body: { orgName: string; adminEmail: string; adminFullName?: string } = {
+    orgName,
+    adminEmail,
+  };
+  if (adminFullName != null && adminFullName.trim().length > 0) {
+    body.adminFullName = adminFullName.trim().slice(0, 255);
   }
+  const result = await apiRequest<CreateOrganizationResult>({
+    method: "POST",
+    path: "/api/v1/management/organizations",
+    body,
+    apiKey,
+  });
+  if (result == null) throw new ManagementApiException("Not found", "not_found", 404);
+  return result;
+}
+
+export async function getStats(apiKey: string): Promise<ManagementStats> {
+  const result = await apiRequest<ManagementStats>({
+    method: "GET",
+    path: "/api/v1/management/stats",
+    apiKey,
+  });
+  if (result == null) throw new ManagementApiException("Not found", "not_found", 404);
+  return result;
 }
 
 export async function getOrganizations(
@@ -290,101 +266,25 @@ export async function getOrganizations(
   const page = opts?.page ?? 1;
   const limit = opts?.limit ?? 20;
   const search = opts?.search?.trim() ?? "";
-
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (search) params.set("search", search);
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
-
-  try {
-    const res = await fetchWithRetry(
-      `${getApiUrl()}/api/v1/management/organizations?${params}`,
-      {
-        method: "GET",
-        headers: { Authorization: `Bearer ${apiKey}` },
-        signal: controller.signal,
-      }
-    );
-
-    const data = (await res.json().catch(() => ({}))) as
-      | ListOrganizationsResult
-      | { error?: string };
-
-    clearTimeout(timeoutId);
-
-    if (!res.ok) {
-      const code = mapStatusToCode(res.status);
-      const message =
-        (typeof (data as { error?: string }).error === "string"
-          ? (data as { error: string }).error
-          : null) ?? `HTTP ${res.status}`;
-      throw new ManagementApiException(message, code, res.status);
-    }
-
-    return data as ListOrganizationsResult;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    if (err instanceof ManagementApiException) throw err;
-    if (err instanceof Error && err.name === "AbortError") {
-      throw new ManagementApiException(
-        "Servicio no disponible. Reintente mas tarde.",
-        "service_unavailable"
-      );
-    }
-    throw new ManagementApiException(
-      err instanceof Error ? err.message : "Error desconocido",
-      "network_error"
-    );
-  }
+  const result = await apiRequest<ListOrganizationsResult>({
+    method: "GET",
+    path: `/api/v1/management/organizations?${params}`,
+    apiKey,
+  });
+  if (result == null) throw new ManagementApiException("Not found", "not_found", 404);
+  return result;
 }
 
 export async function getOrganizationById(
   apiKey: string,
   id: string
 ): Promise<OrganizationDetail | null> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
-
-  try {
-    const res = await fetchWithRetry(
-      `${getApiUrl()}/api/v1/management/organizations/${encodeURIComponent(id)}`,
-      {
-        method: "GET",
-        headers: { Authorization: `Bearer ${apiKey}` },
-        signal: controller.signal,
-      }
-    );
-
-    const data = (await res.json().catch(() => ({}))) as
-      | OrganizationDetail
-      | { error?: string };
-
-    clearTimeout(timeoutId);
-
-    if (res.status === 404) return null;
-    if (!res.ok) {
-      const code = mapStatusToCode(res.status);
-      const message =
-        (typeof (data as { error?: string }).error === "string"
-          ? (data as { error: string }).error
-          : null) ?? `HTTP ${res.status}`;
-      throw new ManagementApiException(message, code, res.status);
-    }
-
-    return data as OrganizationDetail;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    if (err instanceof ManagementApiException) throw err;
-    if (err instanceof Error && err.name === "AbortError") {
-      throw new ManagementApiException(
-        "Servicio no disponible. Reintente mas tarde.",
-        "service_unavailable"
-      );
-    }
-    throw new ManagementApiException(
-      err instanceof Error ? err.message : "Error desconocido",
-      "network_error"
-    );
-  }
+  return apiRequest<OrganizationDetail>({
+    method: "GET",
+    path: `/api/v1/management/organizations/${encodeURIComponent(id)}`,
+    apiKey,
+    allow404: true,
+  });
 }

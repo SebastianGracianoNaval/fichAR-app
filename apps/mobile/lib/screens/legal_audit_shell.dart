@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/org_config_provider.dart';
+import '../services/sign_out_service.dart';
+import '../theme.dart';
 import 'legal_audit_dashboard_screen.dart';
 import 'legal_audit_hash_chain_screen.dart';
 import 'legal_audit_logs_screen.dart';
@@ -18,27 +20,24 @@ class _LegalAuditShellState extends State<LegalAuditShell> {
   Future<void> _signOut(BuildContext context) async {
     if (_signingOut) return;
     final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     setState(() => _signingOut = true);
-    try {
-      await Supabase.instance.client.auth.signOut();
-    } catch (e) {
-      debugPrint('signOut failed: $e');
-      try {
-        await Supabase.instance.client.auth.signOut(
-          scope: SignOutScope.local,
-        );
-      } catch (_) {}
-      if (mounted) {
-        messenger.showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Sesión cerrada localmente. Si tenés problemas, volvé a iniciar sesión.',
-            ),
+    OrgConfigProvider.clear();
+    clearFicharThemeCache();
+    final result = await SignOutService.signOutDetailed();
+    if (!mounted) return;
+    setState(() => _signingOut = false);
+    if (result.wasLocal) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Sesión cerrada localmente. Si tenés problemas, volvé a iniciar sesión.',
           ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _signingOut = false);
+        ),
+      );
+    }
+    if (result.signedOut) {
+      navigator.pushNamedAndRemoveUntil('/login', (route) => false);
     }
   }
 

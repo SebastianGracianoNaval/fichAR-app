@@ -38,6 +38,7 @@ import {
   handleGetLicencias,
   handleGetLicenciasPendientes,
   handlePostLicencias,
+  handlePostLicenciasUpload,
   handlePostLicenciaAprobar,
   handlePostLicenciaRechazar,
 } from './routes/licencias.ts';
@@ -163,6 +164,7 @@ const routes: Route[] = [
   exact('GET', '/licencias', handleGetLicencias),
   exact('GET', '/licencias/pendientes', handleGetLicenciasPendientes),
   exact('POST', '/licencias', handlePostLicencias),
+  exact('POST', '/licencias/upload', handlePostLicenciasUpload),
   dynamic('POST', '/licencias/', '/aprobar', handlePostLicenciaAprobar),
   dynamic('POST', '/licencias/', '/rechazar', handlePostLicenciaRechazar),
 

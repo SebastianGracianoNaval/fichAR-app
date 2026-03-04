@@ -1,9 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'api_client_stub.dart' if (dart.library.io) 'api_client_io.dart' as io;
 
 /// Centralized HTTP client. Base URL, token, auth headers, timeouts, retry.
 /// Reference: OPTIMIZACION-RECURSOS-RED §3.5, §3.6
@@ -61,7 +62,7 @@ class ApiClient {
         attempt++;
         if (attempt >= maxAttempts) rethrow;
         final isNetworkError =
-            e is SocketException ||
+            e is io.SocketException ||
             e is TimeoutException ||
             e is http.ClientException;
         if (!isNetworkError) rethrow;

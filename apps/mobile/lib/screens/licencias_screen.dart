@@ -1,20 +1,19 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../core/org_config_provider.dart';
 import '../theme.dart';
 import '../services/licencias_api_service.dart';
 import '../widgets/inline_error.dart';
 import '../widgets/responsive_content_wrapper.dart';
 
-const _tiposLicencia = [
-  'enfermedad',
-  'accidente',
-  'matrimonio',
-  'maternidad',
-  'paternidad',
-  'duelo',
-  'estudio',
-  'otro',
-];
+const _maxAdjuntoBytes = 5 * 1024 * 1024; // 5 MB (CL-017)
+const _adjuntoExtensiones = ['pdf', 'jpg', 'jpeg', 'png'];
+const _msgAdjuntoObligatorio =
+    'Para licencias por enfermedad o accidente debés adjuntar el certificado médico.';
+const _msgAdjuntoFormato =
+    'Solo se permiten archivos PDF, JPG o PNG de hasta 5 MB.';
+const _tiposRequierenAdjunto = ['enfermedad', 'accidente'];
 
 class LicenciasScreen extends StatefulWidget {
   const LicenciasScreen({super.key});
@@ -28,16 +27,23 @@ class _LicenciasScreenState extends State<LicenciasScreen> {
   String? _error;
   bool _loading = true;
   bool _showForm = false;
-  String _formTipo = _tiposLicencia.first;
+  late String _formTipo;
   DateTime? _formFechaInicio;
   DateTime? _formFechaFin;
   final _motivoCtrl = TextEditingController();
+  List<int>? _adjuntoBytes;
+  String? _adjuntoFilename;
 
   @override
   void initState() {
     super.initState();
+    _formTipo = OrgConfigProvider.licenciasTiposPermitidos.isNotEmpty
+        ? OrgConfigProvider.licenciasTiposPermitidos.first
+        : 'enfermedad';
     _loadLicencias();
   }
+
+  List<String> get _tiposLicencia => OrgConfigProvider.licenciasTiposPermitidos;
 
   Future<void> _loadLicencias() async {
     setState(() {
@@ -62,7 +68,11 @@ class _LicenciasScreenState extends State<LicenciasScreen> {
           if (!_showForm)
             IconButton(
               icon: const Icon(Icons.add),
-              onPressed: () => setState(() => _showForm = true),
+              onPressed: () => setState(() {
+                _showForm = true;
+                _adjuntoBytes = null;
+                _adjuntoFilename = null;
+              }),
             ),
         ],
       ),
@@ -104,7 +114,11 @@ class _LicenciasScreenState extends State<LicenciasScreen> {
                     ),
                     const SizedBox(height: kSpacingLg),
                     FilledButton.icon(
-                      onPressed: () => setState(() => _showForm = true),
+                      onPressed: () => setState(() {
+                        _showForm = true;
+                        _adjuntoBytes = null;
+                        _adjuntoFilename = null;
+                      }),
                       icon: const Icon(Icons.add),
                       label: const Text('Nueva solicitud'),
                     ),
@@ -124,7 +138,11 @@ class _LicenciasScreenState extends State<LicenciasScreen> {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: FilledButton.icon(
-                          onPressed: () => setState(() => _showForm = true),
+                          onPressed: () => setState(() {
+                            _showForm = true;
+                            _adjuntoBytes = null;
+                            _adjuntoFilename = null;
+                          }),
                           icon: const Icon(Icons.add),
                           label: const Text('Nueva solicitud'),
                         ),
@@ -166,6 +184,146 @@ class _LicenciasScreenState extends State<LicenciasScreen> {
     super.dispose();
   }
 
+  bool get _requiereAdjunto =>
+      OrgConfigProvider.licenciasAdjuntoObligatorio &&
+      _tiposRequierenAdjunto.contains(_formTipo);
+
+  Widget _buildAdjuntoSection() {
+    final requiere = _requiereAdjunto;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (requiere)
+          Text(
+            'Certificado médico (obligatorio)',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+          ),
+        const SizedBox(height: kSpacingSm),
+        if (_adjuntoBytes != null && _adjuntoFilename != null)
+          Chip(
+            avatar: const Icon(Icons.attach_file, size: 20),
+            label: Text(_adjuntoFilename!),
+            deleteIcon: const Icon(Icons.close),
+            onDeleted: () => setState(() {
+              _adjuntoBytes = null;
+              _adjuntoFilename = null;
+            }),
+          )
+        else
+          OutlinedButton.icon(
+            icon: const Icon(Icons.upload_file),
+            label: const Text('Adjuntar certificado'),
+            onPressed: () async {
+              final result = await FilePicker.platform.pickFiles(
+                type: FileType.custom,
+                allowedExtensions: _adjuntoExtensiones,
+                withData: true,
+              );
+              if (!mounted || result == null || result.files.isEmpty) return;
+              final file = result.files.single;
+              final bytes = file.bytes;
+              final name = file.name;
+              if (bytes == null || name.isEmpty) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text(_msgAdjuntoFormato)),
+                );
+                return;
+              }
+              final ext = name.split('.').last.toLowerCase();
+              if (!_adjuntoExtensiones.any((e) => e == ext)) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text(_msgAdjuntoFormato)),
+                );
+                return;
+              }
+              if (bytes.length > _maxAdjuntoBytes) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text(_msgAdjuntoFormato)),
+                );
+                return;
+              }
+              setState(() {
+                _adjuntoBytes = bytes;
+                _adjuntoFilename = name;
+              });
+            },
+          ),
+      ],
+    );
+  }
+
+  Future<void> _submitForm() async {
+    if (_formFechaInicio == null || _formFechaFin == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Seleccioná fecha inicio y fin')),
+      );
+      return;
+    }
+    if (_formFechaFin!.isBefore(_formFechaInicio!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Fecha fin debe ser >= fecha inicio'),
+        ),
+      );
+      return;
+    }
+    if (_requiereAdjunto && (_adjuntoBytes == null || _adjuntoFilename == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(_msgAdjuntoObligatorio)),
+      );
+      return;
+    }
+    List<Map<String, String>>? adjuntos;
+    if (_adjuntoBytes != null && _adjuntoFilename != null) {
+      final upload = await LicenciasApiService.uploadAdjunto(
+        _adjuntoBytes!,
+        filename: _adjuntoFilename!,
+      );
+      if (!mounted) return;
+      if (upload.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(upload.error!)),
+        );
+        return;
+      }
+      adjuntos = [upload.data!.toJson()];
+    }
+    final fi =
+        '${_formFechaInicio!.year}-${_formFechaInicio!.month.toString().padLeft(2, '0')}-${_formFechaInicio!.day.toString().padLeft(2, '0')}';
+    final ff =
+        '${_formFechaFin!.year}-${_formFechaFin!.month.toString().padLeft(2, '0')}-${_formFechaFin!.day.toString().padLeft(2, '0')}';
+    final result = await LicenciasApiService.createLicencia(
+      tipo: _formTipo,
+      fechaInicio: fi,
+      fechaFin: ff,
+      motivo: _motivoCtrl.text.trim().isEmpty
+          ? null
+          : _motivoCtrl.text.trim(),
+      adjuntos: adjuntos,
+    );
+    if (!mounted) return;
+    if (result.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.error!)),
+      );
+      return;
+    }
+    setState(() {
+      _showForm = false;
+      _adjuntoBytes = null;
+      _adjuntoFilename = null;
+      _licencias.insert(0, result.data!);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Solicitud enviada')),
+    );
+  }
+
   Widget _buildForm() {
     return SingleChildScrollView(
       child: ResponsiveContentWrapper(
@@ -179,7 +337,11 @@ class _LicenciasScreenState extends State<LicenciasScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               DropdownButtonFormField<String>(
-                initialValue: _formTipo,
+                initialValue: _tiposLicencia.contains(_formTipo)
+                    ? _formTipo
+                    : (_tiposLicencia.isNotEmpty
+                        ? _tiposLicencia.first
+                        : 'enfermedad'),
                 decoration: const InputDecoration(
                   labelText: 'Tipo',
                   border: OutlineInputBorder(),
@@ -189,6 +351,8 @@ class _LicenciasScreenState extends State<LicenciasScreen> {
                     .toList(),
                 onChanged: (v) => setState(() => _formTipo = v ?? _formTipo),
               ),
+              const SizedBox(height: kSpacingMd),
+              _buildAdjuntoSection(),
               const SizedBox(height: kSpacingMd),
               ListTile(
                 title: Text(
@@ -251,52 +415,7 @@ class _LicenciasScreenState extends State<LicenciasScreen> {
                   const SizedBox(width: kSpacingMd),
                   Expanded(
                     child: FilledButton(
-                      onPressed: () async {
-                        if (_formFechaInicio == null || _formFechaFin == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Seleccioná fecha inicio y fin'),
-                            ),
-                          );
-                          return;
-                        }
-                        if (_formFechaFin!.isBefore(_formFechaInicio!)) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Fecha fin debe ser >= fecha inicio',
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-                        final fi =
-                            '${_formFechaInicio!.year}-${_formFechaInicio!.month.toString().padLeft(2, '0')}-${_formFechaInicio!.day.toString().padLeft(2, '0')}';
-                        final ff =
-                            '${_formFechaFin!.year}-${_formFechaFin!.month.toString().padLeft(2, '0')}-${_formFechaFin!.day.toString().padLeft(2, '0')}';
-                        final result = await LicenciasApiService.createLicencia(
-                          tipo: _formTipo,
-                          fechaInicio: fi,
-                          fechaFin: ff,
-                          motivo: _motivoCtrl.text.trim().isEmpty
-                              ? null
-                              : _motivoCtrl.text.trim(),
-                        );
-                        if (!mounted) return;
-                        if (result.error != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(result.error!)),
-                          );
-                          return;
-                        }
-                        setState(() {
-                          _showForm = false;
-                          _licencias.insert(0, result.data!);
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Solicitud enviada')),
-                        );
-                      },
+                      onPressed: _submitForm,
                       child: const Text('Enviar'),
                     ),
                   ),

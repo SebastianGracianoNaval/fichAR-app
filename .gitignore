@@ -60,10 +60,12 @@ coverage/
 # Misc
 *.pem
 .cache/
+skills-lock.json
 
 # Cursor / Agent skills
 .cursor/settings.json
 .agents/
+.claude/
 
 # Definitions (internal reference, not official documentation)
 definiciones/

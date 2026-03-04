@@ -83,10 +83,10 @@ class _LoginScreenState extends State<LoginScreen> {
           if (response.statusCode == 429) {
             _errorMessage = 'Demasiados intentos. Intentá en 15 minutos.';
           } else if (response.statusCode == 401) {
-            _errorMessage = 'Email o contrasena incorrectos.';
+            _errorMessage = 'Email o contraseña incorrectos.';
           } else {
             _errorMessage =
-                response.error ?? 'Error al iniciar sesion. Intentá de nuevo.';
+                response.error ?? 'Error al iniciar sesión. Intentá de nuevo.';
           }
         });
         return;
@@ -102,14 +102,14 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _loading = false;
         _errorMessage = e.message == 'Invalid login credentials'
-            ? 'Email o contrasena incorrectos.'
+            ? 'Email o contraseña incorrectos.'
             : e.message;
       });
       return;
     } catch (e) {
       setState(() {
         _loading = false;
-        _errorMessage = 'Error al iniciar sesion. Intentá de nuevo.';
+        _errorMessage = 'Error al iniciar sesión. Intentá de nuevo.';
       });
       return;
     }
@@ -180,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: kSpacingSm),
                               Text(
-                                'Inicio de sesion',
+                                'Inicio de sesión',
                                 style: theme.textTheme.bodyLarge?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
@@ -203,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     return 'Ingresa tu email';
                                   }
                                   if (!v.contains('@')) {
-                                    return 'Email invalido';
+                                    return 'Email inválido';
                                   }
                                   return null;
                                 },
@@ -218,18 +218,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                   if (!_loading) _onSubmit();
                                 },
                                 decoration: const InputDecoration(
-                                  labelText: 'Contrasena',
+                                  labelText: 'Contraseña',
                                 ),
                                 validator: (v) {
                                   if (v == null || v.isEmpty) {
-                                    return 'Ingresa tu contrasena';
+                                    return 'Ingresa tu contraseña';
                                   }
                                   return null;
                                 },
                               ),
                               const SizedBox(height: kSpacingSm),
                               Semantics(
-                                label: 'Mostrar contrasena',
+                                label: 'Mostrar contraseña',
                                 child: CheckboxListTile(
                                   value: !_obscurePassword,
                                   onChanged: (value) {
@@ -239,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     }
                                   },
                                   title: Text(
-                                    'Mostrar contrasena',
+                                    'Mostrar contraseña',
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       color: theme.colorScheme.onSurface,
                                     ),
@@ -258,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               FicharButton(
                                 onPressed: _loading ? null : _onSubmit,
                                 loading: _loading,
-                                child: const Text('Iniciar sesion'),
+                                child: const Text('Iniciar sesión'),
                               ),
                               const SizedBox(height: kSpacingMd),
                               TextButton(
@@ -270,7 +270,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     context,
                                   ).pushNamed('/forgot-password');
                                 },
-                                child: const Text('Olvide mi contrasena'),
+                                child: const Text('Olvidé mi contraseña'),
                               ),
                             ],
                           ),

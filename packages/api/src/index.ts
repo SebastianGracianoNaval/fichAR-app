@@ -109,6 +109,13 @@ async function fetchHandler(req: Request): Promise<Response> {
     return applySecurityHeaders(handleHealth(), req);
   }
 
+  if (process.env.NODE_ENV === 'production' && getAllowedOrigins().length === 0 && req.headers.get('origin')) {
+    return applySecurityHeaders(
+      Response.json({ error: 'CORS no configurado para producción', code: 'cors_not_configured' }, { status: 403 }),
+      req,
+    );
+  }
+
   const matched = matchRoute(req.method, path);
   if (!matched) {
     return applySecurityHeaders(errJson(404, 'Ruta no encontrada', 'not_found'), req);

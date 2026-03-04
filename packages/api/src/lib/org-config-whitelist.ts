@@ -5,12 +5,16 @@
 
 export interface ConfigSchema {
   key: string;
-  type: 'boolean' | 'number' | 'select';
+  type: 'boolean' | 'number' | 'select' | 'string';
   default: boolean | number | string;
   min?: number;
   max?: number;
+  maxLength?: number;
   allowedValues?: (number | string)[];
 }
+
+const LICENCIAS_TIPOS_DEFAULT =
+  '["enfermedad","accidente","matrimonio","maternidad","paternidad","duelo","estudio","otro"]';
 
 export const CONFIG_WHITELIST: ConfigSchema[] = [
   { key: 'geolocalizacion_obligatoria', type: 'boolean', default: true },
@@ -27,6 +31,22 @@ export const CONFIG_WHITELIST: ConfigSchema[] = [
   { key: 'app_desktop_habilitada', type: 'boolean', default: true },
   { key: 'app_web_habilitada', type: 'boolean', default: true },
   { key: 'fichaje_fuera_zona_notificar', type: 'boolean', default: true },
+  // CFG-014: banco de horas
+  { key: 'banco_horas_habilitado', type: 'boolean', default: true },
+  // CFG-017: adjunto obligatorio enfermedad/accidente
+  { key: 'licencias_adjunto_obligatorio', type: 'boolean', default: true },
+  // CFG-018: tipos de licencia permitidos (JSON array string)
+  { key: 'licencias_tipos_permitidos', type: 'string', default: LICENCIAS_TIPOS_DEFAULT, maxLength: 500 },
+  // CFG-021: tareas/timesheet
+  { key: 'tareas_habilitado', type: 'boolean', default: false },
+  // CFG-027: biometria
+  { key: 'biometria_habilitada', type: 'boolean', default: true },
+  // CFG-039: sabias que frecuencia
+  { key: 'sabias_que_frecuencia', type: 'select', default: 'una_vez_dia', allowedValues: ['siempre', 'una_vez_dia', 'una_vez_semana', 'nunca'] },
+  // CFG-042/043/044: paleta org
+  { key: 'org_color_palette', type: 'select', default: 'profesional', allowedValues: ['profesional', 'fresco', 'neutro', 'custom'] },
+  { key: 'org_color_primary', type: 'string', default: '', maxLength: 9 },
+  { key: 'org_color_secondary', type: 'string', default: '', maxLength: 9 },
 ];
 
 const MAX_KEYS_PER_REQUEST = 20;
@@ -84,6 +104,16 @@ export function validateConfigValue(
     if (schema.allowedValues && !schema.allowedValues.includes(normalized)) {
       const vals = (schema.allowedValues as string[]).join(', ');
       return { valid: false, error: `${key} must be one of: ${vals}` };
+    }
+    return { valid: true };
+  }
+
+  if (schema.type === 'string') {
+    if (typeof value !== 'string') {
+      return { valid: false, error: `${key} must be a string` };
+    }
+    if (schema.maxLength != null && value.length > schema.maxLength) {
+      return { valid: false, error: `${key} must be at most ${schema.maxLength} characters` };
     }
     return { valid: true };
   }

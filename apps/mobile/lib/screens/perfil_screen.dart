@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/device_capabilities.dart';
+import '../core/org_config_provider.dart';
 import '../services/me_api_service.dart';
+import '../services/sign_out_service.dart';
 import '../theme.dart';
 import '../widgets/inline_error.dart';
 import '../widgets/responsive_content_wrapper.dart';
@@ -120,15 +122,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }
 
   Future<void> _signOut() async {
-    try {
-      await Supabase.instance.client.auth.signOut();
-    } catch (_) {
-      try {
-        await Supabase.instance.client.auth.signOut(
-          scope: SignOutScope.local,
-        );
-      } catch (_) {}
-    }
+    OrgConfigProvider.clear();
+    clearFicharThemeCache();
+    await SignOutService.signOut();
   }
 
   String _formatDate(String iso) {
