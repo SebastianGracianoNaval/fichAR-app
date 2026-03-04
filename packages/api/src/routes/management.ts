@@ -327,18 +327,6 @@ const RATE_LIMIT_MESSAGE = 'Demasiados intentos. Intentá más tarde.';
 
 export async function handleManagementAuthLogin(req: Request): Promise<Response> {
   const meta = getRequestMeta(req);
-  const limit = await checkLoginRateLimit(req);
-  if (!limit.allowed) {
-    await logAudit('rate_limit_management_login', { ip: meta.ip, userAgent: meta.userAgent }, {}, 'warning');
-    const headers: Record<string, string> = {};
-    if (limit.retryAfter != null) {
-      headers['Retry-After'] = String(limit.retryAfter);
-    }
-    return Response.json(
-      { error: RATE_LIMIT_MESSAGE, retryAfter: limit.retryAfter },
-      { status: 429, headers },
-    );
-  }
 
   let body: unknown;
   try {
@@ -370,12 +358,24 @@ export async function handleManagementAuthLogin(req: Request): Promise<Response>
     return Response.json({ error: 'Error de configuración' }, { status: 500 });
   }
 
+  const limit = await checkLoginRateLimit(req);
   const { data: authData, error: authErr } = await supabaseAuth.auth.signInWithPassword({
     email,
     password,
   });
 
   if (authErr) {
+    if (!limit.allowed) {
+      await logAudit('rate_limit_management_login', { ip: meta.ip, userAgent: meta.userAgent }, {}, 'warning');
+      const headers: Record<string, string> = {};
+      if (limit.retryAfter != null) {
+        headers['Retry-After'] = String(limit.retryAfter);
+      }
+      return Response.json(
+        { error: RATE_LIMIT_MESSAGE, retryAfter: limit.retryAfter },
+        { status: 429, headers },
+      );
+    }
     await recordLoginFailure(req);
     await logAudit('management_login_failed', { ip: meta.ip, userAgent: meta.userAgent }, { reason: 'auth' }, 'info');
     return Response.json({ error: 'Credenciales inválidas' }, { status: 401 });

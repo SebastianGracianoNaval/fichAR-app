@@ -377,14 +377,6 @@ function buildLoginSuccessResponse(
 
 export async function handleLogin(req: Request): Promise<Response> {
   const meta = getRequestMeta(req);
-  const limit = await checkLoginRateLimit(req);
-  if (!limit.allowed) {
-    await logAudit('rate_limit_login', { ip: meta.ip, userAgent: meta.userAgent }, { ip: meta.ip, intentos: FAIL_THRESHOLD }, 'warning');
-    return Response.json(
-      { error: 'Demasiados intentos. Intentá en 15 minutos.', code: 'rate_limit' },
-      { status: 429, headers: limit.retryAfter ? { 'Retry-After': String(limit.retryAfter) } : {} },
-    );
-  }
 
   let body: unknown;
   try {
@@ -400,6 +392,7 @@ export async function handleLogin(req: Request): Promise<Response> {
     return Response.json({ error: 'Email o contraseña incorrectos.' }, { status: 401 });
   }
 
+  const limit = await checkLoginRateLimit(req);
   const supabaseAuth = createSupabaseAuthClient();
   const { data: authData, error: authErr } = await supabaseAuth.auth.signInWithPassword({
     email: email.toLowerCase(),
@@ -407,10 +400,19 @@ export async function handleLogin(req: Request): Promise<Response> {
   });
 
   if (authErr) {
+    if (!limit.allowed) {
+      await logAudit('rate_limit_login', { ip: meta.ip, userAgent: meta.userAgent }, { ip: meta.ip, intentos: FAIL_THRESHOLD }, 'warning');
+      return Response.json(
+        { error: 'Demasiados intentos. Intentá en 15 minutos.', code: 'rate_limit' },
+        { status: 429, headers: limit.retryAfter ? { 'Retry-After': String(limit.retryAfter) } : {} },
+      );
+    }
     await recordLoginFailure(req);
     await logAudit('login_failed', { ip: meta.ip, userAgent: meta.userAgent }, { reason: 'auth' }, 'info');
     return Response.json({ error: 'Email o contraseña incorrectos.' }, { status: 401 });
   }
+
+  await clearLoginFailure(req);
 
   const accessToken = authData.session?.access_token;
   const refreshToken = authData.session?.refresh_token;
@@ -418,8 +420,6 @@ export async function handleLogin(req: Request): Promise<Response> {
     await logError('critical', 'login_session_missing', undefined, {}, new Error('Supabase session missing token'));
     return Response.json({ error: 'Error de sesión' }, { status: 500 });
   }
-
-  await clearLoginFailure(req);
 
   const admin = getSupabaseAdmin();
   const { data: emp } = await admin

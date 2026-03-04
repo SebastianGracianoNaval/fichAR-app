@@ -116,6 +116,7 @@ async function clearRedisFailure(ip: string): Promise<void> {
   if (!redis) return;
   try {
     await redis.del(`login:fail:${ip}`);
+    await redis.del(`login:block:${ip}`);
   } catch {
     // ignore
   }
