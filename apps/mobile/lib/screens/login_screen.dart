@@ -116,7 +116,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _loading = false);
     if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed('/dashboard');
+    // Do not navigate: StreamBuilder<AuthState> in app.dart will rebuild home to AuthHomeResolver
+    // when onAuthStateChange fires, avoiding a race where _guardRoute could see null session.
   }
 
   @override
