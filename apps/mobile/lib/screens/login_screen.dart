@@ -98,6 +98,14 @@ class _LoginScreenState extends State<LoginScreen> {
       if (authResponse.session == null) {
         throw Exception('No se pudo establecer la sesión');
       }
+      // Ensure UI transitions: onAuthStateChange may emit late on web/production.
+      // Wait one frame + short delay so currentSession is set, then navigate so
+      // _guardRoute sees the session (StreamBuilder may not have rebuilt yet).
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      if (!mounted) return;
+      if (Supabase.instance.client.auth.currentSession != null) {
+        Navigator.of(context).pushReplacementNamed('/dashboard');
+      }
     } on AuthException catch (e) {
       setState(() {
         _loading = false;
